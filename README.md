@@ -31,6 +31,7 @@ Encrypt-Then-MAC implementation whenever we encrypt data.  This means we encrypt
 and then HMAC (ie. keyed mac) the encrypted data with the KAK in a way that provides a true tamper proof seal.
 
 AES-CTR(data, KEK, IV) = Edata
+
 HMAC(SHA256(iv || Edata), KAK) = MAC 
 
 save: IV + MAC + Edata
