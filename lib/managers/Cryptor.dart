@@ -326,7 +326,7 @@ class Cryptor {
   }
 
   List<int> getRandomBytes(int nbytes) {
-    final rng = Random();
+    final rng = Random.secure();
     final rand = new List.generate(nbytes, (_) => rng.nextInt(255));
     return rand;
   }
