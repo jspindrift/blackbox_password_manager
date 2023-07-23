@@ -1,115 +1,115 @@
 {
   "images" : [
     {
-      "filename" : "blackbox_smaller_icon_40 2.png",
+      "filename" : "blackbox_pp_40.png",
       "idiom" : "iphone",
       "scale" : "2x",
       "size" : "20x20"
     },
     {
-      "filename" : "blackbox_smaller_icon_60.png",
+      "filename" : "blackbox_pp_60.png",
       "idiom" : "iphone",
       "scale" : "3x",
       "size" : "20x20"
     },
     {
-      "filename" : "blackbox_smaller_icon_29 1.png",
+      "filename" : "blackbox_pp_29.png",
       "idiom" : "iphone",
       "scale" : "1x",
       "size" : "29x29"
     },
     {
-      "filename" : "blackbox_smaller_icon_58 1.png",
+      "filename" : "blackbox_pp_58.png",
       "idiom" : "iphone",
       "scale" : "2x",
       "size" : "29x29"
     },
     {
-      "filename" : "blackbox_smaller_icon_87.png",
+      "filename" : "blackbox_pp_87.png",
       "idiom" : "iphone",
       "scale" : "3x",
       "size" : "29x29"
     },
     {
-      "filename" : "blackbox_smaller_icon_80 1.png",
+      "filename" : "blackbox_pp_80.png",
       "idiom" : "iphone",
       "scale" : "2x",
       "size" : "40x40"
     },
     {
-      "filename" : "blackbox_smaller_icon_120.png",
+      "filename" : "blackbox_pp_120 1.png",
       "idiom" : "iphone",
       "scale" : "3x",
       "size" : "40x40"
     },
     {
-      "filename" : "blackbox_smaller_icon_120 1.png",
+      "filename" : "blackbox_pp_120.png",
       "idiom" : "iphone",
       "scale" : "2x",
       "size" : "60x60"
     },
     {
-      "filename" : "blackbox_smaller_icon_180.png",
+      "filename" : "blackbox_pp_180.png",
       "idiom" : "iphone",
       "scale" : "3x",
       "size" : "60x60"
     },
     {
-      "filename" : "blackbox_smaller_icon_20.png",
+      "filename" : "blackbox_pp_20.png",
       "idiom" : "ipad",
       "scale" : "1x",
       "size" : "20x20"
     },
     {
-      "filename" : "blackbox_smaller_icon_40 1.png",
+      "filename" : "blackbox_pp_40 1.png",
       "idiom" : "ipad",
       "scale" : "2x",
       "size" : "20x20"
     },
     {
-      "filename" : "blackbox_smaller_icon_29.png",
+      "filename" : "blackbox_pp_29 1.png",
       "idiom" : "ipad",
       "scale" : "1x",
       "size" : "29x29"
     },
     {
-      "filename" : "blackbox_smaller_icon_58.png",
+      "filename" : "blackbox_pp_58 1.png",
       "idiom" : "ipad",
       "scale" : "2x",
       "size" : "29x29"
     },
     {
-      "filename" : "blackbox_smaller_icon_40.png",
+      "filename" : "blackbox_pp_40 2.png",
       "idiom" : "ipad",
       "scale" : "1x",
       "size" : "40x40"
     },
     {
-      "filename" : "blackbox_smaller_icon_80.png",
+      "filename" : "blackbox_pp_80 1.png",
       "idiom" : "ipad",
       "scale" : "2x",
       "size" : "40x40"
     },
     {
-      "filename" : "blackbox_smaller_icon_76.png",
+      "filename" : "blackbox_pp_76.png",
       "idiom" : "ipad",
       "scale" : "1x",
       "size" : "76x76"
     },
     {
-      "filename" : "blackbox_smaller_icon_152.png",
+      "filename" : "blackbox_pp_152.png",
       "idiom" : "ipad",
       "scale" : "2x",
       "size" : "76x76"
     },
     {
-      "filename" : "blackbox_smaller_icon_167.png",
+      "filename" : "blackbox_pp_167.png",
       "idiom" : "ipad",
       "scale" : "2x",
       "size" : "83.5x83.5"
     },
     {
-      "filename" : "blackbox_icon_1024.png",
+      "filename" : "blackbox_pp_1024.png",
       "idiom" : "ios-marketing",
       "scale" : "1x",
       "size" : "1024x1024"
