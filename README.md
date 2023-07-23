@@ -32,7 +32,7 @@ and then HMAC (ie. keyed mac) the encrypted data with the KAK in a way that prov
 
 AES-CTR(data, KEK, IV) = Edata
 
-HMAC(SHA256(iv || Edata), KAK) = MAC 
+HMAC(SHA256(IV || Edata), KAK) = MAC 
 
 save: IV + MAC + Edata
 
