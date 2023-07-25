@@ -1272,7 +1272,6 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
 
         /// decide to decrypt or save item.
         _showErrorDialog("Invalid code format");
-
       }
     } on PlatformException {
       barcodeScanRes = "Failed to get platform version.";

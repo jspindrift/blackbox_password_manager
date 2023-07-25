@@ -106,8 +106,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
   bool _loginScreenFlow = false;
   bool _isDarkModeEnabled = false;
 
-  DateTime? _lastRefreshDate = null; // DateTime.now();
-
   final keyManager = KeychainManager();
   final deviceManager = DeviceManager();
   final cryptor = Cryptor();
@@ -168,20 +166,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
         _loginScreenFlow = !keyManager.hasPasswordItems;
       });
     });
-
-    /// don't allow too many refreshes (exhaust icloud limits)
-    // if (_lastRefreshDate != null) {
-    //   if (DateTime
-    //       .now()
-    //       .difference(_lastRefreshDate!)
-    //       .inSeconds <= 5) {
-    //     WidgetUtils.showSnackBarDuration(
-    //         context, "Refreshing Backup List...", Duration(seconds: 2));
-    //     return;
-    //   }
-    // }
-
-    _lastRefreshDate = DateTime.now();
 
     if (!_isInitState) {
       WidgetUtils.showSnackBarDuration(
@@ -893,43 +877,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
                   ),
                 ),
               ),
-              // Visibility(
-              //   visible: !_loginScreenFlow && !Platform.isAndroid,
-              //   child:
-              // Padding(
-              //   padding: EdgeInsets.all(16),
-              //   child: Center(
-              //     child: ElevatedButton(
-              //       style: ButtonStyle(
-              //         backgroundColor: _isDarkModeEnabled
-              //             ? MaterialStateProperty.all<Color>(Colors.greenAccent)
-              //             : null,
-              //       ),
-              //       child: Text("Create iCloud Backup",
-              //         style: TextStyle(
-              //           color: _isDarkModeEnabled ? Colors.black : Colors.white,
-              //         ),
-              //       ),
-              //       onPressed: () async {
-              //         // print("Create Backup");
-              //         if (_hasMatchingVault) {
-              //           // WidgetUtils.showSnackBarDuration(context, "Backing Up Vault...", Duration(seconds: 2));
-              //
-              //           final status = await _createBackup(false);
-              //           _fetchBackups();
-              //
-              //           if (status) {
-              //             EasyLoading.showToast("Backup Successful");
-              //           } else {
-              //             _showErrorDialog("Could not backup vault.");
-              //           }
-              //         } else {
-              //           _displayCreateBackupDialog(context, false);
-              //         }
-              //       },
-              //     ),
-              //   ),
-              // ),),
             ],
           ),
 
@@ -981,8 +928,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
                 ),
                 itemCount: _backups.length,
                 itemBuilder: (context, index) {
-                  // yyyy-MM-dd  hh:mm a
-                  // print("filesize: ${_backupFileSizes[index]}");
                   var fsize = (_backupFileSizes[index] / 1024);
                   var funit = "KB";
                   if (fsize > 1024) {
@@ -992,10 +937,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
                   var dateLine =
                       '${DateFormat('MMM d y  hh:mm a').format(DateTime.parse(_backups[index].mdate))}\n${_matchingKeyList[index] ? '🔐 ' : ''}${_matchingDeviceList[index] ? "📲 " : ''}${fsize.toStringAsFixed(2)} $funit';
 
-                  // print("_backups id:${_backups[index].id} : $_matchingLocalVaultId");
                   if (_backups[index].id == _matchingLocalVaultId) {
                     dateLine = dateLine + " - Local Vault";
-                    // print("found match");
                   }
 
                   return Container(
@@ -1008,8 +951,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           color: _isDarkModeEnabled ? Colors.white : null,
-                          // color: (_backups[index].id == keyManager.vaultId &&
-                          //     _matchingKeyList[index]) ? _isDarkModeEnabled ? Colors.black : null : null,
                         ),
                       ),
                       subtitle: Padding(
@@ -1019,8 +960,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             color: _isDarkModeEnabled ? Colors.white : null,
-                            // color: (_backups[index].id == keyManager.vaultId &&
-                            //     _matchingKeyList[index]) ? _isDarkModeEnabled ? Colors.black : null : null,
                           ),
                         ),
                       ),
@@ -1039,18 +978,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
                                 _showChangeBackupNameDialog();
                               },
                             ),
-                          // if (_backups[index].id == keyManager.vaultId &&
-                          //     _matchingKeyList[index] && keyManager.hasPasswordItems)
-                          // Visibility(
-                          // visible: (_backups[index]?.encryptedKey?.salt != null),
-                          // child: IconButton(
-                          //   icon: Icon(Icons.sentiment_satisfied_alt),
-                          //   color: _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
-                          //   onPressed: () async {
-                          //     // _showChangeBackupNameDialog();
-                          //     _showRemoveSaltDialog(_backups[index].id, false);
-                          //   },
-                          // ),),
                           IconButton(
                             icon: Icon(Icons.info),
                             color: _isDarkModeEnabled
@@ -1085,13 +1012,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
                                         _backups[index].name,
                                         salt!,
                                       );
-                                    // } else {
-                                    //   /// user needs to input salt
-                                    //   _showSecretKeyImportOptionsDialog(
-                                    //       _backups[index].id,
-                                    //       _backups[index].name,
-                                    //       false);
-                                    // }
                                   } else {
                                     /// check if we have salt stored locally
                                     if (_secretSalts[index].isEmpty) {
@@ -2022,52 +1942,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
         });
   }
 
-  _showRemoveSaltDialog(String vaultId, bool isLocal) async {
-    return showDialog(
-        context: context,
-        builder: (context) {
-          return StatefulBuilder(builder: (context, setState) {
-            return AlertDialog(
-              title: Text('Remove Salt From Backup'),
-              actions: <Widget>[
-                OutlinedButton(
-                  child: Text('Cancel'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-                ElevatedButton(
-                  child: Text('Remove'),
-                  onPressed: () async {
-                    final status = await _removeBackupSalt(vaultId, isLocal);
-
-                    Navigator.of(context).pop();
-
-                    _fetchBackups();
-
-                    if (status) {
-                      EasyLoading.showToast("Removed Salt from Backup");
-                    } else {
-                      _showErrorDialog("Failed to remove salt from Backup");
-                    }
-                  },
-                ),
-              ],
-              // content: TextField(
-              //   onChanged: (value) {
-              //     setState(() {
-              //       _enableBackupNameOkayButton = value.isNotEmpty;
-              //     });
-              //   },
-              //   controller: _dialogChangeNameTextFieldController,
-              //   focusNode: _dialogChangeNameFocusNode,
-              //   decoration: InputDecoration(hintText: "New Backup Name"),
-              // ),
-            );
-          });
-        });
-  }
-
   void _startEasyLoadingScreen() {
     // EasyLoading.show(status: 'Loading data...',);
 
@@ -2376,46 +2250,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
     
     
     return hex.encode(currentNonce);
-  }
-
-  _hashList(GenericItemList items) async {
-    var hashes = [];
-    for (var singleItem in items.list) {
-      if (singleItem.type == "password") {
-        // print("item: ${singleItem.data}");
-        final pwdItem = PasswordItem.fromRawJson(singleItem.data);
-        final pwdItemHash = cryptor.sha256(pwdItem.toRawJson());
-
-        // hashes.add(pwdItem.id);
-        hashes.add(pwdItemHash);
-
-      } else if (singleItem.type == "note") {
-        final noteItem = NoteItem.fromRawJson(singleItem.data);
-        final noteItemHash = cryptor.sha256(noteItem.toRawJson());
-
-        // hashes.add(noteItem.id);
-        hashes.add(noteItemHash);
-
-      } else if (singleItem.type == "key") {
-        final keyItem = KeyItem.fromRawJson(singleItem.data);
-        final keyItemHash = cryptor.sha256(keyItem.toRawJson());
-
-        // hashes.add(noteItem.id);
-        hashes.add(keyItemHash);
-        // hashes.add(key Item.id);
-      }
-    }
-    // print("hashes: ${hashes.length} $hashes");
-
-    var appendedHashes = "";
-    for (var hashStr in hashes) {
-      appendedHashes += hashStr;
-    }
-
-    // print("appendedHashes: $appendedHashes");
-    final merkleHash = cryptor.sha256(appendedHashes);
-    // print("merkleHash: $merkleHash");
-
   }
 
   /// create a backup with a user specified name
@@ -2799,179 +2633,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
       ///
       await fileManager.writeVaultData(backupItemString);
       // print("saved vault file: ${vaultFile}");
-
-      return true;
-    }
-    return false;
-  }
-
-  /// create a backup with a user specified name
-  Future<bool> _removeBackupSalt(String vaultId, bool isLocal) async {
-    // print('backupName: $backupName');
-
-    if (keyManager.hasPasswordItems) {
-      logManager.log("BackupsScreen", "_removeBackupSalt",
-          "change backup name: $vaultId, isLocal: $isLocal");
-
-      // var cdate = DateTime.now().toIso8601String();
-      // var mdate = DateTime.now().toIso8601String();
-
-      VaultItem? currentVault;
-      if (!isLocal) {
-        if (_backups.length > 0) {
-          _backups.forEach((element) {
-            if (element.id == keyManager.vaultId) {
-              currentVault = element;
-              // break;
-            }
-          });
-        }
-      } else {
-        currentVault = _localVaultItem;
-      }
-
-      if (currentVault == null) {
-        return false;
-      }
-
-      // if (currentVault != null) {
-      final cdate = currentVault!.cdate;
-      final mdate = DateTime.now().toIso8601String();
-
-      // }
-      // final salt = currentVault!.encryptedKey.salt; // keyManager.salt;
-      final kdfAlgo = currentVault!.encryptedKey.derivationAlgorithm;
-      final rounds = currentVault!.encryptedKey.rounds; // cryptor.rounds;
-      final type = currentVault!.encryptedKey.type;
-      final version = currentVault!.encryptedKey.version;
-      final memoryPowerOf2 = currentVault!.encryptedKey.memoryPowerOf2;
-      final encryptionAlgo = currentVault!.encryptedKey.encryptionAlgorithm;
-      final keyMaterial = currentVault!.encryptedKey.keyMaterial;
-      final keyNonce = currentVault!.encryptedKey.keyNonce;
-
-      // final encryptedKey = EncryptedKey(
-      //   derivationAlgorithm: kdfAlgo,
-      //   salt: null,
-      //   rounds: rounds,
-      //   type: type,
-      //   version: version,
-      //   memoryPowerOf2: memoryPowerOf2,
-      //   encryptionAlgorithm: encryptionAlgo,
-      //   keyMaterial: keyMaterial,
-      // );
-
-      final appVersion = settingsManager.versionAndBuildNumber();//settingsManager.packageInfo.version;
-      // final appVersion = AppConstants.appVersion + "-${AppConstants.appBuildNumber}";
-
-      final uuid = keyManager.vaultId;
-
-      /// TODO: put salt into id string
-      final idStringPrevious =
-          "${uuid}-${currentVault!.deviceId}-${currentVault!.version}-${cdate}-${currentVault!.mdate}-${currentVault!.name}";
-      // final idStringUpdated =
-      //     "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${currentVault!.name}";
-
-      var tempDecryptedBlob =
-          await cryptor.decryptBackupVault(currentVault!.blob, idStringPrevious);
-      // print("tempDecryptedBlob: $tempDecryptedBlob");
-
-      if (tempDecryptedBlob == null || tempDecryptedBlob.isEmpty) {
-        return false;
-      }
-
-      final idStringUpdated =
-          "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${currentVault!.name}";
-
-      /// TODO: implement this outside of this function
-      settingsManager.doEncryption(utf8.encode(tempDecryptedBlob).length);
-      // cryptor.setTempKeyIndex(keyIndex);
-      // logManager.logger.d("keyIndex: $keyIndex");
-
-      final newKeyNonce = _convertEncryptedBlocksNonce();
-      logManager.logger.d("newKeyNonce: $newKeyNonce");
-
-      final encryptedKeyNonce = await cryptor.encrypt(newKeyNonce);
-      logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
-
-
-
-      final encryptedKey = EncryptedKey(
-        derivationAlgorithm: kdfAlgo,
-        salt: null,
-        rounds: rounds,
-        type: type,
-        version: version,
-        memoryPowerOf2: memoryPowerOf2,
-        encryptionAlgorithm: encryptionAlgo,
-        keyMaterial: keyMaterial,
-        keyNonce: encryptedKeyNonce,
-        // blocksEncrypted: settingsManager.numBlocksEncrypted,
-        // blockRolloverCount: settingsManager.numRolloverEncryptionCounts,
-      );
-
-      var encryptedBlobUpdated =
-          await cryptor.encryptBackupVault(tempDecryptedBlob, idStringUpdated);
-      // print("encryptedBlobUpdated: $encryptedBlobUpdated");
-
-      final deviceDataString = settingsManager.deviceManager.deviceData.toString();
-      logManager.logger.d("deviceDataString: $deviceDataString");
-      // logManager.logger.d("deviceData[utsname.version:]: ${settingsManager.deviceManager.deviceData["utsname.version:"]}");
-
-      settingsManager.doEncryption(utf8.encode(deviceDataString).length);
-      final encryptedDeviceData = await cryptor.encrypt(deviceDataString);
-      logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
-
-
-      // final backupNameFinal = '$backupName - ${items.list.length} items, v${settingsManager.packageInfo.version}';
-      /// TODO: add in updatedBlob, remove blobDigest
-      final backupItem = VaultItem(
-        id: uuid,
-        version: appVersion,
-        name: currentVault!.name,
-        deviceId: _deviceId,
-        deviceData: encryptedDeviceData,
-        encryptedKey: encryptedKey,
-        myIdentity: currentVault!.myIdentity,
-        identities: currentVault!.identities,
-        recoveryKeys: currentVault!.recoveryKeys,
-        numItems: currentVault!.numItems,
-        blob: encryptedBlobUpdated,
-        cdate: cdate,
-        mdate: mdate,
-      );
-
-      final backupItemString = backupItem.toRawJson();
-      // print('backupItemString: $backupItemString');
-
-      final backupHash =
-          Hasher().sha256Hash(backupItemString); // .substring(0, 1023)
-
-      logManager.log(
-          "BackupsScreen", "_removeBackupSalt", "backup hash: $backupHash");
-
-      /// save android backup in shared preferences, this is because secure
-      /// storage doesn't transfer on Android backups.  This is ok because
-      /// the item is encrypted anyway.
-      if (Platform.isAndroid) {
-        await settingsManager.saveAndroidBackup(backupItemString);
-      }
-
-      /// TODO: save backup in Documents for iTunes file sharing
-      ///
-      if (isLocal) {
-        await fileManager.writeVaultData(backupItemString);
-      } else {
-        final status = await keyManager.saveBackupItem(backupItemString, uuid);
-
-        _fetchBackups();
-
-        if (status) {
-          return true;
-        } else {
-          logManager.logger.d('error saving backup');
-          return false;
-        }
-      }
 
       return true;
     }

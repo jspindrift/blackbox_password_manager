@@ -1351,11 +1351,16 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
   Future<void> _scanQR() async {
     String barcodeScanRes;
+    if (!mounted) {
+      logManager.logger.e("something went wrong: not mounted");
+      return;
+    }
+
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
       barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
           "#ff6666", "Cancel", true, ScanMode.QR);
-      logManager.logger.d(barcodeScanRes);
+      // logManager.logger.d(barcodeScanRes);
 
       try {
         RecoveryKeyCode keyCode = RecoveryKeyCode.fromRawJson(barcodeScanRes);
@@ -1363,24 +1368,17 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         if (keyCode != null) {
           /// try to decrypt item
           _decryptWithRecoveryKey(keyCode);
+        } else {
+          _showErrorDialog("Exception: Invalid code format");
         }
       } catch (e) {
         logManager.logger.d("something went wrong: $e");
+        _showErrorDialog("Exception: Could not scan code.");
       }
-
-      // } catch (e) {
-      //   print("Error: $e");
-      //   _showErrorDialog("Invalid code format");
-      // }
     } on PlatformException {
       barcodeScanRes = "Failed to get platform version.";
-      // print("Platform exception");
+      _showErrorDialog("Exception: Failed to get platform version.");
     }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    // if (!mounted) return;
   }
 
   _decryptWithRecoveryKey(RecoveryKeyCode key) async {
@@ -1463,6 +1461,5 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       ),
     );
   }
-
 
 }

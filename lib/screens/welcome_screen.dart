@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
 import 'package:flutter/foundation.dart';
@@ -6,7 +7,7 @@ import "package:flutter_easyloading/flutter_easyloading.dart";
 import "package:flutter_slidable/flutter_slidable.dart";
 import "package:flutter_barcode_scanner/flutter_barcode_scanner.dart";
 import "package:bip39/bip39.dart" as bip39;
-import 'package:password_strength/password_strength.dart';
+
 import '../helpers/AppConstants.dart';
 import "../screens/edit_password_screen.dart";
 import "../screens/add_password_screen.dart";
@@ -54,10 +55,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   List<Widget> _favoriteList = [];
   List<Widget> _normalList = [];
 
-  double _passwordStrengthScore = 0.0;
-
   TextEditingController _searchController = TextEditingController();
-  TextEditingController _passcodeTextController = TextEditingController();
 
   bool _isDarkModeEnabled = false;
 
@@ -114,7 +112,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   Future<void> _decryptPasswordItemList(GenericItemList items) async {
     _decryptedPasswordItemList = [];
     _decryptedPasswordList = [];
-    _passwordStrengthScore = 0.0;
     // var pindex = 0;
 
     if (items.list.length == 0) {
@@ -162,9 +159,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           final decryptedPassword =
               await cryptor.decrypt(passwordItem.password);
 
-          double strength = estimatePasswordStrength(decryptedPassword);
-          _passwordStrengthScore += strength;
-
           if (passwordItem.isBip39) {
             final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
 
@@ -180,11 +174,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         }
       }
     }
-
-    /// TODO: tokenize this, along with master password confirmations after X time period from last authentication
-    // final score = (_passwordStrengthScore/numOfPasswords).toStringAsFixed(2);
-
-    // print("score: $score");
 
     // call for a UI update
     setState(() {
@@ -582,102 +571,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             Navigator.of(context).pop();
           },
         ),
-        // leading:
-        // IconButton(
-        //   icon: Icon(Icons.settings),
-        //   color: _isDarkModeEnabled ? Colors.greenAccent : null,
-        //   onPressed: () {
-        //     Navigator.push(
-        //       context,
-        //       MaterialPageRoute(
-        //         builder: (context) => SettingsScreen(),
-        //         fullscreenDialog: true,
-        //       ),
-        //     ).then((value) {
-        //       setState(() {
-        //         _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
-        //       });
-        //       _updatePasswordItemList();
-        //     });
-        //   },
-        // ),
-        // Showcase(
-        //   // overlayColor: Colors.black54,
-        //   blurValue: 1.0,
-        //   key: _one,
-        //   title: "Settings",
-        //   description: "Tap to explore settings",
-        //   disableDefaultTargetGestures: false,
-        //   tooltipBackgroundColor: Colors.greenAccent,
-        //   textColor: Colors.black,
-        //   child: IconButton(
-        //     icon: Icon(Icons.settings),
-        //     color: _isDarkModeEnabled ? Colors.greenAccent : null,
-        //     onPressed: () {
-        //       Navigator.push(
-        //         context,
-        //         MaterialPageRoute(
-        //           builder: (context) => SettingsScreen(),
-        //           fullscreenDialog: true,
-        //         ),
-        //       ).then((value) {
-        //         setState(() {
-        //           _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
-        //         });
-        //         _updatePasswordItemList();
-        //       });
-        //     },
-        //   ),
-        // ),
         actions: <Widget>[
-          /// TODO: Add this back in after Android bug is fixed
-          /// TODO: DON'T DELETE THIS...
-          // Showcase(
-          //   key: _three,
-          //   blurValue: 1.0,
-          //   title: "Scan",
-          //   description:
-          //       "Share your Blackbox passwords.  Select an item and tap Share to display a code to scan.",
-          //   disableDefaultTargetGestures: false,
-          //   tooltipBackgroundColor: Colors.greenAccent,
-          //   textColor: Colors.black,
-          //   child: IconButton(
-          //     icon: Icon(Icons.camera),
-          //     color: _isDarkModeEnabled ? Colors.greenAccent : null,
-          //     onPressed: () async {
-          //       settingsManager.setIsScanningQRCode(true);
-          //
-          //       /// TODO: fix the Android bug that does not let the camera operate
-          //       if (Platform.isIOS) {
-          //         await _scanQR();
-          //       } else {
-          //         WidgetsBinding.instance.addPostFrameCallback((_) {
-          //           Navigator.of(context)
-          //               .push(MaterialPageRoute(
-          //             builder: (context) => QRScanView(),
-          //           ))
-          //               .then((value) {
-          //             try {
-          //               QRCodeItem item = QRCodeItem.fromRawJson(value);
-          //
-          //               if (item != null) {
-          //                 _saveScannedItem(item).then((value) {
-          //                   EasyLoading.showToast("Saved Scanned Item");
-          //                   _updatePasswordItemList();
-          //                 });
-          //               } else {
-          //                 _showErrorDialog("Invalid code format");
-          //               }
-          //             } catch (e) {
-          //               // print("Error: $e");
-          //               _showErrorDialog("Invalid code format");
-          //             }
-          //           });
-          //         });
-          //       }
-          //     },
-          //   ),
-          // ),
           IconButton(
             icon: Icon(Icons.camera),
             color: _isDarkModeEnabled ? Colors.greenAccent : null,
@@ -708,39 +602,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         _showErrorDialog("Invalid code format");
                       }
                     } catch (e) {
-                      // print("Error: $e");
-                      _showErrorDialog("Invalid code format");
+                      _showErrorDialog("Exception: $e");
                     }
                   });
                 });
               }
             },
           ),
-          // Showcase(
-          //   key: _two,
-          //   blurValue: 1.0,
-          //   title: "Add password",
-          //   description: "Create a new password item",
-          //   disableDefaultTargetGestures: false,
-          //   tooltipBackgroundColor: Colors.greenAccent,
-          //   textColor: Colors.black,
-          //   child: IconButton(
-          //     icon: Icon(Icons.add),
-          //     color: _isDarkModeEnabled ? Colors.greenAccent : null,
-          //     onPressed: () {
-          //       Navigator.of(context)
-          //           .pushNamed(AddPasswordScreen.routeName)
-          //           .then((value) {
-          //         if (value == "savedItem") {
-          //           EasyLoading.showToast("Saved Password Item",
-          //               duration: Duration(seconds: 2));
-          //         }
-          //
-          //         _updatePasswordItemList();
-          //       });
-          //     },
-          //   ),
-          // ),
           IconButton(
             icon: Icon(Icons.add),
             color: _isDarkModeEnabled ? Colors.greenAccent : null,

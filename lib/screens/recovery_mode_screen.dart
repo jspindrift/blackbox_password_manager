@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import '../models/RecoveryKeyCode.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import "package:flutter/material.dart";
@@ -11,6 +10,7 @@ import 'package:elliptic/elliptic.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
+import '../models/RecoveryKeyCode.dart';
 import '../helpers/AppConstants.dart';
 import '../managers/Cryptor.dart';
 import '../managers/LogManager.dart';
@@ -42,11 +42,9 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
   final _importPublicKeyDataTextFieldController = TextEditingController();
 
   FocusNode _dialogIdentityNameTextFieldFocusNode = FocusNode();
-  FocusNode _importPublicKeyNameTextFieldFocusNode = FocusNode();
-  FocusNode _importPublicKeyDataTextFieldFocusNode = FocusNode();
 
   bool _isDarkModeEnabled = false;
-  bool _isRecoveryModeEnabled = false;
+  // bool _isRecoveryModeEnabled = false;
 
   bool _importFieldIsValid = false;
   bool _hasImportWarningMessage = false;
@@ -84,9 +82,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
 
     keyManager.hasRecoveryKeyItems().then((value) {
-      setState(() {
-        _isRecoveryModeEnabled = value;
-      });
+
     });
 
     keyManager.getMyDigitalIdentity().then((value) async {
@@ -97,28 +93,15 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         var ec = getS256();
         final algorithm_exchange = X25519();
 
-        // print("value.privateHexS: ${value.privKeySignature}");
-        // print("value.privateHexE: ${value.privKeyExchange}");
-
         /// TODO: fix this
         final privateHexS = await cryptor.decrypt(value.privKeySignature);
         pubExchangeKeySeed = await cryptor.decrypt(value.privKeyExchange);
-        // print("privateHexS: $privateHexS");
-        // print("pubExchangeKeySeed: $pubExchangeKeySeed");
 
         var privS = PrivateKey(ec, BigInt.parse(privateHexS, radix: 16));
         final privSeedPair = await algorithm_exchange
             .newKeyPairFromSeed(hex.decode(pubExchangeKeySeed));
 
-        var pubE = await privSeedPair
-            .extractPublicKey(); // PrivateKey(algorithm_exchange, BigInt.parse(privateHexE,radix: 16));
-
-        /// TODO: fix this
-        // final intKey = await cryptor.decrypt(value.intermediateKey);
-        // print("intKey: $intKey");
-
-        // final intWords = bip39.entropyToMnemonic(intKey);
-        // print("intWords: $intWords");
+        var pubE = await privSeedPair.extractPublicKey();
 
         setState(() {
           pubSigningKey = privS.publicKey.toHex();
@@ -127,7 +110,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
           _myCode = DigitalIdentityCode(
             pubKeyExchange: pubExchangeKeyPublic,
             pubKeySignature: pubSigningKey,
-            // intermediateKey: intKey,
           );
         });
       }
@@ -191,10 +173,8 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     }
     // print("_matchingRecoveryKeyIndexes: $_matchingRecoveryKeyIndexes");
 
-    setState(() {
-      //   _isRecoveryModeEnabled = value;
-    });
-    // });
+    setState(() {});
+
   }
 
   @override
@@ -213,7 +193,9 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.camera),
+            icon: Icon(
+                Icons.camera,
+            ),
             color: _isDarkModeEnabled ? Colors.greenAccent : null,
             onPressed: () async {
               settingsManager.setIsScanningQRCode(true);
@@ -236,16 +218,11 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
                       if (item != null) {
                         _displaySaveIdentityNameDialog(context, item);
-                        // _saveScannedIdentity(item).then((value) {
-                        //   EasyLoading.showToast("Saved Scanned Identity");
-                        //   // _updatePasswordItemList();
-                        // });
                       } else {
                         _showErrorDialog("Invalid code format");
                       }
                     } catch (e) {
-                      // print("Error: $e");
-                      _showErrorDialog("Invalid code format");
+                      _showErrorDialog("Exception: Could not scan code: $e");
                     }
                   });
                 });
@@ -358,40 +335,16 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                       padding: EdgeInsets.fromLTRB(0, 4, 4, 8),
                       child: Text(
                         "pubKeyExchange: ${_decryptedPublicKeysE[index - 1]}\n\nid: ${cryptor.sha256(_decryptedPublicKeysE[index - 1])}",
-                        // "pubKeyExchange: ${_decryptedPublicKeysE[index - 1]}\n\npubKeySignature: ${_decryptedPublicKeysS[index - 1]}",
-                        // "pubKeyExchange: ${_publicIds[index - 1].pubKeyExchange.data}\npubKeySignature: ${_publicIds[index - 1].pubKeySignature.data}",
-                        // 'pubKey: ${pubSigningKey}\npubExchange: ${pubExchangeKey}\n\nRecovery Disabled',
                         style: TextStyle(
                           color: _isDarkModeEnabled ? Colors.white : null,
                         ),
                       ),
                     ),
-                    // trailing:IconButton(
-                    //   icon: Icon(
-                    //     Icons.social_distance,
-                    //     color: _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
-                    //   ),
-                    //   onPressed: (){
-                    //     print("add recovery key");
-                    //   },
-                    // ),
-                    // Row(children: [
-                    //   IconButton(
-                    //     icon: Icon(
-                    //       Icons.social_distance,
-                    //       color: _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
-                    //     ),
-                    //     onPressed: (){
-                    //       print("add recovery key");
-                    //     },
-                    //   ),
-                    // ],),
-
                     onTap: () {
-                      // print("show id");
                       _displayIdentityInfo(
                           _decryptedPublicKeysE[index - 1],
-                          _decryptedPublicKeysS[index - 1]);
+                          _decryptedPublicKeysS[index - 1],
+                      );
                     },
                   ),
                   Card(
@@ -412,7 +365,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                                 _decryptedPublicKeysE[index - 1],
                                 _decryptedPublicKeysS[index - 1],
                             );
-                            // print("show info");
                           },
                         ),
                         Spacer(),
@@ -432,39 +384,18 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                           onPressed: () {
                             if (_matchingRecoveryKeyIndexes
                                 .contains(index - 1)) {
-                              // print("delete recovery key");
-                              // _showDeleteRecoveryKey();
                               _showDeleteRecoveryKeyDialog(
                                   cryptor
                                       .sha256(_decryptedPublicKeysE[index - 1]),
                                   index - 1);
                             } else {
-                              // print("add recovery key");
                               _showAddRecoveryKeyDialog(
-                                  _decryptedPublicKeysE[index - 1], index - 1);
+                                  _decryptedPublicKeysE[index - 1],
+                                  (index - 1),
+                              );
                             }
                           },
                         ),
-                        // Spacer(),
-                        // IconButton(
-                        //   icon: Icon(
-                        //     Icons.change_circle,
-                        //     color: _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
-                        //   ),
-                        //   onPressed: (){
-                        //     // print("change name");
-                        //   },
-                        // ),
-                        // Spacer(),
-                        // IconButton(
-                        //   icon: Icon(
-                        //     Icons.perm_identity,
-                        //     color: _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
-                        //   ),
-                        //   onPressed: (){
-                        //     // print("scan identity");
-                        //   },
-                        // ),
                         Spacer(),
                         IconButton(
                           icon: Icon(
@@ -474,10 +405,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                                 : Colors.blueAccent,
                           ),
                           onPressed: () {
-                            // print("show recovery code");
-
-                            final a = _decryptedPublicKeysE[index - 1];
-                            _computeAndShowRecoveryCode(a);
+                            _computeAndShowRecoveryCode(_decryptedPublicKeysE[index - 1]);
                           },
                         ),
                         Spacer(),
@@ -489,15 +417,10 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                                 : Colors.redAccent,
                           ),
                           onPressed: () async {
-                            // print("delete identity");
-
-                            _showDeleteIdentityDialog(_publicIds[index - 1].id,
-                                _publicKeyHashes[index - 1]);
-                            // await keyManager.deleteIdentity(_publicIds[index-1].id);
-                            //
-                            // fetchIdentities();
-                            // final a = _decryptedPublicKeysE[index-1];
-                            // _computeAndShowRecoveryCode(a);
+                            _showDeleteIdentityDialog(
+                                _publicIds[index - 1].id,
+                                _publicKeyHashes[index - 1],
+                            );
                           },
                         ),
                         Spacer(),
@@ -644,8 +567,11 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
             return Center(
               child: Column(
                 children: <Widget>[
+                  SizedBox(
+                    height: 64,
+                  ),
                   Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: EdgeInsets.all(32),
                     child: ElevatedButton(
                       style: ButtonStyle(
                         backgroundColor: _isDarkModeEnabled
@@ -1193,16 +1119,12 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
             DigitalIdentityCode.fromRawJson(barcodeScanRes);
         if (item != null) {
           _displaySaveIdentityNameDialog(context, item);
-          // _saveScannedIdentity(item).then((value) {
-          //   EasyLoading.showToast("Saved Scanned Item");
-          //   // _updatePasswordItemList();
-          // });
         } else {
           _showErrorDialog("Invalid code format");
         }
       } catch (e) {
         /// decide to decrypt or save item.
-
+        _showErrorDialog("Exception: Could not scan code: $e");
       }
     } on PlatformException {
       barcodeScanRes = "Failed to get platform version.";
@@ -1527,4 +1449,5 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
       ),
     );
   }
+
 }

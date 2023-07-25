@@ -335,9 +335,11 @@ class BackupManager {
         keyMaterial,
       );
 
-      logManager.logger.d('deriveKeyCheckAgainst result: $result');
-      logManager.logger.d('password: ${password}\nek.rounds: ${ek.rounds}\nsalt:$salt\nkeyMaterial: ${keyMaterial}');
-
+      if (AppConstants.debugKeyData) {
+        logManager.logger.d('deriveKeyCheckAgainst result: $result');
+        logManager.logger.d('password: ${password}\nek.rounds: ${ek
+            .rounds}\nsalt:$salt\nkeyMaterial: ${keyMaterial}');
+      }
       if (result) {
         logManager.logger.d("here!! result good");
 

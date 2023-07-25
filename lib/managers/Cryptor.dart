@@ -1,9 +1,7 @@
 import "dart:math";
 import "dart:convert";
 import "dart:typed_data";
-import "../helpers/bip39_dictionary.dart";
 
-import '../helpers/WidgetUtils.dart';
 import "package:cryptography/cryptography.dart";
 import "package:convert/convert.dart";
 import "package:argon2/argon2.dart";
@@ -14,15 +12,17 @@ import "package:bip39/bip39.dart" as bip39;
 import 'package:ecdsa/ecdsa.dart';
 import 'package:elliptic/elliptic.dart';
 
+import "../helpers/bip39_dictionary.dart";
+import '../helpers/WidgetUtils.dart';
 import '../helpers/AppConstants.dart';
 import '../models/DecryptedGeoLockItem.dart';
 import '../models/MyDigitalIdentity.dart';
 import '../models/VaultItem.dart';
+import "../models/PinCodeItem.dart";
+import "../models/EncryptedGeoLockItem.dart";
 import 'Hasher.dart';
 import "KeychainManager.dart";
 import "SettingsManager.dart";
-import "../models/PinCodeItem.dart";
-import "../models/EncryptedGeoLockItem.dart";
 import 'package:logger/logger.dart';
 
 /// this creates a stackoverflow
@@ -372,7 +372,7 @@ class Cryptor {
         break;
       }
     }
-    // print("trueIndexes: $trueIndexes");
+    // logger.d("trueIndexes: $trueIndexes");
 
     final len = digitString.length;
 
@@ -380,7 +380,7 @@ class Cryptor {
     var added2 = 0;
 
     var leftOver = (digitLength % 3);
-    // print("digitString: ${digitString}, digitLength: ${(digitLength)}, leftOver: ${leftOver}");
+    // logger.d("digitString: ${digitString}, digitLength: ${(digitLength)}, leftOver: ${leftOver}");
 
     for (var j = 0 ; j < len; j++){
       newestString = newestString + digitString.substring(j, j+1);
@@ -389,7 +389,7 @@ class Cryptor {
         newestString = newestString + "-";
       }
       if ((newestString.length-added2) >= digitLength) {
-        // print("break: ${(newestString.length-added2)}, ${added2}, ${leftOver}");
+        // logger.d("break: ${(newestString.length-added2)}, ${added2}, ${leftOver}");
         break;
       }
     }
@@ -397,7 +397,7 @@ class Cryptor {
     if(newestString.substring(newestString.length - 1, newestString.length) == "-") {
       newestString = newestString.substring(0, newestString.length-1);
     }
-    // print("newestString: $newestString");
+    // logger.d("newestString: $newestString");
 
     return newestString;
   }
@@ -921,7 +921,9 @@ class Cryptor {
       final secretKey = SecretKey(utf8.encode(password.trim()));
 
       _salt = base64.decode(salt);
-      logger.d("derive key check: salt: $salt");
+      if (AppConstants.debugKeyData) {
+        logger.d("derive key check: salt: $salt");
+      }
 
       // Calculate a hash that can be stored in the database
       final derivedSecretKey = await pbkdf2.deriveKey(
@@ -958,7 +960,11 @@ class Cryptor {
         final mac = keyMaterial.sublist(16, 48);
         // _cipherText = keyMaterial.sublist(48, 80);
         final cipherText = keyMaterial.sublist(48, keyMaterial.length);
-        logger.d('iv: $iv\nmac: $mac\nciphertext length: ${cipherText.length}: $cipherText');
+
+        if (AppConstants.debugKeyData) {
+          logger.d('iv: $iv\nmac: $mac\nciphertext length: ${cipherText
+              .length}: $cipherText');
+        }
 
         /// check mac
         final blob = iv + cipherText;
@@ -974,10 +980,10 @@ class Cryptor {
 
         final encodedMac = base64.encode(mac);
         final encodedMacCheck = base64.encode(macCheck.bytes);
-        // if (AppConstants.debugKeyData){
+        if (AppConstants.debugKeyData){
           logger.d("encodedMac: ${encodedMac}\n"
               "encodedMacCheck: ${encodedMacCheck}\n");
-        // }
+        }
 
         final macPhrase = bip39.entropyToMnemonic(hex.encode(macCheck.bytes));
 
@@ -986,32 +992,22 @@ class Cryptor {
         // var confirmMacPhrase = macWordList[0] + " " + macWordList[1] + " " + macWordList[2] + " " + macWordList.last;
         // var confirmMacPhrase = macWordList[0] + " " + macWordList[1] + " " + macWordList.last;
         var confirmMacPhrase = macWordList[0] + " " + macWordList.last;
-        logger.d("confirmMacPhrase: $confirmMacPhrase");
 
-        // logger.d("check mac: ${encodedMac == encodedMacCheck}");
-        //
-        // logger.d("nonce: $_nonce");
-        // logger.d("mac: $_mac");
-        // logger.d("ciphertext: $_cipherText");
+        if (AppConstants.debugKeyData) {
+          logger.d("confirmMacPhrase: $confirmMacPhrase");
+        }
 
         if (encodedMac == encodedMacCheck) {
           List<int> empty_mac = [];
           SecretBox sbox =
               SecretBox(cipherText, nonce: iv, mac: Mac(empty_mac));
-          // logger.d("sbox nonce: ${sbox.nonce}");
-          // logger.d("sbox mac: ${sbox.mac.bytes}");
-          // logger.d("sbox ciphertext: ${sbox.cipherText}");
 
           /// Decrypt
-          ///
           final rootKey = await algorithm_nomac.decrypt(
             sbox,
-            secretKey: secretKx, //derivedSecretKey, // secretKx
+            secretKey: secretKx,
           );
 
-
-
-          // _aesSecretKeyBytes = (await _aesSecretKey?.extractBytes())!;
           _aesRootSecretKeyBytes = rootKey;
 
           await expandSecretRootKey(rootKey);
@@ -1284,7 +1280,7 @@ class Cryptor {
   }
 
   /// Used when re-keying our vault
-  /// TODO: re-key
+  ///
   Future<EncryptedKey?> deriveNewKeySchedule(String password) async {
     // logger.d("PBKDF2 - deriveNewKeySchedule");
     try {
@@ -1726,8 +1722,7 @@ class Cryptor {
   /// Encryption.............................................................
   ///
 
-  /// TODO: change this to use empty mac and compute mac manually
-  ///
+  /// general encrypt function for data items
   Future<String> encrypt(String plaintext) async {
     // logger.d("encrypt");
     try {
@@ -2726,16 +2721,11 @@ class Cryptor {
 
     try {
       var keyMaterial = base64.decode(blob);
-      if (Kenc != null && Kenc.length == 32 && Kauth != null && Kauth.length == 32) {
-        // logger.d("settings.numDecryptions: ${settingsManager.numDecryptions}");
+      if (Kenc != null && Kenc.length == 32
+          && Kauth != null && Kauth.length == 32) {
         final iv = keyMaterial.sublist(0, 16);
-        // this is the xor'd mac result
         final mac = keyMaterial.sublist(16, 48);
         final cipherText = keyMaterial.sublist(48, keyMaterial.length);
-
-        // final keyIndexData = hex.decode("00000000");
-
-
 
         final Skenc = SecretKey(Kenc);
         final Skauth = SecretKey(Kauth);
@@ -2743,7 +2733,6 @@ class Cryptor {
         /// compute macs and verify
         final blob = iv + cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-        // logger.d("hashedBlob: ${hashedBlob}");
 
         final checkMac = await hmac_algo_256.calculateMac(
           hashedBlob,
@@ -3186,7 +3175,5 @@ class Cryptor {
 
     return priv;
   }
-
-
 
 }
