@@ -1149,6 +1149,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     final encryptedPubE = await cryptor.encrypt(pubE);
     // final encryptedIntKey = await cryptor.encrypt(intKey);
 
+    /// TODO: encrypt name in recovery key and decrypt
     final identity = DigitalIdentity(
       id: uuid,
       version: AppConstants.digitalIdentityVersion,
