@@ -133,7 +133,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         /// TODO: fix this
         final xpub = await cryptor.decrypt(id.pubKeySignature);
         final ypub = await cryptor.decrypt(id.pubKeyExchange);
-        // final z = await cryptor.decrypt(id.intermediateKey);
 
         final phash = cryptor.sha256(ypub);
         // print("phash identity: $phash");
@@ -152,6 +151,17 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
       setState(() {
         _publicIds = ids!;
       });
+
+      var index = 0;
+      for (var pubId in _publicIds) {
+        final decryptedName = await cryptor.decrypt(pubId.name);
+        // logManager.logger.d("decrypted: $decryptedName");
+        _publicIds[index].name = decryptedName;
+        index++;
+      }
+
+      // setState(() {
+      // });
     }
 
     _matchingRecoveryKeyIndexes = [];
@@ -1147,13 +1157,15 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     /// Encrypt password here
     final encryptedPubS = await cryptor.encrypt(pubS);
     final encryptedPubE = await cryptor.encrypt(pubE);
+    final encryptedName = await cryptor.encrypt(name);
+
     // final encryptedIntKey = await cryptor.encrypt(intKey);
 
     /// TODO: encrypt name in recovery key and decrypt
     final identity = DigitalIdentity(
       id: uuid,
       version: AppConstants.digitalIdentityVersion,
-      name: name,
+      name: encryptedName,
       pubKeySignature: encryptedPubS,
       pubKeyExchange: encryptedPubE,
       // intermediateKey: encryptedIntKey,
