@@ -8,6 +8,7 @@ import 'package:password_strength/password_strength.dart';
 import 'package:random_password_generator/random_password_generator.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import '../helpers/AppConstants.dart';
+import '../managers/GeolocationManager.dart';
 import '../models/PasswordItem.dart';
 import '../models/GenericItem.dart';
 
@@ -43,6 +44,9 @@ class AddPasswordScreen extends StatefulWidget {
 }
 
 class _AddPasswordScreenState extends State<AddPasswordScreen> {
+  /// test geo-lock
+  static const bool _testGeoLock = true;
+
   final _nameTextController = TextEditingController();
   final _usernameTextController = TextEditingController();
   final _passwordTextController = TextEditingController();
@@ -66,6 +70,8 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
 
   bool _duplicatePassword = false;
   bool _isPasswordBip39Valid = false;
+  bool _isGeoLockedEnabled = false;
+  bool _isLocationSettingsEnabled = false;
 
   bool _hidePasswordField = true;
   bool _fieldsAreValid = false;
@@ -106,6 +112,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
   final keyManager = KeychainManager();
   final logManager = LogManager();
   final settingsManager = SettingsManager();
+  final geolocationManager = GeoLocationManager();
 
   @override
   void initState() {
@@ -123,6 +130,8 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
 
     _filteredTags = settingsManager.itemTags;
 
+    _isLocationSettingsEnabled = geolocationManager.isLocationSettingsEnabled;
+
     /// We do this so tags show up in the UI when added.
     /// Not sure why this works but it does
     Timer(Duration(milliseconds: 100), () {
@@ -139,25 +148,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
         title: Text('Password'),
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         automaticallyImplyLeading: false,
-        leading:
-            // TextButton(
-            //   child: Text(
-            //     "Save",
-            //     style: TextStyle(
-            //       color: _isDarkModeEnabled ? Colors.greenAccent : null,
-            //       fontSize: 18,
-            //     ),
-            //   ),
-            //   onPressed: () async {
-            //     // print("pressed done");
-            //     await _pressedSaveItem();
-            //
-            //     Timer(Duration(milliseconds: 100), () {
-            //       FocusScope.of(context).unfocus();
-            //     });
-            //   },
-            // ),
-            BackButton(
+        leading: BackButton(
           color: _isDarkModeEnabled ? Colors.greenAccent : null,
           onPressed: () {
             Navigator.of(context).pop();
@@ -185,20 +176,6 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                   }
                 : null,
           ),
-          // IconButton(
-          //   icon: Icon(
-          //     Icons.save,
-          //     color: _fieldsAreValid
-          //         ? (_isDarkModeEnabled ? Colors.greenAccent : Colors.white)
-          //         : Colors.grey,
-          //     semanticLabel: "Save",
-          //   ),
-          //   onPressed: _fieldsAreValid
-          //       ? () {
-          //           _pressedSaveItem();
-          //         }
-          //       : null,
-          // ),
         ],
       ),
       body: SingleChildScrollView(
@@ -252,7 +229,6 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                   onFieldSubmitted: (_) {
                     _validateFields();
                   },
-                  // keyboardType: TextInputType.name,
                   textInputAction: TextInputAction.next,
                   focusNode: _nameFocusNode,
                   controller: _nameTextController,
@@ -350,22 +326,6 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                             Icons.security,
                             color: _isDarkModeEnabled ? Colors.grey : null,
                           ),
-                          // suffix:
-                          // IconButton(
-                          //
-                          //   icon: Icon(
-                          //     Icons.remove_red_eye,
-                          //     color: _hidePasswordField
-                          //         ? Colors.grey
-                          //         : _isDarkModeEnabled
-                          //         ? Colors.greenAccent
-                          //         : Colors.blueAccent,
-                          //   ),
-                          //   onPressed: () {
-                          //     setState(
-                          //             () => _hidePasswordField = !_hidePasswordField);
-                          //   },
-                          // ),
                         ),
                         style: TextStyle(
                           fontSize: 18.0,
@@ -379,10 +339,6 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                             _passwordStrength = strength;
                             _isPasswordBip39Valid = bip39.validateMnemonic(pwd);
                           });
-
-                          // _isPasswordBip39Valid = bip39.validateMnemonic(password);
-
-                          // _validateFields();
                         },
                         onTap: () {
                           _validateFields();
@@ -435,7 +391,6 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
                       child: LinearProgressIndicator(
-                        // color: _isDarkModeEnabled ? Colors.greenAccent : null,
                         color: _isDarkModeEnabled
                             ? (_isPasswordBip39Valid
                                 ? Colors.purpleAccent
@@ -540,6 +495,68 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                 ),
               ),
               Divider(color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey),
+              Visibility(
+                visible: _testGeoLock,
+                child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: ListTile(
+                    title: Text(
+                      "Geo-Lock",
+                      style: TextStyle(
+                        fontSize: 18.0,
+                        color: _isLocationSettingsEnabled
+                            ? (_isDarkModeEnabled ? Colors.white : Colors.black)
+                            : Colors.grey,
+                      ),
+                    ),
+                    subtitle: _isLocationSettingsEnabled
+                        ? Text(
+                      "Encrypt password with GPS coordinates.  You will only be able to decrypt this item while within ~300 ft. of current location.",
+                      style: TextStyle(
+                        fontSize: 14.0,
+                        color: _isDarkModeEnabled
+                            ? Colors.white
+                            : Colors.black,
+                      ),
+                    ) : Text(
+                      "Enable location settings to Geo-Encrypt password.",
+                      style: TextStyle(
+                        fontSize: 14.0,
+                        color: _isDarkModeEnabled
+                            ? Colors.white
+                            : Colors.black,
+                      ),
+                    ),
+                    trailing: Switch(
+                      thumbColor: MaterialStateProperty.all<Color>(Colors.white),
+                      trackColor: _isLocationSettingsEnabled
+                          ? (_isGeoLockedEnabled
+                          ? (_isDarkModeEnabled
+                          ? MaterialStateProperty.all<Color>(
+                          Colors.greenAccent)
+                          : MaterialStateProperty.all<Color>(
+                          Colors.blue))
+                          : (_isDarkModeEnabled
+                          ? MaterialStateProperty.all<Color>(
+                          Colors.grey)
+                          : MaterialStateProperty.all<Color>(
+                          Colors.grey)))
+                          : MaterialStateProperty.all<Color>(Colors.grey),
+                      value: _isGeoLockedEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          _isGeoLockedEnabled = value;
+                        });
+
+                        _validateFields();
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              Divider(
+                  color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
+              ),
               Text(
                 "Tags",
                 textAlign: TextAlign.left,
@@ -1716,33 +1733,6 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
     final password = _passwordTextController.text;
     final notes = _notesTextController.text;
 
-    /// TODO: remove this
-    // final encodedAllPlaintextLength = utf8.encode(name).length + utf8.encode(username).length + utf8.encode(password).length + utf8.encode(notes).length;
-
-    // settingsManager.doEncryption(encodedAllPlaintextLength);
-    //
-    // /// Encrypt password items here
-    // /// ...
-    // final encryptedName = await cryptor.encrypt(name);
-    //
-    // final encryptedUsername = await cryptor.encrypt(username);
-    //
-    // _isBip39Valid = bip39.validateMnemonic(password);
-    //
-    // String encryptedPassword = '';
-    // if (_isBip39Valid) {
-    //   final seed = bip39.mnemonicToEntropy(password);
-    //
-    //   /// Encrypt seed here
-    //   encryptedPassword = await cryptor.encrypt(seed);
-    // } else {
-    //   /// Encrypt password here
-    //   encryptedPassword = await cryptor.encrypt(password);
-    // }
-    //
-    // /// Encrypt notes
-    // final encryptedNotes = await cryptor.encrypt(notes);
-
     final passwordItem = PasswordItem(
       id: uuid,
       version: AppConstants.passwordItemVersion,
@@ -1760,7 +1750,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
     );
 
     /// encrypt our parameters
-    await passwordItem.encryptParams();
+    await passwordItem.encryptParams(_isGeoLockedEnabled ? geolocationManager.geoLocationUpdate : null);
 
     final passwordItemString = passwordItem.toRawJson();
     // logManager.logger.d('passwordItem toRawJson: ${passwordItemString}');

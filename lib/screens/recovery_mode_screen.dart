@@ -130,7 +130,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         return b.cdate.compareTo(a.cdate);
       });
       for (var id in ids) {
-        /// TODO: fix this
         final xpub = await cryptor.decrypt(id.pubKeySignature);
         final ypub = await cryptor.decrypt(id.pubKeyExchange);
 
@@ -159,9 +158,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         _publicIds[index].name = decryptedName;
         index++;
       }
-
-      // setState(() {
-      // });
     }
 
     _matchingRecoveryKeyIndexes = [];

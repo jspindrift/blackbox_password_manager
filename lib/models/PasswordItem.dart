@@ -112,8 +112,10 @@ class PasswordItem {
   }
 
 
-  Future<void> encryptParams() async {
+  Future<void> encryptParams(GeoLocationUpdate? geoLocation) async {
     try {
+      bool isGeoLocked = geoLocation != null;
+
       /// calculate blocks encrypted
       final encodedAllPlaintextLength = utf8
           .encode(name)
@@ -144,11 +146,38 @@ class PasswordItem {
         encryptedPassword = await cryptor.encrypt(password);
       }
 
+      GeoLockItem? geoItem;
+
+      /// add for geo-encryption
+      if (isBip39) {
+        final seed = cryptor.mnemonicToEntropy(password);
+
+        /// TODO: add geo-lock
+        if (isGeoLocked) {
+          geoItem = await doGeoLockEncryption(geoLocation, seed);
+          encryptedPassword = (geoItem?.password)!;
+        } else {
+          /// Encrypt seed here
+          encryptedPassword = await cryptor.encrypt(seed);
+        }
+      } else {
+        /// TODO: add geo-lock
+        if (isGeoLocked) {
+          geoItem = await doGeoLockEncryption(geoLocation, password);
+          encryptedPassword = (geoItem?.password)!;
+        } else {
+          /// Encrypt password here
+          encryptedPassword = await cryptor.encrypt(password);
+        }
+      }
+
       /// update our fields
       name = encryptedName;
       username = encryptedUsername;
       password = encryptedPassword;
       notes = encryptedNotes;
+      geoLock = geoItem;
+
     } catch (e) {
       logger.w("encryptParams for PasswordItem failed.");
     }

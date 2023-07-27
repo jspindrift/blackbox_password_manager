@@ -6,7 +6,7 @@ class AppConstants {
   /// for testing/debug purposes only!!!
   static const bool debugKeyData = false;
 
-  /// app-specific constants ---------------------------------------
+  /// app-specific constants --------------------------------------------------
   static const String appName = "Blackbox Password Manager";
 
   /// TOTP values ---------------------------------------

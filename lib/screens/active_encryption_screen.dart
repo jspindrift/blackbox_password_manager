@@ -1,26 +1,22 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:argon2/argon2.dart';
-import '../helpers/AppConstants.dart';
-import '../models/EncryptedPeerMessage.dart';
-import '../models/KeyItem.dart';
+
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:bip39/bip39.dart' as bip39;
 
+import '../helpers/AppConstants.dart';
+import '../models/EncryptedPeerMessage.dart';
+import '../models/KeyItem.dart';
+import '../models/GenericItem.dart';
+import '../models/QRCodeEncryptedMessageItem.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/Cryptor.dart';
-
-import '../models/GenericItem.dart';
-
-import '../models/QRCodeEncryptedMessageItem.dart';
 import '../widgets/qr_code_view.dart';
 import 'home_tab_screen.dart';
 
@@ -856,7 +852,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
               ],),
 
               Visibility(
-                visible: !_isRootSymmetric && _didEncrypt,
+                visible: false, //!_isRootSymmetric && _didEncrypt,
                 child:  Padding(
                   padding: EdgeInsets.all(8.0),
                   child: Row(
@@ -910,7 +906,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
               ),
 
               Visibility(
-                visible: !_isRootSymmetric && _didDecryptSuccessfully,
+                visible: false, //!_isRootSymmetric && _didDecryptSuccessfully,
                 child:  Padding(
                   padding: EdgeInsets.all(8.0),
                   child: Row(
@@ -1008,8 +1004,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                   } : null,
                 ),
                 Spacer(),
-              ],),
-
+              ],
+              ),
             ],
           ),
         ),
