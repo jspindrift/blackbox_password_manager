@@ -1273,6 +1273,9 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                 ),
               ),
               ),
+              Divider(
+                color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
+              ),
               Visibility(
                 visible: _testGeoLock,
                 child: Padding(

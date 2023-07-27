@@ -419,16 +419,6 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                       ),
                     ),
                   ),
-                  // Visibility(
-                  //   visible: _isPasswordBip39Valid,
-                  //   child: Padding(
-                  //     padding: EdgeInsets.fromLTRB(0.0, 0.0, 8.0, 0.0),
-                  //     child: Icon(
-                  //     Icons.check_circle,
-                  //       color: _isDarkModeEnabled ? Colors.greenAccent : null,
-                  //   ),
-                  //   ),
-                  // ),
                 ],
               ),
               Padding(

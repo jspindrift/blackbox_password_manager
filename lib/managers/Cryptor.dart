@@ -2420,10 +2420,10 @@ class Cryptor {
         /// create a list of both keys, 16x16
         List<int> Ka_tokens = [];
         // for (var tok in nonce) {
-          for (var i = 0; i<32; i++) {
-
-            Ka_tokens.addAll(Ka);
+        for (var i = 0; i<32; i++) {
+          Ka_tokens.addAll(Ka);
         }
+
         List<int> Kb_tokens = [];
         // for (var tok in nonce) {
         for (var i = 0; i<32; i++) {

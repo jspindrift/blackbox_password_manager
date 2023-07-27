@@ -44,8 +44,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
   FocusNode _dialogIdentityNameTextFieldFocusNode = FocusNode();
 
   bool _isDarkModeEnabled = false;
-  // bool _isRecoveryModeEnabled = false;
-
   bool _importFieldIsValid = false;
   bool _hasImportWarningMessage = false;
 
