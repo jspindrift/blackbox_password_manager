@@ -75,7 +75,11 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+        onWillPop: (){
+        return Future.value(false);
+      },
+      child: Scaffold(
       backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
       appBar: AppBar(
         // title: Text('Pin Code'),
@@ -161,6 +165,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
             });
           }
         }, //: (String code) async {},
+      ),
       ),
     );
   }

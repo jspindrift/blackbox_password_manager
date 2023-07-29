@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import '../helpers/HearbeatTimer.dart';
 import '../helpers/InactivityTimer.dart';
 
-import '../managers/DeviceManager.dart';
 import '../managers/GeolocationManager.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
@@ -394,4 +393,5 @@ class _HomeTabScreenState extends State<HomeTabScreen>
 
     settingsManager.setCurrentTabIndex(index);
   }
+
 }

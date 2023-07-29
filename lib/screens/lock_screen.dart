@@ -111,7 +111,11 @@ class _LockScreenState extends State<LockScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: (){
+        return Future.value(false);
+      },
+        child: Scaffold(
       backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
       appBar: AppBar(
         title: Text('Locked'),
@@ -284,6 +288,7 @@ class _LockScreenState extends State<LockScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -403,4 +408,5 @@ class _LockScreenState extends State<LockScreen> {
       ),
     );
   }
+
 }

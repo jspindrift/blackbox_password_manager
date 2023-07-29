@@ -578,7 +578,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             onPressed: () async {
               settingsManager.setIsScanningQRCode(true);
 
-              /// TODO: fix the Android bug that does not let the camera operate
               if (Platform.isIOS) {
                 await _scanQR();
               } else {
@@ -602,7 +601,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         _showErrorDialog("Invalid code format");
                       }
                     } catch (e) {
-                      _showErrorDialog("Exception: $e");
+                      // _showErrorDialog("Exception: $e");
+                      logManager.logger.w("Exception: $e");
                     }
                   });
                 });

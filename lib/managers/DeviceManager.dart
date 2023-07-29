@@ -48,7 +48,7 @@ class DeviceManager {
         deviceData = _readIosDeviceInfo(await deviceInfoPlugin.iosInfo);
       }
 
-      // print("device data: $deviceData");
+      logger.d("device data: $deviceData");
 
       // else if (Platform.isLinux) {
       //   deviceData = _readLinuxDeviceInfo(await deviceInfoPlugin.linuxInfo);

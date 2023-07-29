@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+import '../managers/SettingsManager.dart';
 import '../models/QRCodeItem.dart';
 import "package:flutter_easyloading/flutter_easyloading.dart";
 
@@ -15,15 +16,24 @@ class QRScanView extends StatefulWidget {
 }
 
 class _QRScanViewState extends State<QRScanView> {
+
+  bool _isDarkModeEnabled = false;
+
   Barcode? result;
   QRViewController? controller;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+
+  final settingsManager = SettingsManager();
 
   @override
   void initState() {
     super.initState();
 
     controller?.resumeCamera();
+
+    setState(() {
+      _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    });
   }
 
   // In order to get hot reload to work we need to pause the camera if the platform
@@ -40,21 +50,33 @@ class _QRScanViewState extends State<QRScanView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      body: Card(
+        color: _isDarkModeEnabled ? Colors.black54 : Colors.white,
+        child: Column(
         children: <Widget>[
           Expanded(flex: 4, child: _buildQrView(context)),
           Expanded(
+
             flex: 1,
             child: FittedBox(
               fit: BoxFit.contain,
               child: Column(
+
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: <Widget>[
-                  if (result != null)
-                    Text(
-                        'Barcode Type: ${describeEnum(result!.format)}   Data: ${result!.code}')
-                  else
-                    const Text('Scan a code'),
+                  // if (result != null)
+                  //   Text(
+                  //       'Barcode Type: ${describeEnum(result!.format)}   Data: ${result!.code}')
+                  // else
+                  SizedBox(
+                    height: 8,
+                  ),
+                  Text(
+                      'Scan a code',
+                    style: TextStyle(
+                      color: _isDarkModeEnabled ? Colors.greenAccent : null,
+                    ),
+                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -62,6 +84,12 @@ class _QRScanViewState extends State<QRScanView> {
                       Container(
                         margin: const EdgeInsets.all(8),
                         child: ElevatedButton(
+                          style: ButtonStyle(
+                              backgroundColor: _isDarkModeEnabled
+                                  ? MaterialStateProperty.all<Color>(
+                                  Colors.black)
+                                  : null,
+                          ),
                             onPressed: () async {
                               await controller?.toggleFlash();
                               setState(() {});
@@ -69,13 +97,25 @@ class _QRScanViewState extends State<QRScanView> {
                             child: FutureBuilder(
                               future: controller?.getFlashStatus(),
                               builder: (context, snapshot) {
-                                return Text('Flash: ${snapshot.data}');
+                                return Text(
+                                    'Flash: ${snapshot.data}',
+                                  style: TextStyle(
+                                    color: _isDarkModeEnabled ? Colors.greenAccent : null,
+                                  ),
+                                );
                               },
-                            )),
+                            ),
+                        ),
                       ),
                       Container(
                         margin: const EdgeInsets.all(8),
                         child: ElevatedButton(
+                            style: ButtonStyle(
+                              backgroundColor: _isDarkModeEnabled
+                                  ? MaterialStateProperty.all<Color>(
+                                  Colors.black)
+                                  : null,
+                            ),
                             onPressed: () async {
                               await controller?.flipCamera();
                               setState(() {});
@@ -85,9 +125,18 @@ class _QRScanViewState extends State<QRScanView> {
                               builder: (context, snapshot) {
                                 if (snapshot.data != null) {
                                   return Text(
-                                      'Camera facing ${describeEnum(snapshot.data!)}');
+                                      'Camera facing ${describeEnum(snapshot.data!)}',
+                                    style: TextStyle(
+                                      color: _isDarkModeEnabled ? Colors.greenAccent : null,
+                                    ),
+                                  );
                                 } else {
-                                  return const Text('loading');
+                                  return Text(
+                                      'loading',
+                                    style: TextStyle(
+                                      color: _isDarkModeEnabled ? Colors.greenAccent : null,
+                                    ),
+                                  );
                                 }
                               },
                             )),
@@ -101,33 +150,63 @@ class _QRScanViewState extends State<QRScanView> {
                       Container(
                         margin: const EdgeInsets.all(8),
                         child: ElevatedButton(
+                          style: ButtonStyle(
+                            backgroundColor: _isDarkModeEnabled
+                                ? MaterialStateProperty.all<Color>(
+                                Colors.black)
+                                : null,
+                          ),
                           onPressed: () async {
                             Navigator.of(context).pop();
                           },
-                          child: const Text('Close',
-                              style: TextStyle(fontSize: 20)),
+                          child: Text('Close',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: _isDarkModeEnabled ? Colors.greenAccent : null,
+                            ),
+                          ),
                         ),
                       ),
-                      Container(
-                        margin: const EdgeInsets.all(8),
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            await controller?.pauseCamera();
-                          },
-                          child: const Text('pause',
-                              style: TextStyle(fontSize: 20)),
-                        ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.all(8),
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            await controller?.resumeCamera();
-                          },
-                          child: const Text('resume',
-                              style: TextStyle(fontSize: 20)),
-                        ),
-                      )
+                      // Container(
+                      //   margin: const EdgeInsets.all(8),
+                      //   child: ElevatedButton(
+                      //     style: ButtonStyle(
+                      //       backgroundColor: _isDarkModeEnabled
+                      //           ? MaterialStateProperty.all<Color>(
+                      //           Colors.black)
+                      //           : null,
+                      //     ),
+                      //     onPressed: () async {
+                      //       await controller?.pauseCamera();
+                      //     },
+                      //     child: Text('pause',
+                      //       style: TextStyle(
+                      //         fontSize: 18,
+                      //         color: _isDarkModeEnabled ? Colors.greenAccent : null,
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
+                      // Container(
+                      //   margin: const EdgeInsets.all(8),
+                      //   child: ElevatedButton(
+                      //     style: ButtonStyle(
+                      //       backgroundColor: _isDarkModeEnabled
+                      //           ? MaterialStateProperty.all<Color>(
+                      //           Colors.black)
+                      //           : null,
+                      //     ),
+                      //     onPressed: () async {
+                      //       await controller?.resumeCamera();
+                      //     },
+                      //     child: Text('resume',
+                      //       style: TextStyle(
+                      //         fontSize: 18,
+                      //         color: _isDarkModeEnabled ? Colors.greenAccent : null,
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ],
@@ -135,7 +214,7 @@ class _QRScanViewState extends State<QRScanView> {
             ),
           )
         ],
-      ),
+      ),),
     );
   }
 
@@ -164,15 +243,15 @@ class _QRScanViewState extends State<QRScanView> {
     setState(() {
       this.controller = controller;
     });
-    var hasItem = false;
+    // var hasItem = false;
     controller.scannedDataStream.listen((scanData) {
       setState(() {
         result = scanData;
         // print("got scanned data: $scanData");
       });
 
-      if (!hasItem) {
-        hasItem = true;
+      // if (!hasItem) {
+      //   hasItem = true;
         try {
           // QRCodeItem item = QRCodeItem.fromRawJson(utf8.decode(scanData.rawBytes!));
           final qrString = scanData.code!;
@@ -193,7 +272,7 @@ class _QRScanViewState extends State<QRScanView> {
           print("Error: $e");
           _showErrorDialog("Invalid code format");
         }
-      }
+      // }
     });
   }
 
