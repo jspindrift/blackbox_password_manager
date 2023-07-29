@@ -48,7 +48,6 @@ class _LockScreenState extends State<LockScreen> {
 
     _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
 
-    // HeartbeatTimer().stopHeartbeatTimer();
     inactivityTimer.stopInactivityTimer();
 
     settingsManager.setIsOnLockScreen(true);
@@ -105,8 +104,6 @@ class _LockScreenState extends State<LockScreen> {
     });
 
     _validateField();
-
-    // Navigator.popUntil(context, (route) => route.isFirst);
   }
 
   @override

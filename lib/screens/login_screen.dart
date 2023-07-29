@@ -485,7 +485,11 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       });
     }
 
-    return Scaffold(
+    return WillPopScope(
+        onWillPop: (){
+      return Future.value(false);
+    },
+    child: Scaffold(
       backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
       appBar: AppBar(
         title: Text('Blackbox'),
@@ -923,7 +927,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
             ),
           ),
         ),
-      ),
+      ),),
     );
   }
 
