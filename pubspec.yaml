@@ -140,6 +140,9 @@ dependencies:
   # jailbreak detection
   flutter_jailbreak_detection: ^1.10.0
 
+  # neon widgets
+  neon_widgets: ^2.0.0
+
 
 dev_dependencies:
   flutter_test:

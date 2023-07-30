@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import "package:flutter/services.dart";
 import 'package:flutter/foundation.dart';
 import "package:flutter_barcode_scanner/flutter_barcode_scanner.dart";
+import 'package:neon_widgets/neon_widgets.dart';
 
 import '../helpers/HearbeatTimer.dart';
 import '../managers/JailbreakChecker.dart';
@@ -557,7 +558,13 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
             color: _isDarkModeEnabled ? Colors.black54 : null,
             child: Form(
               autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: Column(
+              child: NeonContainer(
+                borderColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+                containerColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+                spreadColor: _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+                lightBlurRadius: 80,
+                lightSpreadRadius: 5,
+                child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   Padding(
@@ -926,7 +933,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                     ),
                   ),
                 ],
-              ),
+              ),),
             ),
           ),
         ),

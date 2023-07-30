@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'package:neon_widgets/neon_widgets.dart';
 import '../helpers/HearbeatTimer.dart';
 import '../helpers/InactivityTimer.dart';
 import '../screens/pin_code_screen.dart';
@@ -126,7 +127,13 @@ class _LockScreenState extends State<LockScreen> {
             color: _isDarkModeEnabled ? Colors.black54 : null,
             child: Form(
               autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: Column(
+              child: NeonContainer(
+                borderColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+                containerColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+                spreadColor: _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+                lightBlurRadius: 80,
+                lightSpreadRadius: 5,
+                child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   Padding(
@@ -280,7 +287,7 @@ class _LockScreenState extends State<LockScreen> {
                       ),
                     ),
                 ],
-              ),
+              ),),
             ),
           ),
         ),
