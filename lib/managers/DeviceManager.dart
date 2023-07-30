@@ -41,12 +41,12 @@ class DeviceManager {
     try {
       if (Platform.isAndroid) {
         deviceData = _readAndroidBuildData(await deviceInfoPlugin.androidInfo);
+        /// we don't need the systemFeatures data (its a lot and irrelevant)
+        deviceData["systemFeatures"] = "";
       } else if (Platform.isIOS) {
         deviceData = _readIosDeviceInfo(await deviceInfoPlugin.iosInfo);
       }
-
-      /// we don't need the systemFeatures data (its a lot and irrelevant)
-      deviceData["systemFeatures"] = "";
+     
       logger.d("device data: $deviceData");
 
       // else if (Platform.isLinux) {
