@@ -88,7 +88,6 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     logManager.initialize();
 
     // keyManager.deleteAll();
-
     // logManager.logger.d("now: ${DateTime.now().toIso8601String()}");
 
     logManager.log("LoginScreen", "initState", "initState");
@@ -211,6 +210,10 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
   void _startup() async {
     // print("startup 2: $_isFirstLaunch");
+
+    /// testing SD card backup saving location
+    // final xPath = await fileManager.externalLocalPath;
+    // logManager.logger.d("fileManager.externalLocalPath: ${xPath}");
 
     _isJailbroken = await jailbreakChecker.isDeviceJailbroken();
 

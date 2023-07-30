@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// this creates a stackoverflow
@@ -6,6 +7,10 @@ import 'package:path_provider/path_provider.dart';
 
 class FileManager {
   static final FileManager _shared = FileManager._internal();
+
+  var logger = Logger(
+    printer: PrettyPrinter(),
+  );
 
   factory FileManager() {
     return _shared;
@@ -36,6 +41,20 @@ class FileManager {
 
   get localPath {
     return _localPath;
+  }
+
+  Future<String> get _externalLocalPath async {
+    final directories = await getExternalStorageDirectories();
+    logger.d("directories: $directories");
+
+    /// find the correct directory
+
+
+    return directories?.last.path ?? "none";
+  }
+
+  get externalLocalPath {
+    return _externalLocalPath;
   }
 
   /// Local Log File  ----------------------------------------
@@ -104,6 +123,41 @@ class FileManager {
   ///
   Future<File> get _localVaultFile async {
     final path = await _localPath;
+
+    /// TODO: fix this directory file error, returning on exception for now
+    try {
+      final backupDirExists = Directory("$path/backups/").existsSync();
+
+      // print("backupDirExists: $backupDirExists");
+      if (backupDirExists) {
+        final files = Directory("$path/backups/").listSync();
+        // print("files: ${files.length}: $files");
+
+        var numFiles = files.length;
+        final logFileNumber = numFiles;
+
+        // print('1 file path: ${files.last.path}');
+        // print("return vault file: ${'${files.last.path}'}");
+        return File('${files.first.path}');
+        // return File('$path/logs/log-0.txt');
+
+      } else {
+        // final vaultDirCreateStatus =
+        Directory("$path/backups/").createSync();
+        // if (vaultDirCreateStatus) {
+        //   print('create directory path /backups/vault.txt');
+        // }
+        return File('$path/backups/vault.txt');
+      }
+    } catch (e) {
+      // logManager.logger.w("FILE ERROR: $e");
+      // print("FILE ERROR: $e");
+      return File('$path/backups/vault.txt');
+    }
+  }
+
+  Future<File> get _localVaultFileSDCard async {
+    final path = await _externalLocalPath;
 
     /// TODO: fix this directory file error, returning on exception for now
     try {
@@ -276,6 +330,40 @@ class FileManager {
   Future<String> readVaultData() async {
     try {
       final file = await _localVaultFile;
+
+      // Read the file
+      final contents = await file.readAsString();
+
+      return contents;
+    } catch (e) {
+      return "";
+    }
+  }
+
+  /// Backup Vault Data - Android External Storage (SD card) ------------------
+  ///
+  Future<File?> writeVaultDataSDCard(String data) async {
+    try {
+      final file = await _localVaultFileSDCard;
+      // Write the file
+      return file.writeAsString(data, mode: FileMode.writeOnly);
+    } catch (e) {
+      logger.e("write vault error: $e");
+      return null;
+    }
+  }
+
+  Future<File> clearVaultFileSDCard() async {
+    final file = await _localVaultFileSDCard;
+
+    // Write the file
+    return file.writeAsString("", mode: FileMode.writeOnly);
+    // return file.writeAsString(data, mode: FileMode.append);
+  }
+
+  Future<String> readVaultDataSDCard() async {
+    try {
+      final file = await _localVaultFileSDCard;
 
       // Read the file
       final contents = await file.readAsString();

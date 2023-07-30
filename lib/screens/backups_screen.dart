@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'dart:math';
+
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/services.dart';
@@ -28,7 +29,6 @@ import '../managers/BackupManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/LogManager.dart';
 import '../managers/Hasher.dart';
-import '../testing/test_key_gen.dart';
 import '../widgets/QRScanView.dart';
 import 'home_tab_screen.dart';
 
@@ -69,6 +69,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
   bool _hasMatchingLocalVaultKeyData = false;
   bool _localVaultHasRecoveryKeys = false;
+  bool _shouldSaveToSDCard = false;
+
   // bool _localVaultHasSalt = false;
   int _localVaultNumEncryptedBlocks = 0;
 
@@ -121,6 +123,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
     logManager.log("BackupsScreen", "initState", "initState");
 
     _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+
+    _shouldSaveToSDCard = settingsManager.saveToSDCard;
 
     deviceManager.initialize();
 
@@ -180,8 +184,18 @@ class _BackupsScreenState extends State<BackupsScreen> {
       // print("getAllBackupItems: $value");
 
       /// get the vault from documents directory and find the matching backup
-      /// in iCloud
-      final vaultFileString = await fileManager.readVaultData();
+      var vaultFileString = "";
+      if (Platform.isAndroid) {
+        /// see if we have a vault backup from SD card
+        vaultFileString = await fileManager.readVaultDataSDCard();
+        if (vaultFileString.isEmpty) {
+          /// if no SD card vault, get default file vault location
+          vaultFileString = await fileManager.readVaultData();
+        }
+      } else {
+        vaultFileString = await fileManager.readVaultData();
+      }
+      // final vaultFileString = await fileManager.readVaultData();
       // print("read vault file: ${vaultFileString}");
 
       _localVaultHash = cryptor.sha256(vaultFileString);
@@ -193,11 +207,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
             final encryptedBlob = (_localVaultItem?.blob)!;
             final vaultId = (_localVaultItem?.id)!;
             final deviceId = (_localVaultItem?.deviceId)!;
-            // print("version: ${(_localVaultItem?.version)!}");
-            var version = (_localVaultItem?.version)!;
-            // if (version == null) {
-            //   version = AppConstants.appVersion;
-            // }
+            final version = (_localVaultItem?.version)!;
             final cdate = (_localVaultItem?.cdate)!;
             final mdate = (_localVaultItem?.mdate)!;
             final name = (_localVaultItem?.name)!;
@@ -214,23 +224,10 @@ class _BackupsScreenState extends State<BackupsScreen> {
                     "device data changed!\ndecryptedVaultDeviceData:${decryptedVaultDeviceData}\n"
                         "currentDeviceData: ${currentDeviceData}");
               }
-              // else {
-              //   logManager.logger.w(
-              //       "device data unchanged: ${currentDeviceData}\ndecryptedVaultDeviceData: ${decryptedVaultDeviceData}");
-              // }
             }
 
             final idString =
                 "${vaultId}-${deviceId}-${version}-${cdate}-${mdate}-${name}";
-
-            // var index = 0;
-
-            // if (_localVaultItem.keyIndex != null) {
-            //   index = (_localVaultItem?.keyIndex)!;
-            // }
-            // final index = (localVault?.keyIndex)!;
-            // print("idString: $idString ");
-            // logManager.logger.d("decryption idString: ${idString}");
 
             final decryptedBlob = await cryptor.decryptBackupVault(
                 encryptedBlob, idString);
@@ -243,27 +240,9 @@ class _BackupsScreenState extends State<BackupsScreen> {
                 // logManager.logger.d("decryption genericItems2: $genericItems2");
 
                 if (genericItems2 != null) {
-                  // logManager.logger.d("decryption successful");
-
-                  // final deviceVaultGenericItemList = await _getKeychainVaultState();
-                  // final bool = await genericItems2.verifyItems(
-                  //     deviceVaultGenericItemList.tree);
-                  // if (!bool) {
-                  //   setState((){
-                  //     _vaultHasMerkleChanges = true;
-                  //   });
-                  //
-                  //   logManager.logger.w("verifyItems = false");
-                  // } else {
                   setState(() {
                     _vaultHasMerkleChanges = false;
                   });
-                  // logManager.logger.d("verifyItems = true");
-                  // }
-                  // for (var gitem in genericItems2.list) {
-                  //   final h = gitem.data;
-                  // }
-
                 }
               } catch (e) {
                 logManager.logger.e("can not decrypt current backup vault\n"
@@ -274,27 +253,13 @@ class _BackupsScreenState extends State<BackupsScreen> {
                     _hasMatchingLocalVaultId = keyManager.vaultId == vaultId;
                   });
                 }
-
-                // var genericItems2 = GenericItemListOrig.fromRawJson(decryptedBlob);
-                // logManager.logger.d("decryption GenericItemListOrig: $genericItems2");
-                //
-                // if (genericItems2 != null) {
-                //   final deviceVaultGenericItemList = await _getKeychainVaultState();
-                //   final bool = await genericItems2.verifyItems(
-                //       deviceVaultGenericItemList.tree);
-                //   if (!bool) {
-                //     logManager.logger.w("verifyItems = false");
-                //   }
               }
             } else {
               logManager.logger.w(
                   "can not decrypt current backup vault: $vaultId");
             }
           }
-          // print("vault cdate: ${(_localVaultItem?.cdate)!}");
-          // print("vault mdate: ${(_localVaultItem?.mdate)!}");
 
-          // _hasBackups = true;
           if (mounted) {
             setState(() {
               final encryptedKeyNonce = (_localVaultItem?.encryptedKey
@@ -326,14 +291,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
                 });
               });
 
-              // if (checkB != null) {
-              //   _localVaultNumEncryptedBlocks = checkB;
-              // }
               _matchingLocalVaultId = (_localVaultItem?.id)!;
-              // if (_localVaultItem?.encryptedKey?.salt != null) {
-              //   final saltCheck = (_localVaultItem?.encryptedKey?.salt)!;
-              //   _localVaultHasSalt = saltCheck.isNotEmpty;
-              // }
+
               if ((_localVaultItem?.recoveryKeys)! != null) {
                 _localVaultRecoveryKeys = (_localVaultItem?.recoveryKeys)!;
                 if (_localVaultRecoveryKeys != null) {
@@ -481,7 +440,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         ),
         subtitle: Text(
           _localVaultItem?.id != null
-              ? "${(_localVaultItem?.numItems)!} items\nid: ${(_localVaultItem?.id)!}\nmodified: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse((_localVaultItem?.mdate)!))}\nsize: ${fsize.toStringAsFixed(2)} $funit\nrecovery: ${_localVaultHasRecoveryKeys}\n"
+              ? "${(_localVaultItem?.numItems)!} items\nvault id: ${(_localVaultItem?.id)!}\nmodified: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse((_localVaultItem?.mdate)!))}\nsize: ${fsize.toStringAsFixed(2)} $funit\nrecovery: ${_localVaultHasRecoveryKeys}\n"
               "encryptedBlocks: ${(_localVaultNumEncryptedBlocks > 0 ? _localVaultNumEncryptedBlocks: "?")}\nhealth %: ${(100* (AppConstants.maxEncryptionBlocks-_localVaultNumEncryptedBlocks)/AppConstants.maxEncryptionBlocks).toStringAsFixed(6)}\n\n"
               "hash: ${_localVaultHash.substring(0, 16)}\nchanged: ${_vaultHasMerkleChanges}" // \n\nsalt: ${base64.encode(cryptor.salt ?? [])}\nlocalVaultSalt: ${(_localVaultItem?.encryptedKey.salt)!}
               : "",
@@ -602,7 +561,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
             ),
               subtitle: Text(
                 _localVaultItem?.id != null
-                    ? "id: ${(_localVaultItem?.id)!}" : "",
+                    ? "vault id: ${(_localVaultItem?.id)!.toUpperCase()}" : "",
                 style: TextStyle(
                   color: _isDarkModeEnabled ? Colors.white : null,
                   fontSize: 16,
@@ -816,15 +775,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
         child: Container(
           child: Column(
             children: [
-          // Center(child:Text("Backup Information here..."),),
-          // Padding(
-          //   padding: EdgeInsets.all(16),
-          //   child: Center(
-          //     child:Text(
-          //         "Backup Information here...",
-          //     ),
-          //   ),
-          // ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -841,7 +791,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
                             : null,
                       ),
                       child: Text(
-                        "Create Local Backup",
+                        "Create Backup",
                         style: TextStyle(
                           color:
                               _isDarkModeEnabled ? Colors.black : Colors.white,
@@ -853,7 +803,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
                           if ((_localVaultItem?.id)! == keyManager.vaultId &&
                               _hasMatchingLocalVaultKeyData) {
-                            _startEasyLoadingScreen();
 
                             final status = await _createBackup(true);
 
@@ -878,6 +827,37 @@ class _BackupsScreenState extends State<BackupsScreen> {
                 ),
               ),
             ],
+          ),
+
+          Visibility(
+          visible: Platform.isAndroid && !_loginScreenFlow,
+            child: ListTile(
+              title: Text(
+                "Save to SD Card",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: _isDarkModeEnabled ? Colors.white : Colors.black,
+                ),
+              ),
+              trailing: Switch(
+              thumbColor:
+              MaterialStateProperty.all<Color>(Colors.white),
+              trackColor: _shouldSaveToSDCard ? (_isDarkModeEnabled
+                  ? MaterialStateProperty.all<Color>(
+                  Colors.greenAccent)
+                  : MaterialStateProperty.all<Color>(
+                  Colors.blue)) : MaterialStateProperty.all<Color>(
+                  Colors.grey),
+              value: _shouldSaveToSDCard,
+              onChanged: (value) {
+                setState(() {
+                  _shouldSaveToSDCard = value;
+                });
+
+                _pressedSDCardSwitch(value);
+              },
+            ),
+            ),
           ),
 
           Visibility(
@@ -1129,6 +1109,11 @@ class _BackupsScreenState extends State<BackupsScreen> {
             )
           : null,
     );
+  }
+
+  _pressedSDCardSwitch(bool value) async {
+
+    settingsManager.saveSaveToSDCard(value);
   }
 
   void _onItemTapped(int index) {
@@ -1942,13 +1927,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
         });
   }
 
-  void _startEasyLoadingScreen() {
-    // EasyLoading.show(status: 'Loading data...',);
-
-    // Timer(const Duration(seconds: 1), () {
-    //   EasyLoading.dismiss();
-    // });
-  }
 
   /// create a backup with a user specified name
   Future<bool> _createBackup(bool isLocal) async {
@@ -1994,51 +1972,40 @@ class _BackupsScreenState extends State<BackupsScreen> {
           cdate = currentVault.cdate;
         }
 
-        // print('cdate2: $cdate');
-        // print('mdate2: $mdate');
+        // logManager.logger.d('deviceData: ${settingsManager.deviceManager.deviceData}');
+        // logManager.logger.d('test0: ${_localVaultItem?.toJson()}');
 
-        logManager.logger.d('deviceData: ${settingsManager.deviceManager.deviceData}');
-
-        logManager.logger.d('test0: ${_localVaultItem?.toJson()}');
-
-        var numRounds = cryptor.rounds; //(_localVaultItem?.encryptedKey.rounds)!;
-        // if (numRounds <= 0) {
-        //   numRounds = cryptor.rounds;
-        // }
-
-        logManager.logger.d('test0: ${numRounds}');
+        var numRounds = cryptor.rounds;
 
         /// create EncryptedKey object
         final salt = keyManager.salt;
         final kdfAlgo = EnumToString.convertToString(KDFAlgorithm.pbkdf2_512);
-        final rounds =  numRounds; //cryptor.rounds;
+        final rounds =  numRounds;
         final type = 0;
         final version = 1;
         final memoryPowerOf2 = 0;
         final encryptionAlgo =
             EnumToString.convertToString(EncryptionAlgorithm.aes_ctr_256);
         final keyMaterial = keyManager.encryptedKeyMaterial;
-        logManager.logger.d('test1');
+        // logManager.logger.d('test1');
 
         var items = await keyManager.getAllItemsForBackup() as GenericItemList;
-        logManager.logger.d('test2: ${items}');
+        // logManager.logger.d('test2: ${items}');
 
         var testItems = json.encode(items);
 
         /// TODO: Digital ID
         final myId = await keyManager.getMyDigitalIdentity();
-        logManager.logger.d('test3: ${myId}');
+        // logManager.logger.d('test3: ${myId}');
 
         // var backupNameFinal = '$backupName - ${items.list.length} items';
         if (currentVault != null && !isLocal) {
           backupName = currentVault.name;
         }
 
-        // final appVersion = settingsManager.packageInfo.version;
-        final appVersion = settingsManager.versionAndBuildNumber();//AppConstants.appVersion + "-${AppConstants.appBuildNumber}";
-        logManager.logger.d('test4: ${appVersion}');
+        final appVersion = settingsManager.versionAndBuildNumber();
+        // logManager.logger.d('test4: ${appVersion}');
 
-        // final uuid = cryptor.getUUID();
         final uuid = keyManager.vaultId;
 
         final idString =
@@ -2058,11 +2025,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
         final encryptedKeyNonce = await cryptor.encrypt(keyNonce);
         logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
 
-
-        /// TODO: uncomment this to track encryption count
-        // settingsManager.doEncryption(utf8.encode(keyNonce).length);
-
-
         final encryptedKey = EncryptedKey(
             derivationAlgorithm: kdfAlgo,
             salt: salt,
@@ -2073,10 +2035,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
             encryptionAlgorithm: encryptionAlgo,
             keyMaterial: keyMaterial,
             keyNonce: encryptedKeyNonce,
-            // blocksEncrypted: settingsManager.numBlocksEncrypted,
-            // blockRolloverCount: settingsManager.numRolloverEncryptionCounts,
         );
-        // logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
+        logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
         // logManager.logger.d('items: ${items.toJson()}');
         // logManager.logger.d('items.toString: ${items.toString().length}: ${items.toString()}');
@@ -2092,6 +2052,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
         final deviceDataString = settingsManager.deviceManager.deviceData.toString();
         // logManager.logger.d("deviceDataString: $deviceDataString");
+        logManager.logLongMessage("deviceDataString: $deviceDataString");
+
         // logManager.logger.d("deviceData[utsname.version:]: ${settingsManager.deviceManager.deviceData["utsname.version:"]}");
 
         settingsManager.doEncryption(utf8.encode(deviceDataString).length);
@@ -2115,41 +2077,17 @@ class _BackupsScreenState extends State<BackupsScreen> {
         );
         // logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
-        // final backupItemTest = VaultItem(
-        //   id: uuid,
-        //   version: appVersion,
-        //   name: backupName,
-        //   deviceId: _deviceId,
-        //   encryptedKey: encryptedKey,
-        //   myIdentity: myId,
-        //   identities: identities,
-        //   recoveryKeys: recoveryKeys,
-        //   numItems: items.list.length,
-        //   blob: testItems,
-        //   cdate: cdate,
-        //   mdate: mdate,
-        // );
-        // final backupItemTestString = backupItemTest.toRawJson();
-        // logManager.logger.d('backupItemTestString: $backupItemTestString');
-
-        // print("passwordItems: $passwordItems");
-        // print("genericItems: $items");
-
-        // print("backupItem: $backupItem");
-        // print("backupItemJson: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
-
-        /// TODO: merkle root
-        // backupItem.calculateMerkleRoot();
+        logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
+        // log("backupItemJson: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
         final backupItemString = backupItem.toRawJson();
         // logManager.logger.d('backupItemString: $backupItemString');
-
         final backupHash = cryptor.sha256(backupItemString);
 
         // logManager.logger.d("backup hash: $backupHash");
 
         logManager.log(
-            "BackupsScreen", "_createBackup", "backup hash:\n$backupHash\n\nid: ${uuid}");
+            "BackupsScreen", "_createBackup", "backup hash:\n$backupHash\n\nvault id: ${uuid}");
 
         /// save android backup in shared preferences, this is because secure
         /// storage doesn't transfer on Android backups.
@@ -2164,13 +2102,20 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
         /// Save backup in Documents Directory
         if (isLocal) {
-          //final vaultFile =
+          if (Platform.isAndroid && _shouldSaveToSDCard) {
+            /// write backup to SD card
+            await fileManager.writeVaultDataSDCard(backupItemString);
+          }
+
+          /// write backup to default directory
           await fileManager.writeVaultData(backupItemString);
-          // print("saved vault file: ${vaultFile}");
+
         } else {
+
+          /// this is for synchronize-able iCloud Backups (not implemented for now)
           final status =
               await keyManager.saveBackupItem(backupItemString, uuid);
-          logManager.logger.d("nonlocal :saved vault file: ${status}");
+          logManager.logger.d("nonlocal: saved vault file: ${status}");
 
           _fetchBackups();
 
@@ -2180,11 +2125,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
             logManager.logger.d('error saving backup');
             return false;
           }
-          // });
         }
-
-        /// Save backup item in keychain
-        /// TODO: await async here
 
         return true;
       }
@@ -2998,12 +2939,16 @@ class _BackupsScreenState extends State<BackupsScreen> {
   }
 
   void _showDeleteLocalBackupItemDialog() {
+    var warnMsg = "";
+    if (Platform.isAndroid) {
+      warnMsg = "This will also delete the vault backup from your SD Card if you are using this feature.";
+    }
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Delete Local Backup'),
+        title: Text('Delete Backup'),
         content:
-            Text('Are you sure you want to delete this local backup item?'),
+            Text('Are you sure you want to delete this backup?\n\n$warnMsg'),
         actions: <Widget>[
           OutlinedButton(
             onPressed: () {
@@ -3027,15 +2972,15 @@ class _BackupsScreenState extends State<BackupsScreen> {
   }
 
   void _confirmDeleteLocalBackup() async {
-    await fileManager.clearVaultFile();
 
     if (Platform.isAndroid) {
       await settingsManager.deleteAndroidBackup();
+      await fileManager.clearVaultFileSDCard();
     }
 
-    // Timer(const Duration(milliseconds: 200), () {
+    await fileManager.clearVaultFile();
+
     _fetchBackups();
-    // });
   }
 
   void _showErrorDialog(String message) {

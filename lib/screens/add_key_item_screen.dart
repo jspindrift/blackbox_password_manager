@@ -69,7 +69,6 @@ class _AddKeyItemScreenState extends State<AddKeyItemScreen> {
   bool _isSymmetric = true;
   bool _isPurposeKeyGen = false;
   bool _isPurposeEncryption = false;
-  // bool _isPurposeDecryption = false;
   bool _isPurposeSigning = false;
   bool _isPurposeKeyExchange = false;
 

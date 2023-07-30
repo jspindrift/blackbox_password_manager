@@ -1449,7 +1449,6 @@ class Cryptor {
   }
 
 
-
   /// derivePinKey using PBKDF2
   /// derives our pin code key to wrap our encryption key
   /// (and authentication key)
@@ -1565,11 +1564,9 @@ class Cryptor {
         nonce: decodedSalt,
       );
       // final derivedSecretKeyBytes = await derivedSecretKey.extractBytes();
-      //
       // logger.d("derivedSecretKeyBytes length: ${derivedSecretKeyBytes.length}: ${derivedSecretKeyBytes}");
 
       // final endTime = DateTime.now();
-
       // final timeDiff = endTime.difference(startTime);
       // logger.d("pbkdf2 time diff: ${timeDiff.inMilliseconds} ms");
 
@@ -1633,7 +1630,6 @@ class Cryptor {
   /// derivation method should be used
   Future<List<int>> deriveKeyArgon2(String password) async {
     logger.d("Argon2 - deriving key");
-
     try {
       // var password = "test";
       final argonPassword = password.toBytesLatin1();
@@ -1722,7 +1718,7 @@ class Cryptor {
   /// Encryption.............................................................
   ///
 
-  /// general encrypt function for data items
+  /// general encrypt function for vault data items
   Future<String> encrypt(String plaintext) async {
     // logger.d("encrypt");
     try {
@@ -1782,31 +1778,10 @@ class Cryptor {
 
         final decryptedData = await decrypt(ciphertext);
 
-
         // Generate a random 128-bit nonce.
         final iv = algorithm_nomac.newNonce();
-        // logger.d("ctr new nonce: ${nonce.length}, nonce");
 
-        var encodedPlaintext;// = utf8.encode(decryptedData);
-        // if (ishex) {
-        //    encodedPlaintext = hex.decode(decryptedData);
-        // } else {
-          encodedPlaintext = utf8.encode(decryptedData);
-        // }
-        // logger.d("encoded password: $encodedPlaintext");
-
-        // var bigNumHexLon = lon_min_bigNum.toRadixString(16);
-        // logger.d("bigNumHexLon: $bigNumHexLon");
-
-
-        /// Encrypt
-        /// TODO: implement
-        // final secretBoxIndexed = await algorithm_nomac.encrypt(
-        //   encodedPlaintext,
-        //   secretKey: Kenci_sec!,
-        //   nonce: iv,
-        // );
-
+        var encodedPlaintext = utf8.encode(decryptedData);
 
         /// Encrypt
         final secretBox = await algorithm_nomac.encrypt(
@@ -1827,22 +1802,10 @@ class Cryptor {
           secretKey: _tempAuthSecretKey!,
         );
 
-        /// check mac
-        /// TODO: implement
-        // final macIndexed = await hmac.calculateMac(
-        //   blob,
-        //   secretKey: Kauthi_sec!,
-        // );
-        // if (AppConstants.debugKeyData){
-        //   logger.d("ciphertext: ${ciphertext}\n"
-        //       "decryptedData: ${decryptedData}\n"
-        //       "blob: $blob"
-        //       "mac: ${mac}\n");
-        // }
-
         /// append our nonce, masked MAC and ciphertext
         // var encyptedMaterialIndexed = iv + macIndexed.bytes + secretBoxIndexed.cipherText;
 
+        /// TODO: count encryption blocks for new key
         // await settingsManager.saveEncryptionCount(settingsManager.numEncryptions);
         // await settingsManager.saveNumBytesEncrypted(settingsManager.numBytesEncrypted);
 
@@ -1932,13 +1895,10 @@ class Cryptor {
   /// used for encrypting backups with metadata string
   Future<String> encryptBackupVault(String plaintext, String id) async {
     // logger.d("encryptBackupVault");
-
     try {
       if (_aesSecretKey != null && _authSecretKey != null) {
         // Generate a random 128-bit nonce.
         final iv = algorithm_nomac.newNonce();
-        // logger.d("ctr new nonce: ${nonce.length}, nonce");
-
         final encodedPlaintext = utf8.encode(plaintext);
         // logger.d("encoded password: $encodedPlaintext");
 
@@ -1949,11 +1909,7 @@ class Cryptor {
           nonce: iv,
         );
 
-        // logger.d("ctr MAC: ${secretBox.mac}");
-        // logger.d("ctr Ciphertext: ${secretBox.cipherText}");
-
         /// encrypt-then-mac with added KAK and nonce
-        ///
         final blob = iv + secretBox.cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
         // logger.d("hashedBlob: ${sha256(base64.encode(blob))}");
@@ -1961,31 +1917,28 @@ class Cryptor {
         final idHashBytes = hex.decode(sha256(id));
         // logger.d("idHashBytes: ${sha256(id)}");
 
-        final Kmeta1 = await hmac_algo_256.calculateMac(
+        final Kmeta = await hmac_algo_256.calculateMac(
           idHashBytes,
           secretKey: _authSecretKey!,
         );
 
-        final Kmeta1_key = SecretKey(Kmeta1.bytes);
+        final Kmeta_key = SecretKey(Kmeta.bytes);
 
         final mac_meta = await hmac_algo_256.calculateMac(
           hashedBlob,
-          secretKey: Kmeta1_key,
+          secretKey: Kmeta_key,
         );
 
         if (AppConstants.debugKeyData){
           logger.d("blob: ${hex.encode(blob)}"
-              "\nKmeta1: ${Kmeta1}");
+              "\nKmeta: ${Kmeta}");
         }
 
         await settingsManager.saveNumBlocksEncrypted((settingsManager.numBytesEncrypted/16).ceil());
-
         await settingsManager.saveNumBytesEncrypted(settingsManager.numBytesEncrypted);
 
-        /// TODO: add in
         var encyptedMaterial = iv + mac_meta.bytes + secretBox.cipherText;
-
-        // logger.d("encyptedMaterial2: ${encyptedMaterial2.length} : $encyptedMaterial2");
+        // logger.d("encyptedMaterial: ${encyptedMaterial.length} : encyptedMaterial");
 
         return base64.encode(encyptedMaterial);
       } else {
@@ -2007,11 +1960,6 @@ class Cryptor {
       if (key != null && data.isNotEmpty) {
         // Generate a random 128-bit nonce.
         final iv = algorithm_nomac.newNonce();
-        // logger.d("ctr new nonce: ${nonce.length}, nonce");
-
-        // final encodedPlaintext = utf8.encode(data);
-        // logger.d("encoded password: $encodedPlaintext");
-        // settingsManager.doEncryption(encodedPlaintext.length);
 
         /// Encrypt
         final secretBox = await algorithm_nomac.encrypt(
@@ -2019,9 +1967,6 @@ class Cryptor {
           secretKey: key,
           nonce: iv,
         );
-
-        final kbytes = await key.extractBytes();
-
 
         /// encrypt-then-mac with added KAK and nonce
         ///
@@ -2034,29 +1979,19 @@ class Cryptor {
           hashedBlob,
           secretKey: key,
         );
-        // if (AppConstants.debugKeyData){
-        //   logger.d("data: ${data}\n"
-        //       "key: ${kbytes}"
-        //       "blob: ${blob}\nmac: $mac");
-        // }
-        /// xor the 2 macs to mask the weaker one (secretBox.mac)
-        /// TODO: remove
-        // final xormac = xor(Uint8List.fromList(secretBox.mac.bytes),
-        //     Uint8List.fromList(mac.bytes));
-        // logger.d("xormac.mac.bytes: ${xormac}");
 
-        /// append our nonce, masked MAC and ciphertext
-        // var encyptedMaterial = iv + xormac + secretBox.cipherText;
+        if (AppConstants.debugKeyData){
+          final kbytes = await key.extractBytes();
+          logger.d("data: ${data}\n"
+              "key: ${kbytes}"
+              "blob: ${blob}\nmac: $mac");
+        }
 
-        // await settingsManager.saveEncryptionCount(settingsManager.numEncryptions);
-        // await settingsManager.saveNumBytesEncrypted(settingsManager.numBytesEncrypted);
-
-        /// TODO: add in
-        var encyptedMaterial2 = iv + mac.bytes + secretBox.cipherText;
+        final encyptedMaterial = iv + mac.bytes + secretBox.cipherText;
 
         // logger.d("encyptedMaterial2: ${encyptedMaterial2.length} : $encyptedMaterial2");
 
-        return base64.encode(encyptedMaterial2);
+        return base64.encode(encyptedMaterial);
       } else {
         return "";
       }
@@ -2066,8 +2001,7 @@ class Cryptor {
     }
   }
 
-  /// decrypt items
-  /// TODO: change this to use empty mac and compute mac manually
+  /// decrypt vault data items
   ///
   Future<String> decrypt(String blob) async {
     // logger.d("decrypt");
@@ -2833,7 +2767,6 @@ class Cryptor {
   }
 
   /// decrypt vault items with generated Metadata key
-  /// TODO: change this to use empty mac and compute mac manually
   ///
   Future<String> decryptBackupVault(String blob, String id) async {
     logger.d("decryptBackupVault");
@@ -2975,12 +2908,12 @@ class Cryptor {
     }
   }
 
-  /// Asymmetric Keys
-  ///
+
+  /// Asymmetric Keys -------------------------------------------------------
+  /// the below methods are for testing/learning
   ///
 
-
-  /// Key-Exchange
+  /// Key-Exchange - not used - add_key_item_screen
   ///
   Future<EcKeyPair> generateKeysX_secp256r1() async {
     logger.d("generateKeys_secp256r1");
@@ -2994,30 +2927,16 @@ class Cryptor {
     // We need the private key pair of Alice.
     final aliceKeyPair = await algorithm.newKeyPairFromSeed(rand);
     // final aliceKeyPair = await algorithm.newKeyPair();
-    logger.d("aliceKeyPair: ${aliceKeyPair.extract()}");
+    // logger.d("aliceKeyPair: ${aliceKeyPair.extract()}");
 
-    final alicePublicKey = await aliceKeyPair.extractPublicKey();
-    final aliceKeyPair2 = await aliceKeyPair.extract();
-    logger.d("alicePublicKey: ${alicePublicKey}");
-
-    // // We need only public key of Bob.
-    // final bobKeyPair = await algorithm.newKeyPair();
-    // final bobPublicKey = await bobKeyPair.extractPublicKey();
-    // logger.d("bobPublicKey.X: ${bobPublicKey.x}");
-    // logger.d("bobPublicKey.Y: ${bobPublicKey.y}");
-    //
-    // // We can now calculate a 32-byte shared secret key.
-    // final sharedSecretKey = await algorithm.sharedSecretKey(
-    //   keyPair: aliceKeyPair,
-    //   remotePublicKey: bobPublicKey,
-    // );
-    //
-    // logger.d("sharedSecretKey: ${sharedSecretKey.extractBytes()}");
+    // final alicePublicKey = await aliceKeyPair.extractPublicKey();
+    // final aliceKeyPair2 = await aliceKeyPair.extract();
+    // logger.d("alicePublicKey: ${alicePublicKey}");
 
     return aliceKeyPair;
   }
 
-  /// Key-Exchange
+  /// Key-Exchange - not used - add_key_item_screen
   ///
   Future<SimpleKeyPair> generateKeysX_secp256k1() async {
     logger.d("generateKeysX_secp256k1");
@@ -3026,81 +2945,46 @@ class Cryptor {
 
     final rand = getRandomBytes(32);
     final aliceKeyPair = await algorithm.newKeyPairFromSeed(rand);
-    // final privSeed = await aliceKeyPair.extractPrivateKeyBytes();
 
-    // final aliceKeyPair = await algorithm.newKeyPair();
-    // logger.d('algorithm: ${algorithm}');
-    // final priv = await aliceKeyPair.extractPrivateKeyBytes();
-    //
-    // logger.d('aliceKeyPair Priv: ${priv}');
-    // logger.d('aliceKeyPair Priv.Hex: ${hex.encode(priv)}');
-
-    // logger.d('aliceKeyPair privSeed: ${privSeed}');
-    // final pubSeed = await aliceKeyPair.extractPublicKey();
-    // logger.d('aliceKeyPair PubSeed: ${pubSeed.bytes}');
-
-    final pub = await aliceKeyPair.extractPublicKey();
-    logger.d('aliceKeyPair Pub: ${pub.bytes}');
+    // final pub = await aliceKeyPair.extractPublicKey();
+    // logger.d('aliceKeyPair Pub: ${pub.bytes}');
 
     return aliceKeyPair;
   }
 
-  /// Digital Signature
+  /// Digital Signature - not used - add_key_item_screen
   ///
   Future<PrivateKey> generateKeysS_secp256r1() async {
     logger.d("generateKeysS_secp256r1");
 
     var ec = getP256();
 
-    // var ec2 = getS256();
-    // logger.d(ec2.);
-
-    // ec.
-    logger.d("ec.curve.name: ${ec.name}");
-    logger.d("ec.curve.n: ${ec.n}");
-    logger.d("ec.curve.a: ${ec.a}");
-    logger.d("ec.curve.b: ${ec.b}");
-    logger.d("ec.curve.bitsize: ${ec.bitSize}");
-    logger.d("ec.curve.G.X: ${ec.G.X}");
-    logger.d("ec.curve.G.Y: ${ec.G.Y}");
-    logger.d("ec.curve.h: ${ec.h}");
-    logger.d("ec.curve.p: ${ec.p}");
-    logger.d("ec.curve.S: ${ec.S}");
+    // logger.d("ec.curve.name: ${ec.name}");
+    // logger.d("ec.curve.n: ${ec.n}");
+    // logger.d("ec.curve.a: ${ec.a}");
+    // logger.d("ec.curve.b: ${ec.b}");
+    // logger.d("ec.curve.bitsize: ${ec.bitSize}");
+    // logger.d("ec.curve.G.X: ${ec.G.X}");
+    // logger.d("ec.curve.G.Y: ${ec.G.Y}");
+    // logger.d("ec.curve.h: ${ec.h}");
+    // logger.d("ec.curve.p: ${ec.p}");
+    // logger.d("ec.curve.S: ${ec.S}");
     // var priv2 = PrivateKey(EllipticCurve(), D);
 
     var priv = ec.generatePrivateKey();
-    // var kp = ec.
+    // logger.d("privateKey.D: ${priv.D}");
+    // logger.d("privateKey.bytes: ${priv.bytes}");
+    // logger.d("privateKey.hex: ${hex.encode(priv.bytes)}");
+    // logger.d("priv: $priv");
 
-    logger.d("privateKey.D: ${priv.D}");
-    logger.d("privateKey.bytes: ${priv.bytes}");
-    logger.d("privateKey.hex: ${hex.encode(priv.bytes)}");
-    logger.d("priv: $priv");
-
-    var pub = priv.publicKey;
-    var xpub = ec.publicKeyToCompressedHex(pub);
-
-    logger.d("pubKey.compressed: ${xpub}");
-
-    // var hashHex =
-    //     '7494049889df7542d98afe065f5e27b86754f09e550115871016a67781a92535';
-    // var hash = List<int>.generate(hashHex.length ~/ 2,
-    //         (i) => int.parse(hashHex.substring(i * 2, i * 2 + 2), radix: 16));
-    // logger.d("hashHex: ${hashHex}");
-    // logger.d("hashHexDecoded: ${hex.decode(hashHex)}");
-    //
-    // logger.d("hash: ${hash}");
-    //
-    // var sig = signature(priv, hash);
-    // logger.d("sig.R: ${sig.R}");
-    // logger.d("sig.S: ${sig.S}");
-    //
-    // var result = verify(pub, hash, sig);
-    // logger.d("result: ${result}");
+    // var pub = priv.publicKey;
+    // var xpub = ec.publicKeyToCompressedHex(pub);
+    // logger.d("pubKey.compressed: ${xpub}");
 
     return priv;
   }
 
-  /// Digital Signature
+  /// Digital Signature - not used - add_key_item_screen
   ///
   Future<PrivateKey> generateKeysS_secp256k1() async {
     logger.d("generateKeysS_secp256k1");
@@ -3109,69 +2993,68 @@ class Cryptor {
     // logger.d(ec2.);
 
     // ec.
-    logger.d("ec.curve.name: ${ec.name}");
-    logger.d("ec.curve.n: ${ec.n}");
-    logger.d("ec.curve.a: ${ec.a}");
-    logger.d("ec.curve.b: ${ec.b}");
-    logger.d("ec.curve.bitsize: ${ec.bitSize}");
-    logger.d("ec.curve.G.X: ${ec.G.X}");
-    logger.d("ec.curve.G.Y: ${ec.G.Y}");
-    logger.d("ec.curve.h: ${ec.h}");
-    logger.d("ec.curve.p: ${ec.p}");
-    logger.d("ec.curve.S: ${ec.S}");
+    // logger.d("ec.curve.name: ${ec.name}");
+    // logger.d("ec.curve.n: ${ec.n}");
+    // logger.d("ec.curve.a: ${ec.a}");
+    // logger.d("ec.curve.b: ${ec.b}");
+    // logger.d("ec.curve.bitsize: ${ec.bitSize}");
+    // logger.d("ec.curve.G.X: ${ec.G.X}");
+    // logger.d("ec.curve.G.Y: ${ec.G.Y}");
+    // logger.d("ec.curve.h: ${ec.h}");
+    // logger.d("ec.curve.p: ${ec.p}");
+    // logger.d("ec.curve.S: ${ec.S}");
 
     final numString =
         "52729815520663091770273351126351744558404106391013798562910028644993848649013";
 
     final privateBigInt = BigInt.parse(numString);
     final privateHex = privateBigInt.toRadixString(16);
-    logger.d("privateBigInt: ${privateBigInt}");
-    logger.d("privateHex: ${privateHex}");
+    // logger.d("privateBigInt: ${privateBigInt}");
+    // logger.d("privateHex: ${privateHex}");
 
     var priv2 = PrivateKey(ec, privateBigInt);
     var priv3 = PrivateKey(ec, BigInt.parse(privateHex, radix: 16));
 
-    logger.d("priv2.D: ${priv2.D}");
-    logger.d("priv3.D: ${priv3.D}");
+    // logger.d("priv2.D: ${priv2.D}");
+    // logger.d("priv3.D: ${priv3.D}");
 
     var priv = ec.generatePrivateKey();
 
-    logger.d("privateKey.D: ${priv.D}");
-    logger.d("privateKey.bytes: ${priv.bytes}");
-    logger.d("privateKey.hex: ${hex.encode(priv.bytes)}");
+    // logger.d("privateKey.D: ${priv.D}");
+    // logger.d("privateKey.bytes: ${priv.bytes}");
+    // logger.d("privateKey.hex: ${hex.encode(priv.bytes)}");
     // logger.d("priv: $priv");
 
     var pub = priv.publicKey;
     var xpub = ec.publicKeyToCompressedHex(pub);
-    logger.d("pubKey.compressed: ${xpub.length}: ${xpub}");
-
-    logger.d("pubKey.X: ${pub.X}");
-    logger.d("pubKey.X.hex: ${pub.X.toRadixString(16)}");
-
-    logger.d("pubKey.Y: ${pub.Y}");
-    logger.d("pubKey.Y.hex: ${pub.Y.toRadixString(16)}");
+    // logger.d("pubKey.compressed: ${xpub.length}: ${xpub}");
+    //
+    // logger.d("pubKey.X: ${pub.X}");
+    // logger.d("pubKey.X.hex: ${pub.X.toRadixString(16)}");
+    //
+    // logger.d("pubKey.Y: ${pub.Y}");
+    // logger.d("pubKey.Y.hex: ${pub.Y.toRadixString(16)}");
 
     logger.d(pub.toHex());
     var newPub = ec.hexToPublicKey(pub.toHex());
-    logger.d("newPub.X: ${newPub.X}");
-    logger.d("newPub.Y: ${newPub.Y}");
+    // logger.d("newPub.X: ${newPub.X}");
+    // logger.d("newPub.Y: ${newPub.Y}");
 
     var hashHex =
         '7494049889df7542d98afe065f5e27b86754f09e550115871016a67781a92535';
     var hash = List<int>.generate(hashHex.length ~/ 2,
             (i) => int.parse(hashHex.substring(i * 2, i * 2 + 2), radix: 16));
-    logger.d("hashHex: ${hashHex}");
-    logger.d("hashHexDecoded: ${hex.decode(hashHex)}");
-
-    logger.d("hash: ${hash}");
+    // logger.d("hashHex: ${hashHex}");
+    // logger.d("hashHexDecoded: ${hex.decode(hashHex)}");
+    //
+    // logger.d("hash: ${hash}");
 
     var sig = signature(priv, hash);
-    logger.d("sig.R: ${sig.R}");
-    logger.d("sig.S: ${sig.S}");
+    // logger.d("sig.R: ${sig.R}");
+    // logger.d("sig.S: ${sig.S}");
 
     var result = verify(pub, hash, sig);
-    logger.d("result: ${result}");
-
+    // logger.d("result: ${result}");
 
     return priv;
   }

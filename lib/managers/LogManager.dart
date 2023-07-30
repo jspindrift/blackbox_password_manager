@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as dev;
 import 'package:convert/convert.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
@@ -868,6 +869,10 @@ class LogManager {
     );
 
     _basicLogLineList.list.add(logLine2);
+  }
+
+  void logLongMessage(String message) {
+    dev.log(message);
   }
 
   /// save collected logs to the log file

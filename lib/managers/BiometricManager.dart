@@ -15,7 +15,7 @@ class BiometricManager {
   bool _biometricsIsSupported = false;
   bool _canCheckBiometrics = false;
   List<BiometricType>? _availableBiometrics;
-  String _biometricType = 'Touch ID';
+  String _biometricType = 'Biometrics';
   String _biometricIcon = 'assets/icons8-fingerprint-96.png';
   bool _isTouchID = true;
 

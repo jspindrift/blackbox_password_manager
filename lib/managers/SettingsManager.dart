@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:io';
 import '../helpers/WidgetUtils.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,6 +27,7 @@ enum SharedPreferenceKey {
   sessionNumber,
   heartbeats,
   numGestureInteractions,
+  saveToSDCard,
 }
 
 class SettingsManager {
@@ -58,6 +60,7 @@ class SettingsManager {
   bool _isDarkModeEnabled = false;
   bool _isLockOnExitEnabled = false;
   bool _isRecoveredSession = false;
+  bool _saveToSDCard = false;
 
   int _inactivityTime = 5 * 60;
 
@@ -89,6 +92,10 @@ class SettingsManager {
   List<String> _itemTags = [];
 
   VaultItem? _androidBackup;
+
+  bool get saveToSDCard {
+    return _saveToSDCard;
+  }
 
   bool get shouldRekey {
     return _shouldRekey;
@@ -200,6 +207,8 @@ class SettingsManager {
 
   Future<void> initialize() async {
     await _readHasLaunched();
+
+    await _readSaveToSDCard();
 
     await _readLockOnExit();
 
@@ -644,6 +653,40 @@ class SettingsManager {
 
       // logger.d('readDarkMode: $boolData');
       _isDarkModeEnabled = boolData;
+    } catch (e) {
+      logger.e(e);
+    }
+  }
+
+  /// Blocks Encrypted
+  Future<void> _readSaveToSDCard() async {
+    if (Platform.isAndroid) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+
+        var boolData = prefs.getBool(
+            EnumToString.convertToString(SharedPreferenceKey.saveToSDCard));
+        if (boolData == null) {
+          return;
+        }
+
+        // logger.d("_saveToSDCard: [boolData]");
+        _saveToSDCard = boolData;
+      } catch (e) {
+        logger.e(e);
+      }
+    }
+  }
+
+  Future<void> saveSaveToSDCard(bool saveToSD) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setBool(
+          EnumToString.convertToString(SharedPreferenceKey.saveToSDCard),
+          saveToSD);
+
+      // logger.d("save _saveToSDCard: [$saveToSD]");
+      _saveToSDCard = saveToSD;
     } catch (e) {
       logger.e(e);
     }

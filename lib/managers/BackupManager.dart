@@ -161,7 +161,6 @@ class BackupManager {
             hint: "",
         );
 
-        // cryptor.setCurrentKeyMaterial(newKeyMaterial);
         /// delete keys
         ///
         var encryptedBlob = vault.blob;

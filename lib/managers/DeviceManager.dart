@@ -39,15 +39,14 @@ class DeviceManager {
     var deviceData = <String, dynamic>{};
 
     try {
-      // if (kIsWeb) {
-      //   deviceData = _readWebBrowserInfo(await deviceInfoPlugin.webBrowserInfo);
-      // } else {
       if (Platform.isAndroid) {
         deviceData = _readAndroidBuildData(await deviceInfoPlugin.androidInfo);
       } else if (Platform.isIOS) {
         deviceData = _readIosDeviceInfo(await deviceInfoPlugin.iosInfo);
       }
 
+      /// we don't need the systemFeatures data (its a lot and irrelevant)
+      deviceData["systemFeatures"] = "";
       logger.d("device data: $deviceData");
 
       // else if (Platform.isLinux) {
