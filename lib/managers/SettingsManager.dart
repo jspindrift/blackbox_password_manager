@@ -28,6 +28,7 @@ enum SharedPreferenceKey {
   heartbeats,
   numGestureInteractions,
   saveToSDCard,
+  recoveryMode,
 }
 
 class SettingsManager {
@@ -78,6 +79,7 @@ class SettingsManager {
   bool _isOnLockScreen = true;
   bool _isCreatingNewAccount = false;
   bool _didCopyToClipboard = false;
+  bool _isRecoveryModeEnabled = false;
 
   bool _hasLaunched = false;
   bool _shouldRekey = false;
@@ -95,6 +97,10 @@ class SettingsManager {
 
   bool get saveToSDCard {
     return _saveToSDCard;
+  }
+
+  bool get isRecoveryModeEnabled {
+    return _isRecoveryModeEnabled;
   }
 
   bool get shouldRekey {
@@ -208,6 +214,8 @@ class SettingsManager {
   Future<void> initialize() async {
     await _readHasLaunched();
 
+    await readRecoveryModeEnabled();
+
     await _readSaveToSDCard();
 
     await _readLockOnExit();
@@ -217,8 +225,6 @@ class SettingsManager {
     await _readDarkMode();
 
     await _readPinCodeLength();
-
-    await _readAndroidBackup();
 
     await _readLastTabIndex();
 
@@ -658,6 +664,38 @@ class SettingsManager {
     }
   }
 
+  /// Lock On Exit
+  void saveRecoveryModeEnabled(bool isEnabled) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setBool(
+          EnumToString.convertToString(SharedPreferenceKey.recoveryMode),
+          isEnabled);
+
+      _isRecoveryModeEnabled = isEnabled;
+    } catch (e) {
+      logger.e(e);
+    }
+  }
+
+  /// Read Lock On Exit
+  Future<void> readRecoveryModeEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      var boolData = prefs.getBool(
+          EnumToString.convertToString(SharedPreferenceKey.recoveryMode));
+      if (boolData == null) {
+        return;
+      }
+
+      // logger.d("read lock on exit: $boolData");
+      _isRecoveryModeEnabled = boolData;
+    } catch (e) {
+      logger.e(e);
+    }
+  }
+
   /// Blocks Encrypted
   Future<void> _readSaveToSDCard() async {
     if (Platform.isAndroid) {
@@ -719,47 +757,6 @@ class SettingsManager {
     } catch (e) {
       logger.e(e);
     }
-  }
-
-  /// Save Android Backup
-  /// save android backup in shared preferences, this is because secure
-  /// storage doesn't transfer on Android backups.  This is ok because
-  /// the item is encrypted anyway.
-  Future<void> saveAndroidBackup(String backup) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setString(
-          EnumToString.convertToString(SharedPreferenceKey.backup), backup);
-
-      _androidBackup = VaultItem.fromRawJson(backup);
-    } catch (e) {
-      logger.e(e);
-    }
-  }
-
-  Future<void> _readAndroidBackup() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-
-      var strData = prefs
-          .getString(EnumToString.convertToString(SharedPreferenceKey.backup));
-      if (strData == null) {
-        return;
-      }
-
-      _androidBackup = VaultItem.fromRawJson(strData);
-    } catch (e) {
-      logger.e(e);
-    }
-  }
-
-  Future<bool> deleteAndroidBackup() async {
-    final prefs = await SharedPreferences.getInstance();
-    final status = await prefs
-        .remove(EnumToString.convertToString(SharedPreferenceKey.backup));
-
-    _androidBackup = null;
-    return status;
   }
 
   _removeSharedPreference(SharedPreferenceKey sharedPreferenceKey) async {

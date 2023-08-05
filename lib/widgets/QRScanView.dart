@@ -1,12 +1,12 @@
 import 'dart:developer';
-import 'dart:io';
-import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+
 import '../managers/SettingsManager.dart';
-import '../models/QRCodeItem.dart';
-import "package:flutter_easyloading/flutter_easyloading.dart";
+import '../managers/LogManager.dart';
+
 
 class QRScanView extends StatefulWidget {
   const QRScanView({Key? key}) : super(key: key);
@@ -18,12 +18,15 @@ class QRScanView extends StatefulWidget {
 class _QRScanViewState extends State<QRScanView> {
 
   bool _isDarkModeEnabled = false;
+  bool _hasShownErrorDialog = false;
+  bool _scannedCodeAlready = false;
 
   Barcode? result;
   QRViewController? controller;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
 
   final settingsManager = SettingsManager();
+  final logManager = LogManager();
 
   @override
   void initState() {
@@ -243,36 +246,31 @@ class _QRScanViewState extends State<QRScanView> {
     setState(() {
       this.controller = controller;
     });
-    // var hasItem = false;
+
     controller.scannedDataStream.listen((scanData) {
       setState(() {
         result = scanData;
-        // print("got scanned data: $scanData");
+        // logManager.logger.d("got scanned data: ${scanData.code}");
+        // logManager.logger.d("got scanned data bytes: ${scanData.rawBytes}");
       });
 
-      // if (!hasItem) {
-      //   hasItem = true;
-        try {
-          // QRCodeItem item = QRCodeItem.fromRawJson(utf8.decode(scanData.rawBytes!));
-          final qrString = scanData.code!;
-          QRCodeItem item = QRCodeItem.fromRawJson(qrString);
+      if (_scannedCodeAlready) {
+        return;
+      }
 
-          if (item != null) {
-            // WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.of(context).pop(qrString);
-            // });
-            // _saveScannedItem(item).then((value) {
-            //   EasyLoading.showToast("Saved Scanned Item");
-            //   _updatePasswordItemList();
-            // });
-          } else {
-            _showErrorDialog("Invalid code format");
-          }
-        } catch (e) {
-          print("Error: $e");
+      try {
+        final qrString = scanData.code!;
+
+        if (qrString.isNotEmpty) {
+          _scannedCodeAlready = true;
+          Navigator.of(context).pop(qrString);
+        } else {
           _showErrorDialog("Invalid code format");
         }
-      // }
+      } catch (e) {
+        logManager.logger.e("Exception: $e");
+        _showErrorDialog("Invalid code format");
+      }
     });
   }
 
@@ -292,6 +290,10 @@ class _QRScanViewState extends State<QRScanView> {
   }
 
   void _showErrorDialog(String message) {
+    if (_hasShownErrorDialog) {
+      return;
+    }
+    _hasShownErrorDialog = true;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

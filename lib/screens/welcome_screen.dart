@@ -578,35 +578,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             onPressed: () async {
               settingsManager.setIsScanningQRCode(true);
 
-              if (Platform.isIOS) {
-                await _scanQR();
-              } else {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.of(context)
-                      .push(MaterialPageRoute(
-                    builder: (context) => QRScanView(),
-                  ))
-                      .then((value) {
-                    settingsManager.setIsScanningQRCode(false);
-
-                    try {
-                      QRCodeItem item = QRCodeItem.fromRawJson(value);
-
-                      if (item != null) {
-                        _saveScannedItem(item).then((value) {
-                          EasyLoading.showToast("Saved Scanned Item");
-                          _updatePasswordItemList();
-                        });
-                      } else {
-                        _showErrorDialog("Invalid code format");
-                      }
-                    } catch (e) {
-                      // _showErrorDialog("Exception: $e");
-                      logManager.logger.w("Exception: $e");
-                    }
-                  });
-                });
-              }
+              await _scanQR();
             },
           ),
           IconButton(
@@ -773,35 +745,62 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   Future<void> _scanQR() async {
-    String barcodeScanRes;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    try {
-      barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
-          "#ff6666", "Cancel", true, ScanMode.QR);
-
-      settingsManager.setIsScanningQRCode(false);
-
-      /// user pressed cancel
-      if (barcodeScanRes == "-1") {
-        return;
-      }
-
+    if (Platform.isIOS) {
+      String barcodeScanRes;
+      // Platform messages may fail, so we use a try/catch PlatformException.
       try {
-        QRCodeItem item = QRCodeItem.fromRawJson(barcodeScanRes);
-        if (item != null) {
-          _saveScannedItem(item).then((value) {
-            EasyLoading.showToast("Saved Scanned Item");
-            _updatePasswordItemList();
-          });
-        } else {
-          _showErrorDialog("Invalid code format");
+        barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
+            "#ff6666", "Cancel", true, ScanMode.QR);
+
+        settingsManager.setIsScanningQRCode(false);
+
+        /// user pressed cancel
+        if (barcodeScanRes == "-1") {
+          return;
         }
-      } catch (e) {
-        logManager.logger.w("exception: $e");
+
+        try {
+          QRCodeItem item = QRCodeItem.fromRawJson(barcodeScanRes);
+          if (item != null) {
+            _saveScannedItem(item).then((value) {
+              EasyLoading.showToast("Saved Scanned Item");
+              _updatePasswordItemList();
+            });
+          } else {
+            _showErrorDialog("Invalid code format");
+          }
+        } catch (e) {
+          logManager.logger.w("exception: $e");
+        }
+      } on PlatformException {
+        barcodeScanRes = "Failed to get platform version.";
+        logManager.logger.w("Platform exception");
       }
-    } on PlatformException {
-      barcodeScanRes = "Failed to get platform version.";
-      logManager.logger.w("Platform exception");
+    } else if (Platform.isAndroid) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context)
+            .push(MaterialPageRoute(
+          builder: (context) => QRScanView(),
+        )).then((value) {
+          settingsManager.setIsScanningQRCode(false);
+
+          try {
+            QRCodeItem item = QRCodeItem.fromRawJson(value);
+
+            if (item != null) {
+              _saveScannedItem(item).then((value) {
+                EasyLoading.showToast("Saved Scanned Item");
+                _updatePasswordItemList();
+              });
+            } else {
+              _showErrorDialog("Invalid code format");
+            }
+          } catch (e) {
+            _showErrorDialog("Exception: $e");
+            logManager.logger.w("Exception: $e");
+          }
+        });
+      });
     }
   }
 

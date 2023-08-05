@@ -223,7 +223,6 @@ class KeyScheduler {
     }
 
 
-
     /// save new master password
     ///
 
@@ -234,15 +233,8 @@ class KeyScheduler {
       return false;
     }
 
+    /// TODO: check this function
     // cryptor.setSecretSaltBytes(base64.decode(newSalt));
-
-    /// save our salt
-    final statusSalt = await keyManager.saveSalt(vaultId, newSalt);
-    logManager.logger.d("statusSalt: $statusSalt: new: ${newSalt}");
-
-    if (!statusSalt) {
-      return false;
-    }
 
     KeyMaterial newKeyParams = KeyMaterial(
       id: vaultId,
@@ -264,11 +256,9 @@ class KeyScheduler {
     }
 
 
-
     /// transition the live AES Keys for app vault session
     cryptor.switchTempKeysToCurrent();
 
-    // print("status salt: $statusSalt");
 
     /// TODO: do this after we have safe everything
     ///
@@ -279,28 +269,8 @@ class KeyScheduler {
     /// re-read and refresh our variables
     await keyManager.readEncryptedKey();
 
-
-    // final backupItem = VaultItem(
-    //   id: vaultId,
-    //   keyIndex: keyIndex,
-    //   version: appVersion,
-    //   name: backupName,
-    //   deviceId: deviceId,
-    //   encryptedKey: encryptedKey,
-    //   myIdentity: myId,
-    //   identities: identities,
-    //   recoveryKeys: recoveryKeys,
-    //   numItems: items.list.length,
-    //   blob: encryptedBlob,
-    //   cdate: timestamp,
-    //   mdate: timestamp,
-    // );
-
-
-
     return true;
   }
-
 
 
   /// Get current keychain and app state into a Backup Item
@@ -473,7 +443,6 @@ class KeyScheduler {
 
     return hex.encode(currentNonce);
   }
-
 
 
 

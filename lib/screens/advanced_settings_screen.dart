@@ -830,75 +830,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     );
   }
 
-  /// delete iCloud first dialog
-  void _showConfirmDeleteIcloudDataDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        // backgroundColor: _isDarkModeEnabled ? Colors.black : null,
-        title: Text(
-          'Delete iCloud Data',
-          // style: TextStyle(
-          //   color: _isDarkModeEnabled ? Colors.white : Colors.black,
-          // ),
-        ),
-        content: Text(
-          'Are you sure you want to erase iCloud data?',
-          // style: TextStyle(
-          //   color: _isDarkModeEnabled ? Colors.white : Colors.black,
-          // ),
-        ),
-        actions: <Widget>[
-          OutlinedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('Cancel'),
-          ),
-          OutlinedButton(
-            style: TextButton.styleFrom(
-              primary: Colors.redAccent,
-            ),
-            onPressed: () async {
-              Navigator.of(context).pop();
-              _showSecondConfirmDeleteIcloudDataDialog();
-            },
-            child: Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// delete iCloud second dialog
-  void _showSecondConfirmDeleteIcloudDataDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        // backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
-        title: Text('Delete iCloud Data'),
-        content: Text('Last Chance.  Press Delete to erase all iCloud data.'),
-        actions: <Widget>[
-          OutlinedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('Cancel'),
-          ),
-          OutlinedButton(
-            style: TextButton.styleFrom(
-              primary: Colors.redAccent,
-            ),
-            onPressed: () async {
-              // await _confirmedDeleteAccount();
-              await _confirmedDeleteIcloudData();
-            },
-            child: Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
 
   /// delete the account items and encryption key and force user back
   /// to login screen to setup a new account
@@ -913,14 +844,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     }
   }
 
-  Future<void> _confirmedDeleteIcloudData() async {
-    final status = await keyManager.deleteiCloudData();
-    if (status) {
-      EasyLoading.showToast("iCloud Data Deleted");
-    } else {
-      _showErrorDialog('Delete iCloud data failed');
-    }
-  }
 
   /// TODO: get rid of this.  This is used for testing purposes
   Future<void> _confirmedDeleteEverything() async {

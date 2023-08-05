@@ -1,21 +1,20 @@
 import 'dart:convert';
 import 'dart:io';
-import '../models/DigitalIdentity.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 
+import '../models/DigitalIdentity.dart';
 import '../models/KeyItem.dart';
 import '../models/MyDigitalIdentity.dart';
 import '../models/PasswordItem.dart';
 import '../models/GenericItem.dart';
-
-import '../models/SecretSalt.dart';
-import 'Cryptor.dart';
 import '../models/VaultItem.dart';
 import '../models/NoteItem.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/LogManager.dart';
 import '../models/PinCodeItem.dart';
+import 'Cryptor.dart';
+
 
 class SecItem {
   SecItem(this.key, this.value);
@@ -153,33 +152,6 @@ class KeychainManager {
         sharedPreferencesName: 'keyData',
       );
 
-  // /// Derived Key Salt
-  // ///
-  // AndroidOptions _getAndroidOptionsSalt() => const AndroidOptions(
-  //       encryptedSharedPreferences: true,
-  //       preferencesKeyPrefix: 'com.blackboxsystems.salt',
-  //       sharedPreferencesName: 'salt',
-  //     );
-  /// Secret Salt Key Options
-  ///
-  IOSOptions _getIOSOptionsSecretSalt() => IOSOptions(
-        accountName: 'com.blackboxsystems.secretSalt',
-        synchronizable: false,
-        accessibility: KeychainAccessibility.first_unlock_this_device,
-      );
-
-  MacOsOptions _getMacOptionsSecretSalt() => MacOsOptions(
-        // groupId: 'com.example.blackboxPasswordManager',
-        accountName: 'com.blackboxsystems.secretSalt',
-        synchronizable: false,
-        accessibility: KeychainAccessibility.first_unlock_this_device,
-      );
-
-  AndroidOptions _getAndroidOptionsSecretSalt() => const AndroidOptions(
-        encryptedSharedPreferences: true,
-        preferencesKeyPrefix: 'com.blackboxsystems.secretSalt',
-        sharedPreferencesName: 'secretSalt',
-      );
 
   /// My Identity Key Options
   ///
@@ -265,19 +237,6 @@ class KeychainManager {
         sharedPreferencesName: 'biometric',
       );
 
-  /// Cloud Device ID Key
-  ///
-  IOSOptions _getIOSOptionsCloudDeviceKey() => IOSOptions(
-        accountName: 'com.blackboxsystems.cloudDevice',
-        synchronizable: true,
-        accessibility: KeychainAccessibility.unlocked,
-      );
-
-  // MacOsOptions _getMacOptionsCloudDeviceKey() => MacOsOptions(
-  //   accountName: 'com.blackboxsystems.cloudDevice',
-  //   synchronizable: true,
-  //   accessibility: KeychainAccessibility.unlocked,
-  // );
 
   /// Local Device ID's Key
   ///
@@ -335,68 +294,6 @@ class KeychainManager {
         sharedPreferencesName: 'recovery',
       );
 
-  // /// Recovery Code Key Options
-  // /// for Secret Share Items
-  // IOSOptions _getIOSOptionsRecoveryCode() => IOSOptions(
-  //       accountName: 'com.blackboxsystems.recovery',
-  //       synchronizable: false,
-  //       accessibility: KeychainAccessibility.first_unlock_this_device,
-  //     );
-  //
-  // MacOsOptions _getMacOptionsRecoveryCode() => MacOsOptions(
-  //   groupId: 'com.blackboxsystems',
-  //   accountName: 'com.blackboxsystems.recovery',
-  //       synchronizable: false,
-  //       accessibility: KeychainAccessibility.first_unlock_this_device,
-  //     );
-  //
-  // AndroidOptions _getAndroidOptionsRecoveryCode() => const AndroidOptions(
-  //       encryptedSharedPreferences: true,
-  //       preferencesKeyPrefix: 'com.blackboxsystems.recovery',
-  //       sharedPreferencesName: 'recovery',
-  //     );
-
-  // /// Recovery Code Key Options
-  // /// for Secret Share Items
-  // IOSOptions _getIOSOptionsRecoveryMode() => IOSOptions(
-  //       accountName: 'com.blackboxsystems.recoveryMode',
-  //       synchronizable: false,
-  //       accessibility: KeychainAccessibility.first_unlock_this_device,
-  //     );
-  //
-  // MacOsOptions _getMacOptionsRecoveryMode() => MacOsOptions(
-  //   groupId: 'com.blackboxsystems',
-  //   accountName: 'com.blackboxsystems.recoveryMode',
-  //       synchronizable: false,
-  //       accessibility: KeychainAccessibility.first_unlock_this_device,
-  //     );
-  //
-  // AndroidOptions _getAndroidOptionsRecoveryMode() => const AndroidOptions(
-  //       encryptedSharedPreferences: true,
-  //       preferencesKeyPrefix: 'com.blackboxsystems.recoveryMode',
-  //       sharedPreferencesName: 'recoveryMode',
-  //     );
-
-  // /// Secret Sharing Key Options
-  // ///
-  // IOSOptions _getIOSOptionsSecretShare() => IOSOptions(
-  //       accountName: 'com.blackboxsystems.secretShare',
-  //       synchronizable: false,
-  //       accessibility: KeychainAccessibility.first_unlock_this_device,
-  //     );
-  //
-  // MacOsOptions _getMacOptionsSecretShare() => MacOsOptions(
-  //       // groupId: 'com.blackboxsystems',
-  //       accountName: 'com.blackboxsystems.secretShare',
-  //       synchronizable: false,
-  //       accessibility: KeychainAccessibility.first_unlock_this_device,
-  //     );
-  //
-  // AndroidOptions _getAndroidOptionsSecretShare() => const AndroidOptions(
-  //       encryptedSharedPreferences: true,
-  //       preferencesKeyPrefix: 'com.blackboxsystems.secretShare',
-  //       sharedPreferencesName: 'secretShare',
-  //     );
 
   /// Password Item Options
   ///
@@ -419,70 +316,6 @@ class KeychainManager {
         sharedPreferencesName: 'item',
       );
 
-  /// Backup Item Options
-  ///
-  IOSOptions _getIOSOptionsBackup() => IOSOptions(
-        accountName: 'com.blackboxsystems.backup',
-        synchronizable: true,
-        accessibility: KeychainAccessibility.unlocked,
-      );
-
-  MacOsOptions _getMacOptionsBackup() => MacOsOptions(
-        // groupId: 'com.blackboxsystems',
-        accountName: 'com.blackboxsystems.backup',
-        synchronizable: false,
-        accessibility: KeychainAccessibility.first_unlock_this_device,
-      );
-
-  AndroidOptions _getAndroidOptionsBackup() => const AndroidOptions(
-        encryptedSharedPreferences: true,
-        preferencesKeyPrefix: 'com.blackboxsystems.backup',
-        sharedPreferencesName: 'backup',
-      );
-
-  // /// TODO: do this...
-  // /// iCloud Backup Item Options
-  // ///
-  // IOSOptions _getIOSOptionsBackupCloud() => IOSOptions(
-  //       accountName: 'com.blackboxsystems.backup.icloud',
-  //       synchronizable: true,
-  //       accessibility: KeychainAccessibility.unlocked,
-  //     );
-  //
-  // MacOsOptions _getMacOptionsBackupCloud() => MacOsOptions(
-  //       // groupId: 'com.blackboxsystems',
-  //       accountName: 'com.blackboxsystems.backup.icloud',
-  //       synchronizable: true,
-  //       accessibility: KeychainAccessibility.first_unlock_this_device,
-  //     );
-  //
-  // AndroidOptions _getAndroidOptionsBackupCloud() => const AndroidOptions(
-  //       encryptedSharedPreferences: true,
-  //       preferencesKeyPrefix: 'com.blackboxsystems.backup.cloud',
-  //       sharedPreferencesName: 'backup.cloud',
-  //     );
-
-  /// TODO: do this...
-  /// Local Backup Item Options
-  ///
-  IOSOptions _getIOSOptionsBackupLocal() => IOSOptions(
-        accountName: 'com.blackboxsystems.backup.local',
-        synchronizable: true,
-        accessibility: KeychainAccessibility.unlocked,
-      );
-
-  MacOsOptions _getMacOptionsBackupLocal() => MacOsOptions(
-        // groupId: 'com.blackboxsystems',
-        accountName: 'com.blackboxsystems.backup.local',
-        synchronizable: false,
-        accessibility: KeychainAccessibility.first_unlock_this_device,
-      );
-
-  AndroidOptions _getAndroidOptionsBackupLocal() => const AndroidOptions(
-        encryptedSharedPreferences: true,
-        preferencesKeyPrefix: 'com.blackboxsystems.backup.local',
-        sharedPreferencesName: 'backup.local',
-      );
 
   /// save the encrypted key and salt for the master password
   Future<bool> saveMasterPassword(KeyMaterial key) async {
@@ -704,34 +537,20 @@ class KeychainManager {
   ///
   Future<bool> readEncryptedKey() async {
     logger.d("readEncryptedKey");
-    // print('debug: readEncryptedKey');
-    // var isValid = false;
+
     try {
       if (Platform.isIOS || Platform.isMacOS) {
-        // print('debug: readEncryptedKey iOS');
 
         final key = await _storage.readAll(
           iOptions: _getIOSOptionsKey(),
           aOptions: _getAndroidOptionsKey(),
           mOptions: _getMacOptionsKey(),
         );
-
-        final secretSalts = await _storage.readAll(
-          iOptions: _getIOSOptionsSecretSalt(),
-          aOptions: _getAndroidOptionsSecretSalt(),
-          mOptions: _getMacOptionsSecretSalt(),
-        );
-
         // print("key: $key");
 
         _keyItems = key.entries
             .map((entry) => SecItem(entry.key, entry.value))
             .toList(growable: false);
-
-        final saltItems = secretSalts.entries
-            .map((entry) => SecItem(entry.key, entry.value))
-            .toList(growable: false);
-
         // print("keyItems: ${_keyItems.length}");
 
         for (var element in _keyItems) {
@@ -739,26 +558,13 @@ class KeychainManager {
           if (element.key == 'keyMaterial') {
             KeyMaterial keyParams = KeyMaterial.fromRawJson(element.value);
             _encryptedKeyMaterial = keyParams.key;
-            // _salt = km.salt;
             _vaultId = keyParams.id;
             _hint = keyParams.hint;
+            _salt = keyParams.salt;
+            cryptor.setSecretSaltBytes(_salt.codeUnits);
 
             _currentKeyMaterial = keyParams;
-
             cryptor.setCurrentKeyMaterial(keyParams);
-            // print("_currentKeyMaterial: $_currentKeyMaterial");
-
-            for (var salt in saltItems) {
-              final secretSalt = SecretSalt.fromRawJson(salt.value);
-              if (secretSalt.vaultId == _vaultId) {
-                final salt8 = base64.decode(secretSalt.salt);
-                _salt = secretSalt.salt;
-                cryptor.setSecretSaltBytes(salt8.toList());
-                break;
-              }
-            }
-            // print("_currentKeyMaterial: $_currentKeyMaterial");
-            // print("salt2: $_salt");
           }
         }
 
@@ -778,28 +584,11 @@ class KeychainManager {
           mOptions: _getMacOptionsKey(),
         );
 
-        final secretSalts = await _storage.readAll(
-          iOptions: _getIOSOptionsSecretSalt(),
-          aOptions: _getAndroidOptionsSecretSalt(),
-          mOptions: _getMacOptionsSecretSalt(),
-        );
-
-        final saltItems = secretSalts.entries
-            .map((entry) => SecItem(entry.key, entry.value))
-            .toList(growable: false);
-
         // print("key: $key");
-        // print("salt: $salt");
 
         _keyItems = key.entries
             .map((entry) => SecItem(entry.key, entry.value))
             .toList(growable: false);
-
-        // _keyItems = key.entries
-        //     .map((entry) => KeyMaterial.fromRawJson(entry.value))
-        //     .toList(growable: false);
-
-        // print("keyItems: ${_keyItems.length}");
 
         if (_keyItems.length == 0) {
           // print("Key item is empty");
@@ -811,27 +600,13 @@ class KeychainManager {
           if (element.key == 'keyMaterial') {
             KeyMaterial keyParams = KeyMaterial.fromRawJson(element.value);
             _encryptedKeyMaterial = keyParams.key;
-            // _salt = km.salt;
             _vaultId = keyParams.id;
             _hint = keyParams.hint;
+            _salt = keyParams.salt;
+            cryptor.setSecretSaltBytes(_salt.codeUnits);
 
             _currentKeyMaterial = keyParams;
-
             cryptor.setCurrentKeyMaterial(keyParams);
-
-            for (var salt in saltItems) {
-              // print("for-loop salt: ${salt.key}: ${salt.value}");
-
-              final secretSalt = SecretSalt.fromRawJson(salt.value);
-              if (secretSalt.vaultId == _vaultId) {
-                final salt8 = base64.decode(secretSalt.salt);
-                _salt = secretSalt.salt;
-                cryptor.setSecretSaltBytes(salt8.toList());
-                // print("encodedKey2: $_encryptedKeyMaterial");
-                // print("salt2: $_salt");
-                break;
-              }
-            }
           }
         }
 
@@ -849,197 +624,6 @@ class KeychainManager {
       logManager.log("KeychainManager", "readEncryptedKey", "failure: $e");
       logManager.logger.w("Keychain readEncryptedKey failure: $e");
       return false;
-    }
-  }
-
-
-  /// Vault Salt
-  ///
-  Future<bool> saveSalt(String vaultId, String salt) async {
-    logger.d("saveSalt: $vaultId");
-
-    try {
-      /// just write it twice just in case...bug in Android and maybe iOS
-      ///
-      ///
-
-      final secretSalt = SecretSalt(
-        vaultId: vaultId,
-        // deviceId: deviceId,
-        salt: salt,
-      );
-
-      await _storage.write(
-        key: vaultId,
-        value: secretSalt.toRawJson(),
-        iOptions: _getIOSOptionsSecretSalt(),
-        aOptions: _getAndroidOptionsSecretSalt(),
-        mOptions: _getMacOptionsSecretSalt(),
-      );
-
-      await _storage.write(
-        key: vaultId,
-        value: secretSalt.toRawJson(),
-        iOptions: _getIOSOptionsSecretSalt(),
-        aOptions: _getAndroidOptionsSecretSalt(),
-        mOptions: _getMacOptionsSecretSalt(),
-      );
-
-      /// Method for extra caution on invalid saving with Android
-      /// begin
-      ///
-      _salt = salt;
-
-      var keyStorage = await _storage.readAll(
-        iOptions: _getIOSOptionsSecretSalt(),
-        aOptions: _getAndroidOptionsSecretSalt(),
-        mOptions: _getMacOptionsSecretSalt(),
-      );
-
-      // var keyItems = keyStorage.entries
-      //     .map((entry) => SecItem(entry.key, entry.value))
-      //     .toList(growable: false);
-
-      // var tempKeyItem = '';
-      // var tempSaltItem = '';
-      // for (var element in keyItems) {
-      //   // print("for-loop: ${element.key}: ${element.value}");
-      //   if (element.key == 'key') {
-      //     tempKeyItem = element.value;
-      //     // print("set encoded key material");
-      //     // print("encodedKey: $_encryptedKeyMaterial");
-      //   } else if (element.key == 'salt') {
-      //     tempSaltItem = element.value;
-      //     // print("set salt");
-      //   }
-      // }
-
-      var tries = 0;
-
-      if (keyStorage.entries.length == 0) {
-        logger.w("Creating Secret Salt - write again");
-
-        while (keyStorage.entries.length == 0) {
-          await _storage.write(
-            key: vaultId,
-            value: secretSalt.toRawJson(),
-            iOptions: _getIOSOptionsSecretSalt(),
-            aOptions: _getAndroidOptionsSecretSalt(),
-            mOptions: _getMacOptionsSecretSalt(),
-          );
-
-          keyStorage = await _storage.readAll(
-            iOptions: _getIOSOptionsSecretSalt(),
-            aOptions: _getAndroidOptionsSecretSalt(),
-            mOptions: _getMacOptionsSecretSalt(),
-          );
-
-          tries += 1;
-
-          if (tries > 100) {
-            logger.w("EXHAUSTED TRIES Saving Secret Salt");
-            return false;
-            // break;
-          }
-        }
-
-        return true;
-      }
-
-      logManager.log("KeychainManager", "saveSalt", "success: $vaultId");
-      logManager.logger
-          .d("KeychainManager - saveSalt: success: $vaultId");
-      return true;
-    } catch (e) {
-      // print('error writing data');
-      logManager.log("KeychainManager", "saveSalt", "failure: $e");
-      logManager.logger.w("Keychain saveSalt failure: $e");
-      return false;
-    }
-  }
-
-  Future<bool> readSecretSalt(String id) async {
-    // print('debug: saveItem: $value');
-    logger.d("readSecretSalt: $id");
-
-    try {
-      /// just write it twice just in case...bug in Android and maybe iOS
-      ///
-      final saltItems = await _storage.readAll(
-        // key: id,
-        iOptions: _getIOSOptionsSecretSalt(),
-        aOptions: _getAndroidOptionsSecretSalt(),
-        mOptions: _getMacOptionsSecretSalt(),
-      );
-
-      var items = saltItems.entries
-          .map((entry) => SecItem(entry.key, entry.value))
-          .toList(growable: false);
-
-      // var secretSalt = "0";
-      for (var element in items) {
-        // print("for-loop: ${element.key}: ${element.value}");
-        if (element.key == _vaultId) {
-          // secretSalt = element.value;
-          // for (var salt in saltItems) {
-          final secretSalt = SecretSalt.fromRawJson(element.value);
-          // if (secretSalt.vaultId == _vaultId) {
-          _salt = secretSalt.salt;
-          break;
-          // }
-          // }
-          // _salt = secretSalt;
-          break;
-          // print("encodedLogKey: $_encodedLogKeyMaterial");
-        }
-      }
-
-      // await _storage.read(
-      //   key: id,
-      //   iOptions: _getIOSOptionsSecretSalt(),
-      //   aOptions: _getAndroidOptionsSecretSalt(),
-      //   mOptions: _getMacOptionsSecretSalt(),
-      // );
-
-      logManager.log("KeychainManager", "readSecretSalt", "success: $id");
-      logManager.logger.d("KeychainManager - readSecretSalt: success: $id");
-      return true;
-    } catch (e) {
-      // print('error writing data');
-      logManager.log("KeychainManager", "readSecretSalt", "failure: $e");
-      logManager.logger.w("Keychain readSecretSalt failure: $e");
-      return false;
-    }
-  }
-
-  Future<String> getSecretSaltById(String vaultId) async {
-    // print('debug: saveItem: $value');
-    logger.d("getSecretSaltById: $vaultId");
-
-    try {
-      /// just write it twice just in case...bug in Android and maybe iOS
-      ///
-      final saltItem = await _storage.read(
-        key: vaultId,
-        iOptions: _getIOSOptionsSecretSalt(),
-        aOptions: _getAndroidOptionsSecretSalt(),
-        mOptions: _getMacOptionsSecretSalt(),
-      );
-
-      if (saltItem != null) {
-        final secretSaltItem = SecretSalt.fromRawJson(saltItem);
-        return secretSaltItem.salt;
-      }
-
-      logManager.log("KeychainManager", "readSecretSalt", "success: $vaultId");
-      logManager.logger
-          .d("KeychainManager - readSecretSalt: success: $vaultId");
-      return "";
-    } catch (e) {
-      // print('error writing data');
-      logManager.log("KeychainManager", "readSecretSalt", "failure: $e");
-      logManager.logger.w("Keychain readSecretSalt failure: $e");
-      return "";
     }
   }
 
@@ -1657,95 +1241,6 @@ class KeychainManager {
     }
   }
 
-
-  // /// Save Cloud Device Key
-  // /// save device-id, timestamp, status, and auth level in icloud to detect
-  // /// new devices running the app
-  // Future<bool> saveCloudDeviceKey(CloudDeviceKey cloudDevice) async {
-  //   print("saveCloudDeviceKey");
-  //   try {
-  //     if (Platform.isIOS) {
-  //       await _storage.write(
-  //         key: cloudDevice.id,
-  //         value: cloudDevice.toRawJson(),
-  //         iOptions: _getIOSOptionsCloudDeviceKey(),
-  //       );
-  //
-  //       logManager.log("KeychainManager", "saveCloudDeviceKey", "success");
-  //       return true;
-  //     }
-  //
-  //     logManager.log("KeychainManager", "saveCloudDeviceKey", "failure");
-  //     logManager.logger.w("Keychain saveCloudDeviceKey failure");
-  //     return false;
-  //   } catch (e) {
-  //     print(e);
-  //     logManager.log("KeychainManager", "saveCloudDeviceKey", "failure: $e");
-  //     logManager.logger.w("Keychain saveCloudDeviceKey failure: $e");
-  //     return false;
-  //   }
-  // }
-  //
-  // /// reads the key and returns if available
-  // Future<List<CloudDeviceKey>> readCloudDeviceKeys() async {
-  //   logger.d("readCloudDeviceKeys");
-  //   try {
-  //     if (Platform.isIOS) {
-  //       var items = await _storage.readAll(
-  //         iOptions: _getIOSOptionsCloudDeviceKey(),
-  //       );
-  //
-  //       final cloudDeviceItems = items.entries
-  //           .map((entry) => CloudDeviceKey.fromRawJson(entry.value))
-  //           .toList(growable: false);
-  //
-  //       logManager.log("KeychainManager", "readCloudDeviceKeys", "success");
-  //
-  //       print("${items.length} items");
-  //       return cloudDeviceItems;
-  //     }
-  //     return [];
-  //   } catch (e) {
-  //     logManager.log("KeychainManager", "readCloudDeviceKeys", "failure: $e");
-  //     logManager.logger.w("Keychain readCloudDeviceKeys failure: $e");
-  //     return [];
-  //   }
-  // }
-  //
-  // Future<bool> deleteCloudDeviceKey(String id) async {
-  //   logger.d("deleteCloudDeviceKey");
-  //
-  //   try {
-  //     await _storage.delete(
-  //       key: id,
-  //       iOptions: _getIOSOptionsCloudDeviceKey(),
-  //     );
-  //
-  //     logManager.log("KeychainManager", "deleteCloudDeviceKey", 'success: $id');
-  //     return true;
-  //   } catch (e) {
-  //     logManager.log("KeychainManager", "deleteCloudDeviceKey", 'failure: $id: $e');
-  //     logManager.logger.w("Keychain deleteCloudDeviceKeys failure: $e");
-  //     return false;
-  //   }
-  // }
-  //
-  // Future<bool> deleteCloudDeviceKeys() async {
-  //   logger.d("deleteCloudDeviceKeys");
-  //
-  //   try {
-  //       await _storage.deleteAll(
-  //         iOptions: _getIOSOptionsCloudDeviceKey(),
-  //       );
-  //
-  //       logManager.log("KeychainManager", "deleteCloudDeviceKeys", 'success');
-  //       return true;
-  //   } catch (e) {
-  //     logManager.log("KeychainManager", "deleteCloudDeviceKeys", 'failure: $e');
-  //     logManager.logger.w("Keychain deleteCloudDeviceKeys failure: $e");
-  //     return false;
-  //   }
-  // }
 
   /// BIOMETRIC KEY
   ///
@@ -2379,159 +1874,6 @@ class KeychainManager {
 
 
 
-
-  /// BACKUP ITEMS
-  ///
-
-  /// save a backup item
-  Future<bool> saveBackupItem(String backupRawJson, String id) async {
-    // print("debug: saveBackupItem: $key");
-    logger.d("saveBackupItem: $id");
-    // logger.d("saveBackupItem: $id: $backupRawJson");
-
-    try {
-      await _storage.write(
-        key: id,
-        value: backupRawJson,
-        iOptions: _getIOSOptionsBackup(),
-        aOptions: _getAndroidOptionsBackup(),
-        mOptions: _getMacOptionsBackup(),
-      );
-
-      await _storage.write(
-        key: id,
-        value: backupRawJson,
-        iOptions: _getIOSOptionsBackup(),
-        aOptions: _getAndroidOptionsBackup(),
-        mOptions: _getMacOptionsBackup(),
-      );
-
-      // print('saved backup item!');
-      logger.d("saveBackupItem: success");
-      logManager.log("KeychainManager", "saveBackupItem", "success: $id");
-      return true;
-    } catch (e) {
-      logger.d("saveBackupItem: failure");
-      logManager.log("KeychainManager", "saveBackupItem", "failure: $e");
-      logManager.logger.w("Keychain saveBackupItem failure: $e");
-      return false;
-    }
-  }
-
-  /// get and return a backup item based on id
-  Future<VaultItem?> getBackupItem(String id) async {
-    // print('debug: getBackupItem: $id');
-    logger.d("getBackupItem: $id");
-
-    try {
-      final backupItem = await _storage.read(
-        key: id,
-        iOptions: _getIOSOptionsBackup(),
-        aOptions: _getAndroidOptionsBackup(),
-        mOptions: _getMacOptionsBackup(),
-      );
-
-      final item = VaultItem.fromRawJson(backupItem!);
-      logManager.log("KeychainManager", "getBackupItem", "success: $id");
-      return item;
-    } catch (e) {
-      logManager.log("KeychainManager", "getBackupItem", "failure: $e");
-      logManager.logger.w("Keychain getBackupItem failure: $e");
-      return null;
-    }
-  }
-
-  /// check for the existence of backup items
-  Future<bool> hasBackupItems() async {
-    // print('debug: hasBackupItems');
-    logger.d("hasBackupItems");
-
-    try {
-      final backupItems = await _storage.readAll(
-        iOptions: _getIOSOptionsBackup(),
-        aOptions: _getAndroidOptionsBackup(),
-        mOptions: _getMacOptionsBackup(),
-      );
-
-      final items = backupItems.entries
-          .map((entry) => VaultItem.fromRawJson(entry.value))
-          .toList(growable: false);
-
-      logManager.log("KeychainManager", "hasBackupItems", "success");
-
-      return (items.length > 0);
-    } catch (e) {
-      logManager.log("KeychainManager", "hasBackupItems", "failure: $e");
-      logManager.logger.w("Keychain hasBackupItems failure: $e");
-      return false;
-    }
-  }
-
-  /// get all of the backup items
-  Future<List<VaultItem>> getAllBackupItems() async {
-    // print('debug: getAllBackupItems');
-    logger.d("getAllBackupItems");
-
-    try {
-      var backupItems = await _storage.readAll(
-        iOptions: _getIOSOptionsBackup(),
-        aOptions: _getAndroidOptionsBackup(),
-        mOptions: _getMacOptionsBackup(),
-      );
-
-      // logger.d("${backupItems.length}: ${backupItems.entries.first.value}");
-      // logger.d("backupItems: ${backupItems.entries.length}: ${backupItems.entries}");
-
-      final items = backupItems.entries
-          .map((entry) => VaultItem.fromRawJson(entry.value))
-          .toList(growable: false);
-
-      // logger.d("items: ${items.length}: $items");
-
-      logManager.log("KeychainManager", "getAllBackupItems", "success");
-      return items;
-    } catch (e) {
-      // print(e);
-      logManager.log("KeychainManager", "getAllBackupItems", "failure: $e");
-      logManager.logger.w("Keychain getAllBackupItems failure: $e");
-      return [];
-    }
-  }
-
-  /// delete a backup item based on the id
-  Future<bool> deleteBackupItem(String id) async {
-    // print('debug: deleteBackupItem');
-    logger.d("deleteBackupItem: $id");
-
-    try {
-      final hasKey = await _storage.containsKey(
-        key: id,
-        iOptions: _getIOSOptionsBackup(),
-        aOptions: _getAndroidOptionsBackup(),
-        mOptions: _getMacOptionsBackup(),
-      );
-      // print('hasKey: $hasKey');
-
-      if (hasKey) {
-        await _storage.delete(
-          key: id,
-          iOptions: _getIOSOptionsBackup(),
-          aOptions: _getAndroidOptionsBackup(),
-          mOptions: _getMacOptionsBackup(),
-        );
-        logManager.log("KeychainManager", "deleteBackupItem", "success: $id");
-        return true;
-      }
-
-      logManager.log("KeychainManager", "deleteBackupItem", "failure: $id");
-      return false;
-    } catch (e) {
-      logManager.log("KeychainManager", "deleteBackupItem", "failure: $e");
-      logManager.logger.w("Keychain deleteBackupItem failure: $e");
-      return false;
-    }
-  }
-
   /// Recovery Keys
   ///
   ///
@@ -2616,30 +1958,30 @@ class KeychainManager {
     }
   }
 
-  Future<bool> hasRecoveryKeyItems() async {
-    // print('debug: hasBackupItems');
-    logger.d("hasRecoveryKeyItems");
-
-    try {
-      final backupItems = await _storage.readAll(
-        iOptions: _getIOSOptionsRecoveryKey(),
-        aOptions: _getAndroidOptionsRecoveryKey(),
-        mOptions: _getMacOptionsRecoveryKey(),
-      );
-
-      final items = backupItems.entries
-          .map((entry) => RecoveryKey.fromRawJson(entry.value))
-          .toList(growable: false);
-
-      logManager.log("KeychainManager", "hasBackupItems", "success");
-
-      return (items.length > 0);
-    } catch (e) {
-      logManager.log("KeychainManager", "hasBackupItems", "failure: $e");
-      logManager.logger.w("Keychain hasBackupItems failure: $e");
-      return false;
-    }
-  }
+  // Future<bool> hasRecoveryKeyItems() async {
+  //   // print('debug: hasBackupItems');
+  //   logger.d("hasRecoveryKeyItems");
+  //
+  //   try {
+  //     final backupItems = await _storage.readAll(
+  //       iOptions: _getIOSOptionsRecoveryKey(),
+  //       aOptions: _getAndroidOptionsRecoveryKey(),
+  //       mOptions: _getMacOptionsRecoveryKey(),
+  //     );
+  //
+  //     final items = backupItems.entries
+  //         .map((entry) => RecoveryKey.fromRawJson(entry.value))
+  //         .toList(growable: false);
+  //
+  //     logManager.log("KeychainManager", "hasBackupItems", "success");
+  //
+  //     return (items.length > 0);
+  //   } catch (e) {
+  //     logManager.log("KeychainManager", "hasBackupItems", "failure: $e");
+  //     logManager.logger.w("Keychain hasBackupItems failure: $e");
+  //     return false;
+  //   }
+  // }
 
   Future<bool> deleteRecoveryKeyItem(String id) async {
     // print('debug: deleteBackupItem');
@@ -2738,11 +2080,6 @@ class KeychainManager {
         mOptions: _getMacOptionsLogKey(),
       );
       await _storage.deleteAll(
-        iOptions: _getIOSOptionsSecretSalt(),
-        aOptions: _getAndroidOptionsSecretSalt(),
-        mOptions: _getMacOptionsSecretSalt(),
-      );
-      await _storage.deleteAll(
         iOptions: _getIOSOptionsMyIdentity(),
         aOptions: _getAndroidOptionsMyIdentity(),
         mOptions: _getMacOptionsMyIdentity(),
@@ -2783,11 +2120,7 @@ class KeychainManager {
         aOptions: _getAndroidOptionsItem(),
         mOptions: _getMacOptionsItem(),
       );
-      await _storage.deleteAll(
-        iOptions: _getIOSOptionsBackup(),
-        aOptions: _getAndroidOptionsBackup(),
-        mOptions: _getMacOptionsBackup(),
-      );
+
       await _storage.deleteAll(
         iOptions: _getIOSOptionsBiometric(),
         aOptions: _getAndroidOptionsBiometric(),
@@ -2963,26 +2296,6 @@ class KeychainManager {
     }
   }
 
-  /// delete our local vault items and keys except for backup items and log key
-  Future<bool> deleteiCloudData() async {
-    // print('debug: deleteForBackup');
-    logger.d("deleteiCloudData");
-
-    try {
-      await _storage.deleteAll(
-        iOptions: _getIOSOptionsBackup(),
-        aOptions: _getAndroidOptionsBackup(),
-        mOptions: _getMacOptionsBackup(),
-      );
-
-      logManager.log("KeychainManager", "deleteiCloudData", "success");
-      return true;
-    } catch (e) {
-      logManager.log("KeychainManager", "deleteiCloudData", "failure: $e");
-      logManager.logger.w("Keychain deleteiCloudData failure: $e");
-      return false;
-    }
-  }
 }
 
 /// TODO: add id field, implement in iOS

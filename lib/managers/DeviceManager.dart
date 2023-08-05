@@ -57,7 +57,7 @@ class DeviceManager {
       //   deviceData =
       //       _readWindowsDeviceInfo(await deviceInfoPlugin.windowsInfo);
       // }
-      // }
+
     } on PlatformException {
       deviceData = <String, dynamic>{
         'Error:': 'Failed to get platform version.'

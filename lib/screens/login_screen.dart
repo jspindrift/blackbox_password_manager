@@ -104,8 +104,6 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     /// add observer for app lifecycle state transitions
     WidgetsBinding.instance.addObserver(this);
 
-    // logManager.logger.d("deviceData: ${DeviceManager().deviceData}");
-
     /// setup subscription streams
     resetAppSubscription = settingsManager.onResetAppRecieved.listen((event) {
       logManager.logger.d("LoginPage: resetAppSubscription: ${event}");
@@ -141,9 +139,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   }
 
   void _readRecoveryMode() async {
-    final status = await keyManager.hasRecoveryKeyItems();
     setState(() {
-      _isRecoveryModeEnabled = status;
+      _isRecoveryModeEnabled = settingsManager.isRecoveryModeEnabled;
     });
   }
 
@@ -277,7 +274,6 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     final keyStatus = await keyManager.readEncryptedKey();
     setState(() {
       _isSigningUp = !keyManager.hasPasswordItems;
-      // _isSigningUp = status;
     });
 
     // print("keystatus: $keyStatus");
@@ -292,7 +288,6 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       // set to secure settings by default
       settingsManager.saveLockOnExit(true);
     } else {
-      // await _getAppSettings();
       setState(() {
         _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
       });
@@ -313,12 +308,6 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       _isBiometricLoginEnabled = false;
     }
 
-    /// check cloud backups
-    final backupStatus = await keyManager.hasBackupItems();
-    setState(() {
-      _hasBackups = backupStatus;
-    });
-
     /// check local document backup file
     final vaultFileString = await fileManager.readVaultData();
 
@@ -328,17 +317,14 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       });
     }
 
-    // print("_hasBackups: $_hasBackups");
-
-    /// check android backup file
-    if (Platform.isAndroid && !backupStatus) {
-      final androidBackup = settingsManager.androidBackup;
-      if (androidBackup != null) {
-        setState(() {
-          _hasBackups = true;
-        });
-      }
+    /// check android SD backup file if local does not exist
+    if (Platform.isAndroid && !_hasBackups) {
+      var vaultFileString = await fileManager.readVaultDataSDCard();
+      setState(() {
+        _hasBackups = vaultFileString.isNotEmpty;
+      });
     }
+
   }
 
   Future<void> _getAppSettings() async {
@@ -346,6 +332,10 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     // await DeviceManager().initialize();
 
     logManager.logger.d("deviceData: ${settingsManager.deviceManager.deviceData}");
+
+    setState(() {
+      _isRecoveryModeEnabled = settingsManager.isRecoveryModeEnabled;
+    });
 
   }
 
@@ -423,13 +413,13 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
               ),
               fullscreenDialog: true,
             ),
-          ).then((value) {
+          ).then((value) async {
             if (value == 'login') {
               // settingsManager.setCurrentTabIndex(0);
 
               Navigator.of(context)
                   .pushNamed(HomeTabScreen.routeName)
-                  .then((value) {
+                  .then((value) async {
                 logManager.saveLogs();
 
                 settingsManager.setCurrentTabIndex(1);
@@ -463,25 +453,22 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                   });
                 });
 
-                keyManager.hasBackupItems().then((value) async {
+                final vaultFileString = await fileManager.readVaultData();
+
+                if (vaultFileString.isNotEmpty) {
                   setState(() {
-                    _hasBackups = value;
+                    _hasBackups = true;
                   });
-                  final vaultFileString = await fileManager.readVaultData();
+                }
 
-                  if (vaultFileString.isNotEmpty) {
-                    setState(() {
-                      _hasBackups = true;
-                    });
-                  }
+                /// check android backup file
+                if (Platform.isAndroid && !_hasBackups) {
+                  var vaultFileString = await fileManager.readVaultDataSDCard();
+                  setState(() {
+                    _hasBackups = vaultFileString.isNotEmpty;
+                  });
+                }
 
-                  if (Platform.isAndroid && !value) {
-                    final androidBackup = settingsManager.androidBackup;
-                    if (androidBackup != null) {
-                      _hasBackups = true;
-                    }
-                  }
-                });
               });
             }
           });
@@ -549,7 +536,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                 onPressed: () {
                   TestCrypto().runTests();
                 },
-              ))
+              ),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -1014,26 +1002,23 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       });
     });
 
-    keyManager.hasBackupItems().then((value) async {
+    final vaultFileString = await fileManager.readVaultData();
+
+    if (vaultFileString.isNotEmpty) {
       setState(() {
-        _hasBackups = value;
+        _hasBackups = true;
       });
+    }
 
-      final vaultFileString = await fileManager.readVaultData();
+    // print("_hasBackups: $_hasBackups");
 
-      if (vaultFileString.isNotEmpty) {
-        setState(() {
-          _hasBackups = true;
-        });
-      }
-
-      if (Platform.isAndroid && !value) {
-        final androidBackup = settingsManager.androidBackup;
-        if (androidBackup != null) {
-          _hasBackups = true;
-        }
-      }
-    });
+    /// check android backup file
+    if (Platform.isAndroid && !_hasBackups) {
+      var vaultFileString = await fileManager.readVaultDataSDCard();
+      setState(() {
+        _hasBackups = vaultFileString.isNotEmpty;
+      });
+    }
 
     /// check for pin code
     final pinStatus = await keyManager.readPinCodeKey(); //.then((value) {
@@ -1124,12 +1109,6 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         // print("status: $status");
 
         if (status) {
-          /// save our salt
-          await keyManager.saveSalt(
-            uuid,
-            newKeyParams.salt,
-          );
-
           /// Save identity key data
           ///
           final myId = await cryptor.createMyDigitalID();
@@ -1138,12 +1117,12 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           if (myId != null) {
             // final statusId =
             await keyManager.saveMyIdentity(
-                keyManager.vaultId, myId.toRawJson());
+                keyManager.vaultId,
+                myId.toRawJson(),
+            );
 
             // print("statusId: $statusId");
           }
-
-          // print("status salt: $statusSalt");
 
           /// re-save log key in-case we needed to create a new one
           await keyManager.saveLogKey(cryptor.logKeyMaterial);

@@ -46,6 +46,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
   bool _isDarkModeEnabled = false;
   bool _importFieldIsValid = false;
   bool _hasImportWarningMessage = false;
+  bool _recoverModeEnabled = false;
 
   List<String> _decryptedPublicKeysS = [];
   List<String> _decryptedPublicKeysE = [];
@@ -57,9 +58,10 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
   MyDigitalIdentity? myIdentity;
 
-  String pubSigningKey = "";
-  String pubExchangeKeySeed = "";
-  String pubExchangeKeyPublic = "";
+  String _pubSigningKey = "";
+  String _pubExchangeKeySeed = "";
+  String _pubExchangeKeyPublic = "";
+  String _pubExchangeKeyAddress = "";
 
   DigitalIdentityCode? _myCode;
   bool _enableBackupNameOkayButton = false;
@@ -79,9 +81,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
     _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
 
-    keyManager.hasRecoveryKeyItems().then((value) {
-
-    });
+    _recoverModeEnabled = settingsManager.isRecoveryModeEnabled;
 
     keyManager.getMyDigitalIdentity().then((value) async {
       // print("value: ${value!.toRawJson()}");
@@ -93,33 +93,36 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
         /// TODO: fix this
         final privateHexS = await cryptor.decrypt(value.privKeySignature);
-        pubExchangeKeySeed = await cryptor.decrypt(value.privKeyExchange);
+        _pubExchangeKeySeed = await cryptor.decrypt(value.privKeyExchange);
 
         var privS = PrivateKey(ec, BigInt.parse(privateHexS, radix: 16));
         final privSeedPair = await algorithm_exchange
-            .newKeyPairFromSeed(hex.decode(pubExchangeKeySeed));
+            .newKeyPairFromSeed(hex.decode(_pubExchangeKeySeed));
 
         var pubE = await privSeedPair.extractPublicKey();
 
         setState(() {
-          pubSigningKey = privS.publicKey.toHex();
-          pubExchangeKeyPublic = hex.encode(pubE.bytes);
+          _pubSigningKey = privS.publicKey.toHex();
+          _pubExchangeKeyPublic = hex.encode(pubE.bytes);
+          _pubExchangeKeyAddress = cryptor.sha256(_pubExchangeKeyPublic).substring(0,32);
 
           _myCode = DigitalIdentityCode(
-            pubKeyExchange: pubExchangeKeyPublic,
-            pubKeySignature: pubSigningKey,
+            pubKeyExchange: _pubExchangeKeyPublic,
+            pubKeySignature: _pubSigningKey,
           );
         });
       }
     });
 
-    fetchIdentities();
+    fetchRecoveryIdentities();
   }
 
-  Future<void> fetchIdentities() async {
+  /// recovery identities
+  Future<void> fetchRecoveryIdentities() async {
     _publicKeyHashes = [];
     _decryptedPublicKeysS = [];
     _decryptedPublicKeysE = [];
+    // _decryptedPublicAddressKeysE = [];
 
     final ids = await keyManager.getIdentities();
 
@@ -131,9 +134,9 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         final xpub = await cryptor.decrypt(id.pubKeySignature);
         final ypub = await cryptor.decrypt(id.pubKeyExchange);
 
+        /// hash of public exchange key
         final phash = cryptor.sha256(ypub);
         // print("phash identity: $phash");
-
         _publicKeyHashes.add(phash);
 
         if (AppConstants.debugKeyData) {
@@ -203,55 +206,14 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
             color: _isDarkModeEnabled ? Colors.greenAccent : null,
             onPressed: () async {
               settingsManager.setIsScanningQRCode(true);
-
-              /// TODO: fix the Android bug that does not let the camera operate
-              if (Platform.isIOS) {
-                await _scanQR(context);
-              } else {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.of(context)
-                      .push(MaterialPageRoute(
-                    builder: (context) => QRScanView(),
-                  ))
-                      .then((value) {
-                    settingsManager.setIsScanningQRCode(false);
-
-                    try {
-                      DigitalIdentityCode item =
-                          DigitalIdentityCode.fromRawJson(value);
-
-                      if (item != null) {
-                        _displaySaveIdentityNameDialog(context, item);
-                      } else {
-                        _showErrorDialog("Invalid code format");
-                      }
-                    } catch (e) {
-                      _showErrorDialog("Exception: Could not scan code: $e");
-                    }
-                  });
-                });
-              }
+              await _scanQR(context);
             },
           ),
           IconButton(
             icon: Icon(Icons.import_export),
             color: _isDarkModeEnabled ? Colors.greenAccent : null,
             onPressed: () async {
-              // settingsManager.setIsScanningQRCode(true);
-              //   print("import public key");
               _showModalImportPublicKeyView();
-              //   Uri sms = Uri.parse('sms:13147759429');
-              //   Uri sms = Uri.parse('tel:13147759429');
-              //   Uri sms = Uri.parse('file:');
-              //   Uri sms = Uri.parse('${FileManager().localPath}');
-              // Uri sms = Uri.parse('mailto:jspinner.deveng@gmail.com?subject=hello');
-              //
-              //   // launch
-              //   if (await launchUrl(sms)) {
-              //     //app opened
-              //   }else{
-              //     //app is not opened
-              //   }
             },
           ),
         ],
@@ -264,68 +226,109 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         itemBuilder: (context, index) {
           if (index == 0) {
             return Card(
-              elevation: 4,
+              elevation: 2,
               color: _isDarkModeEnabled ? Colors.black54 : Colors.white,
-              child: ListTile(
-                visualDensity: VisualDensity(vertical: 4),
-                title: Padding(
-                  padding: EdgeInsets.fromLTRB(0, 4, 4, 4),
-                  child: Text(
-                    'My Digital Identity',
-                    style: TextStyle(
-                      color: _isDarkModeEnabled ? Colors.white : null,
+              child: Column(children: [
+                Padding(
+                    padding: EdgeInsets.all(4),
+                  child: ListTile(
+                    title: Text(
+                        "Enable Recovery Mode",
+                      style: TextStyle(
+                        color: _isDarkModeEnabled ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    subtitle:  Padding(
+                      padding: EdgeInsets.fromLTRB(0,4,4,4),
+                      child: Text(
+                      "This allows you to scan recovery keys from the login page.",
+                      style: TextStyle(
+                        color: Colors.grey[800],
+                      ),
+                    ),),
+                    trailing: Switch(
+                      thumbColor:
+                      MaterialStateProperty.all<Color>(Colors.white),
+                      trackColor: _recoverModeEnabled ? (_isDarkModeEnabled
+                          ? MaterialStateProperty.all<Color>(
+                          Colors.greenAccent)
+                          : MaterialStateProperty.all<Color>(
+                          Colors.blue)) : MaterialStateProperty.all<Color>(
+                          Colors.grey),
+                      value: _recoverModeEnabled,
+                      onChanged: (value){
+                        setState(() {
+                          _recoverModeEnabled = value;
+                        });
+
+                        settingsManager.saveRecoveryModeEnabled(value);
+                      },
                     ),
                   ),
                 ),
-                subtitle: Padding(
-                  padding: EdgeInsets.fromLTRB(0, 4, 4, 4),
-                  child: Text(
-                    "pubKey: $pubExchangeKeyPublic",
-                    style: TextStyle(
-                      color: _isDarkModeEnabled ? Colors.white : null,
+                Divider(
+                  color: Colors.grey,
+                ),
+                ListTile(
+                  title: Padding(
+                    padding: EdgeInsets.fromLTRB(0, 4, 4, 4),
+                    child: Text(
+                      'My Digital Identity',
+                      style: TextStyle(
+                        color: _isDarkModeEnabled ? Colors.white : null,
+                      ),
                     ),
                   ),
-                ),
-                leading: Icon(
-                  Icons.perm_identity,
-                  color: _isDarkModeEnabled
-                      ? Colors.greenAccent
-                      : Colors.blueAccent,
-                  size: 40,
-                ),
-                trailing: IconButton(
-                  icon: Icon(Icons.qr_code),
-                  color: _isDarkModeEnabled
-                      ? Colors.greenAccent
-                      : Colors.blueAccent,
-                  onPressed: () {
-                    if (_myCode != null) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => QRCodeView(
-                            data: _myCode!.toRawJson(),
-                            isDarkModeEnabled: _isDarkModeEnabled,
-                            isEncrypted: false,
+                  subtitle: Padding(
+                    padding: EdgeInsets.fromLTRB(0, 4, 4, 4),
+                    child: Text(
+                      "Public Address:\n$_pubExchangeKeyAddress",
+                      style: TextStyle(
+                        color: _isDarkModeEnabled ? Colors.white : null,
+                      ),
+                    ),
+                  ),
+                  leading: Icon(
+                    Icons.perm_identity,
+                    color: _isDarkModeEnabled
+                        ? Colors.greenAccent
+                        : Colors.blueAccent,
+                    size: 40,
+                  ),
+                  trailing: IconButton(
+                    icon: Icon(Icons.qr_code),
+                    color: _isDarkModeEnabled
+                        ? Colors.greenAccent
+                        : Colors.blueAccent,
+                    onPressed: () {
+                      if (_myCode != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => QRCodeView(
+                              data: _myCode!.toRawJson(),
+                              isDarkModeEnabled: _isDarkModeEnabled,
+                              isEncrypted: false,
+                            ),
                           ),
-                        ),
-                      );
-                    }
+                        );
+                      }
+                    },
+                  ),
+                  onTap: () {
+                    _displayMyIdentityInfo();
                   },
                 ),
-                onTap: () {
-                  _displayMyIdentityInfo();
-                },
-              ),
+              ],)
+
             );
           } else {
             return Card(
-              elevation: 4,
+              elevation: 2,
               color: _isDarkModeEnabled ? Colors.black54 : Colors.white,
               child: Column(
                 children: [
                   ListTile(
-                    // visualDensity: VisualDensity(vertical: 4),
                     title: Padding(
                       padding: EdgeInsets.fromLTRB(0, 4, 4, 4),
                       child: Text(
@@ -338,9 +341,12 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                     subtitle: Padding(
                       padding: EdgeInsets.fromLTRB(0, 4, 4, 8),
                       child: Text(
-                        "pubKeyExchange: ${_decryptedPublicKeysE[index - 1]}\n\nid: ${cryptor.sha256(_decryptedPublicKeysE[index - 1])}",
+                        // "pubKeyExchange: ${_decryptedPublicKeysE[index - 1]}\n\naddress: ${cryptor.sha256(_decryptedPublicKeysE[index - 1])}",
+                        // "address: ${cryptor.sha256(_decryptedPublicKeysE[index - 1]).substring(0,32)}",
+                        "Address: ${_publicKeyHashes[index-1].substring(0, 32)}",
                         style: TextStyle(
                           color: _isDarkModeEnabled ? Colors.white : null,
+                          fontSize: 14,
                         ),
                       ),
                     ),
@@ -526,7 +532,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     // print('bobKeyPair pubMade: ${bobPublicKey.bytes}');
     // print('bobKeyPair pubMade.Hex: ${hex.encode(bobPublicKey.bytes)}');
 
-    final aliceSeed = pubExchangeKeySeed;
+    final aliceSeed = _pubExchangeKeySeed;
     final seedBytes = hex.decode(aliceSeed);
     final privSeedPair = await algorithm.newKeyPairFromSeed(seedBytes);
 
@@ -797,7 +803,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
               .text.isNotEmpty &&
           _importPublicKeyDataTextFieldController.text.isNotEmpty &&
           _importPublicKeyDataTextFieldController.text.length == 64 &&
-          _importPublicKeyDataTextFieldController.text != pubExchangeKeyPublic;
+          _importPublicKeyDataTextFieldController.text != _pubExchangeKeyPublic;
 
       _hasImportWarningMessage = !_importFieldIsValid;
     });
@@ -852,7 +858,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                   padding: EdgeInsets.all(16),
                   child: Center(
                     child: Text(
-                      "publicKeyExchange: ${pubExchangeKeyPublic}\n\ndate: ${(myIdentity?.cdate)!}",
+                      "publicKeyExchange: ${_pubExchangeKeyPublic}\n\ndate: ${(myIdentity?.cdate)!}",
                       // "name: ${item.name}\nid: ${item.id}\ndeviceId: ${item.deviceId}\ncreated: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse(item.cdate))}\nmodified: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse(item.mdate))}\nCurrent Vault: ${(item.encryptedKey.keyMaterial == keyManager.encryptedKeyMaterial)}",
                       style: TextStyle(
                         color: _isDarkModeEnabled ? Colors.white : Colors.black,
@@ -909,7 +915,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                         Navigator.of(context).pop();
 
                         await Clipboard.setData(
-                            ClipboardData(text: pubExchangeKeyPublic));
+                            ClipboardData(text: _pubExchangeKeyPublic));
 
                         EasyLoading.showToast('Copied Public Key',
                             duration: Duration(milliseconds: 500));
@@ -930,10 +936,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
             );
           });
         });
-    //     .then((value) {
-    //     print("Chose value: $value");
-    //
-    // });
   }
 
   void _displayIdentityInfo(String pubE, String pubS) async {
@@ -1066,73 +1068,66 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         });
   }
 
-  _showDialogImportOptions() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Choose An Import Option'),
-        content: Text('Import a digital identity using the below options'),
-        actions: <Widget>[
-          OutlinedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: TextButton.styleFrom(
-              primary: Colors.white,
-            ),
-            onPressed: () async {
-              // _confirmDeleteLocalBackup();
-              Navigator.of(ctx).pop();
-            },
-            child: Text('Input Manually'),
-          ),
-          ElevatedButton(
-            style: TextButton.styleFrom(
-              primary: Colors.white,
-            ),
-            onPressed: () async {
-              // _confirmDeleteLocalBackup();
-              Navigator.of(ctx).pop();
-            },
-            child: Text('Scan ID Code'),
-          ),
-        ],
-      ),
-    );
-  }
 
   Future<void> _scanQR(BuildContext context) async {
-    String barcodeScanRes;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    try {
-      barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
-          "#ff6666", "Cancel", true, ScanMode.QR);
 
-      settingsManager.setIsScanningQRCode(false);
-
-      /// user pressed cancel
-      if (barcodeScanRes == "-1") {
-        return;
-      }
-
+    if (Platform.isIOS) {
+      String barcodeScanRes;
+      // Platform messages may fail, so we use a try/catch PlatformException.
       try {
-        DigitalIdentityCode item =
-            DigitalIdentityCode.fromRawJson(barcodeScanRes);
-        if (item != null) {
-          _displaySaveIdentityNameDialog(context, item);
-        } else {
-          _showErrorDialog("Invalid code format");
+        barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
+            "#ff6666", "Cancel", true, ScanMode.QR);
+
+        settingsManager.setIsScanningQRCode(false);
+
+        /// user pressed cancel
+        if (barcodeScanRes == "-1") {
+          return;
         }
-      } catch (e) {
-        /// decide to decrypt or save item.
-        _showErrorDialog("Exception: Could not scan code: $e");
+
+        try {
+          DigitalIdentityCode item =
+          DigitalIdentityCode.fromRawJson(barcodeScanRes);
+          if (item != null) {
+            _displaySaveIdentityNameDialog(context, item);
+          } else {
+            _showErrorDialog("Invalid code format");
+          }
+        } catch (e) {
+          /// decide to decrypt or save item.
+          _showErrorDialog("Exception: Could not scan code: $e");
+        }
+      } on PlatformException {
+        barcodeScanRes = "Failed to get platform version.";
+        logManager.logger.w("Platform exception");
       }
-    } on PlatformException {
-      barcodeScanRes = "Failed to get platform version.";
-      logManager.logger.w("Platform exception");
+    } else if (Platform.isAndroid) {
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context)
+            .push(MaterialPageRoute(
+          builder: (context) => QRScanView(),
+        ))
+            .then((value) {
+
+              print("value obtained: $value");
+          settingsManager.setIsScanningQRCode(false);
+
+          try {
+            DigitalIdentityCode item =
+            DigitalIdentityCode.fromRawJson(value);
+
+            if (item != null) {
+              _displaySaveIdentityNameDialog(context, item);
+            } else {
+              _showErrorDialog("Invalid code format");
+            }
+          } catch (e) {
+            _showErrorDialog("Exception: Could not scan code: $e");
+          }
+        });
+      });
+
     }
   }
 
@@ -1155,14 +1150,14 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
     // final encryptedIntKey = await cryptor.encrypt(intKey);
 
-    /// TODO: encrypt name in recovery key and decrypt
+    /// TODO: save encrypted block number with encryption
+    /// TODO: change to encryptParams method for object
     final identity = DigitalIdentity(
       id: uuid,
       version: AppConstants.digitalIdentityVersion,
       name: encryptedName,
       pubKeySignature: encryptedPubS,
       pubKeyExchange: encryptedPubE,
-      // intermediateKey: encryptedIntKey,
       cdate: createDate.toIso8601String(),
       mdate: createDate.toIso8601String(),
     );
@@ -1173,7 +1168,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     final statusId = await keyManager.saveIdentity(uuid, identityObjectString);
 
     if (statusId) {
-      await fetchIdentities();
+      await fetchRecoveryIdentities();
       EasyLoading.showToast("Saved Scanned Item");
     } else {
       _showErrorDialog("Could not save scanned item");
@@ -1181,16 +1176,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
   }
 
   Future<void> _createRecoveryKey(String pubKeyExchange) async {
-    /// get my identity keys
-    ///
-    /// get this identity keys
-    ///
-    /// create secret key
-    ///
-    /// encrypt with secret key
-    ///
-    /// save recovery key
-    ///
     final algorithm = X25519();
 
     // print("pubKeyExchange: $pubKeyExchange");
@@ -1201,7 +1186,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     // print('bobKeyPair pubMade: ${bobPublicKey.bytes}');
     // print('bobKeyPair pubMade.Hex: ${hex.encode(bobPublicKey.bytes)}');
 
-    final aliceSeed = pubExchangeKeySeed;
+    final aliceSeed = _pubExchangeKeySeed;
     final seedBytes = hex.decode(aliceSeed);
     final privSeedPair = await algorithm.newKeyPairFromSeed(seedBytes);
 
@@ -1215,37 +1200,26 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
     final secretKeyData = SecretKey(sharedSecretBytes);
 
-    final rootKey = cryptor
-        .aesRootSecretKeyBytes; //cryptor.aesSecretKeyBytes + cryptor.authSecretKeyBytes;
+    final rootKey = cryptor.aesRootSecretKeyBytes;
 
-    final encryptedKeys = await cryptor.encryptRecoveryKey(secretKeyData, rootKey);
+    final encryptedRootKey = await cryptor.encryptRecoveryKey(secretKeyData, rootKey);
 
     // print("encrypted Keys: $encryptedKeys");
 
     final pubKeyHash = cryptor.sha256(pubKeyExchange);
-    // _publicKeyHashes.add(pubKeyHash);
+    _publicKeyHashes.add(pubKeyHash);
 
     final recoveryKey = RecoveryKey(
       id: pubKeyHash,
-      data: encryptedKeys,
+      data: encryptedRootKey,
       cdate: DateTime.now().toIso8601String(),
     );
-
-    // print("recoveryKey: ${recoveryKey.toRawJson()}");
+    logManager.logger.d("recoveryKey: ${recoveryKey.toRawJson()}");
 
     // final status =
     await keyManager.saveRecoveryKey(pubKeyHash, recoveryKey.toRawJson());
 
-    // print("recoveryKey status: ${status}");
-
-    // if (status) {
-    //   setState(() {
-    //     _publicKeyHashes.add(pubKeyHash);
-    //     _matchingRecoveryKeyIndexes.add(index);
-    //   });
-    // }
-
-    await fetchIdentities();
+    await fetchRecoveryIdentities();
   }
 
   _displaySaveIdentityNameDialog(
@@ -1423,7 +1397,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                 logManager.logger.w("Could not delete recovery key with pubHash: $pubHash");
               }
 
-              await fetchIdentities();
+              await fetchRecoveryIdentities();
 
               Navigator.of(ctx).pop();
             },

@@ -85,217 +85,6 @@ class BackupManager {
     }
   }
 
-  /// restore the backup item with the master password for the item
-  ///
-  /// TODO: restore Android backup from shared preferences
-  Future<bool> restoreBackupItem(
-      String password, String id, String salt) async {
-    /// first must check password before restoring
-    final keyManager = KeychainManager();
-    logManager.log("BackupManager", "restoreBackupItem", "id: $id");
-
-    try {
-      /// determine if we need to backup from Android shared preferences backup
-      var androidBackup;
-      var restoreAndroidBackup = false;
-      if (Platform.isAndroid) {
-        androidBackup = settingsManager.androidBackup;
-        if (androidBackup != null) {
-          final androidBackupId = androidBackup?.id;
-          if (androidBackupId == id) {
-            restoreAndroidBackup = true;
-          }
-        }
-      }
-
-      /// get backup item key and check password
-      final backupItem = await keyManager.getBackupItem(id);
-      var vault;
-      if (restoreAndroidBackup) {
-        vault = androidBackup as VaultItem;
-      } else {
-        vault = backupItem as VaultItem;
-      }
-
-      final backupHash = Hasher().sha256Hash(vault.toRawJson());
-      logManager.log(
-          "BackupManager", "restoreBackupItem", "backup hash: $backupHash");
-
-      final ek = vault.encryptedKey;
-      final keyMaterial = ek.keyMaterial;
-      if (vault.bytesEncrypted != null) {
-        final numBytesEncrypted = vault.bytesEncrypted;
-        final keyRolloverIndex = vault.encryptionKey.keyRollIndex;
-
-        await settingsManager.saveNumBytesEncrypted(numBytesEncrypted);
-        await settingsManager.saveNumBlocksEncrypted((numBytesEncrypted/16).ciel());
-
-        await settingsManager.saveEncryptionRolloverCount(keyRolloverIndex);
-
-      }
-
-      final cryptor = Cryptor();
-
-      final result = await cryptor.deriveKeyCheckAgainst(
-        password,
-        ek.rounds,
-        salt,
-        keyMaterial,
-      );
-      // print('password: $password');
-      //
-      // print('result: $result');
-      // print('rounds: ${ek.rounds}');
-      // print('salt: ${ek.salt}');
-      // print('keyMaterial: $keyMaterial');
-
-      // final ek = backupItem.encryptedKey;
-
-      if (result) {
-
-        KeyMaterial newKeyMaterial = KeyMaterial(
-            id: id,
-            salt: salt,
-            rounds: ek.rounds,
-            key: keyMaterial,
-            hint: "",
-        );
-
-        /// delete keys
-        ///
-        var encryptedBlob = vault.blob;
-
-        final idString =
-            "${vault.id}-${vault.deviceId}-${vault.version}-${vault.cdate}-${vault.mdate}-${vault.name}";
-
-        final decryptedBlob = await cryptor.decryptBackupVault(encryptedBlob, idString);
-        // logManager.logger.d("decryptedBlob: ${decryptedBlob}");
-        if (decryptedBlob.isNotEmpty) {
-          /// since our decryption is valid we can now delete local keys to re-save
-          ///
-          /// TODO: add this in
-          var genericItems2 = GenericItemList.fromRawJson(decryptedBlob);
-          // print("genericItems2: ${genericItems2}");
-          // return false;
-
-          await keyManager.deleteForBackup();
-
-          // print("decryption successfull: $decryptedBlob");
-
-
-          // return;
-          if (!genericItems2.list.isEmpty) {
-            genericItems2.list.sort((a, b) {
-              return b.data.compareTo(a.data);
-            });
-            // print("sorted genericItems2: ${genericItems2}");
-
-            /// Go through each GenericItem
-            for (var genericItem in genericItems2.list) {
-              var itemId = "";
-              // print("generic item: ${genericItem}");
-
-              // print("item type: ${genericItem.type}");
-              if (genericItem.type == "password") {
-                final passwordItem = PasswordItem.fromRawJson(genericItem.data);
-                itemId = passwordItem.id;
-              } else if (genericItem.type == "note") {
-                final noteItem = NoteItem.fromRawJson(genericItem.data);
-                itemId = noteItem.id;
-              } else if (genericItem.type == "key") {
-                final keyItem = KeyItem.fromRawJson(genericItem.data);
-                itemId = keyItem.id;
-              }
-              final genericItemString = genericItem.toRawJson();
-
-              if (itemId.isEmpty) {
-                logManager.logger.d("BackupManager: itemId is EMPTY!!");
-                // print("generic item: ${genericItem}");
-
-                continue;
-              }
-
-              /// save generic item
-              // final status =
-              await keyManager.saveItem(itemId, genericItemString);
-              // logManager.logger.d("BackupManager - saveItem - status: $status");
-            }
-          }
-        } else if (vault.numItems > 0) {
-          logManager.logger.d("object could not be decoded");
-          return false;
-        }
-
-        /// save my identity
-        if (vault.myIdentity != null) {
-          final myId = vault.myIdentity as MyDigitalIdentity;
-
-          await keyManager.saveMyIdentity(vault.id, myId.toRawJson());
-        }
-
-        /// save identities
-        ///
-        if (vault.identities != null) {
-          for (var id in vault.identities!) {
-            await keyManager.saveIdentity(id.id, id.toRawJson());
-          }
-        }
-
-        /// save recovery keys
-        ///
-        if (vault.recoveryKeys != null) {
-          for (var key in vault.recoveryKeys!) {
-            await keyManager.saveRecoveryKey(key.id, key.toRawJson());
-          }
-        }
-
-        /// save master password details
-        ///
-        final status = await keyManager.saveMasterPassword(
-            newKeyMaterial,
-        );
-
-        /// TODO: save secret salt if imported backup
-        ///
-        // final statusSalt =
-        await keyManager.saveSalt(
-          vault.id,
-          salt,
-        );
-        // print("save Secret Salt: $statusSalt");
-
-        if (status) {
-          /// re-save log key in-case we needed to create a new one
-          await keyManager.saveLogKey(cryptor.logKeyMaterial);
-
-          /// re-read and refresh our variables
-          await keyManager.readEncryptedKey();
-
-          await fileManager.clearTempVaultFile();
-
-          /// TODO: dont create local when restoring cloud
-          // final backupDocumentFile =
-          // await fileManager.writeVaultData(backupItem!.toRawJson());
-
-          // if (backupDocumentFile != null) {
-          //   logManager.logger.d("create backup vault file: $backupDocumentFile");
-          // }
-        }
-        logManager.logger.d("BackupManager - restoreBackupItem - $status");
-
-        return status;
-      }
-
-      logManager.logger.w("BackupManager - restoreBackupItem - Failure");
-      return false;
-    } catch (e) {
-      // print(e);
-      logManager.logger.w("BackupManager - restoreBackupItem - Exception: $e");
-
-      logManager.log("BackupManager", "restoreBackupItem", "$e");
-      return false;
-    }
-  }
 
   Future<bool> restoreLocalBackupItem(
       VaultItem localVault, String password, String salt) async {
@@ -673,12 +462,10 @@ class BackupManager {
 
         /// TODO: save secret salt if imported backup
         ///
-        // final thisDeviceId = await deviceManager.getDeviceId();
-        // final statusSalt =
-        await keyManager.saveSalt(
-          localVault.id,
-          salt,
-        );
+        // await keyManager.saveSalt(
+        //   localVault.id,
+        //   salt,
+        // );
         // print("status salt: $statusSalt");
 
         /// re-save log key in-case we needed to create a new one
@@ -895,13 +682,6 @@ class BackupManager {
 
         // final thisDeviceId = await deviceManager.getDeviceId();
         if (status) {
-          final statusSalt = await keyManager.saveSalt(
-            localVault.id,
-            salt,
-          );
-
-          // print("status salt: $statusSalt");
-
           /// re-save log key in-case we needed to create a new one
           await keyManager.saveLogKey(cryptor.logKeyMaterial);
 
@@ -1141,13 +921,6 @@ class BackupManager {
 
       // await _reExpandCurrentKey();
       final encodedSalt = (_currentDeviceVault?.encryptedKey.salt)!;
-      //
-      // cryptor.setSecretSaltBytes(base64.decode(encodedSalt));
-      //
-      // if (_tempRootKey != null) {
-      //
-      //   await cryptor.expandSecretRootKey(_tempRootKey!);
-      // }
 
       KeyMaterial newKeyMaterial = KeyMaterial(
         id: vaultId,
@@ -1165,26 +938,16 @@ class BackupManager {
 
       // logManager.logger.d("statusMaster: $statusMaster");
 
-      // if (status) {
-      /// save our salt
-      final statusSalt = await keyManager.saveSalt(
-        vaultId,
-        base64.encode(cryptor.salt!),
-      );
-      // logManager.logger.d("statusSalt: $statusSalt");
-
       final statusFinal = await keyManager.readEncryptedKey();
+      logManager.logger.d("statusFinal: $statusFinal");
 
-      logManager.logger.d("statusMaster: $statusMaster\n"
-          "statusSalt: $statusSalt\nstatusFinal: $statusFinal");
+      final isAllValid = (status2 && status3
+          && status4 && statusFinal
+          && statusMaster);
 
-      final isAllValid = (status2 && status3 && status4
-          && statusSalt && statusFinal && statusMaster);
       responseStatusCode = isAllValid ? 0 : 2;
 
-
-      return status2 && status3 && status4 && statusSalt && statusFinal &&
-          statusMaster;
+      return status2 && status3 && status4 && statusFinal && statusMaster;
     } catch (e) {
       logManager.logger.w("_recoverVault failure: $e");
       return false;
