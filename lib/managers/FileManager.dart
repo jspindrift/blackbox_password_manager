@@ -191,6 +191,33 @@ class FileManager {
     }
   }
 
+  Future<File> _localNamedVaultFile(String name) async {
+    final path = await _localPath;
+
+    /// TODO: fix this directory file error, returning on exception for now
+    try {
+      final backupDirExists = Directory("$path/Backups/").existsSync();
+
+      if (backupDirExists) {
+        final files = Directory("$path/Backups/").listSync();
+        // print("files: ${files.length}: $files");
+
+        if (name.isEmpty) {
+          return File('${files.first.path}');
+        } else {
+          return File('$path/Backups/$name.json');
+        }
+      } else {
+        Directory("$path/Backups/").createSync();
+
+        return File('$path/Backups/$name.json');
+      }
+    } catch (e) {
+      // logManager.logger.w("FILE ERROR: $e");
+      return File('$path/Backups/$name.json');
+    }
+  }
+
   /// Temp Vault File  ----------------------------------------
   ///
   Future<File> get _localTempVaultFile async {
@@ -412,5 +439,38 @@ class FileManager {
     // return file.writeAsString(data, mode: FileMode.append);
   }
 
+  /// Named Vault File functions ----------------------------------------
+  ///
+  Future<File?> writeNamedVaultData(String backupName, String data) async {
+    try {
+      final file = await _localNamedVaultFile(backupName);
+
+      // Write the file
+      return file.writeAsString(data, mode: FileMode.writeOnly);
+    } catch (e) {
+      logger.e("Exception: write vault error: $e");
+      return null;
+    }
+  }
+
+  Future<File> clearNamedVaultFile() async {
+    final file = await _localNamedVaultFile("");
+
+    // Write the file
+    return file.writeAsString("", mode: FileMode.writeOnly);
+  }
+
+  Future<String> readNamedVaultData() async {
+    try {
+      final file = await _localNamedVaultFile("");
+
+      // Read the file
+      final contents = await file.readAsString();
+
+      return contents;
+    } catch (e) {
+      return "";
+    }
+  }
 
 }

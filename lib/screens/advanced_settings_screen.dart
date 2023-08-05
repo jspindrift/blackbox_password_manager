@@ -758,7 +758,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
 
   void _runTests() async {
     logManager.logger.d("running experimental tests");
-    // await TestKeyGen().runTests(context);
   }
 
 

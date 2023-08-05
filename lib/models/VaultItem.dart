@@ -202,7 +202,7 @@ class VaultItem {
 
 class RecoveryKey {
   String id;  // pubKeyHash (hash of peer's public key)
-  String data; // encrypted root vault key with shared secret key
+  String data; // encrypted root vault key using the indexed shared secret key
   String cdate;
 
   RecoveryKey({

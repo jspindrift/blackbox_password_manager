@@ -2,7 +2,8 @@ import 'dart:convert';
 
 class DigitalIdentity {
   String id;
-  int? version;
+  int index;  // Index of Shared Secret Recovery Key (can cycle as an HOTP key).
+  int version;
   String name;
   String pubKeyExchange;
   String pubKeySignature;
@@ -11,6 +12,7 @@ class DigitalIdentity {
 
   DigitalIdentity({
     required this.id,
+    required this.index,
     required this.version,
     required this.name,
     required this.pubKeyExchange,
@@ -24,16 +26,11 @@ class DigitalIdentity {
 
   String toRawJson() => json.encode(toJson());
 
-
-  Map<String, dynamic> toJsonVersion() => {
-    "version": version!,
-  };
-
-
   factory DigitalIdentity.fromJson(Map<String, dynamic> json) {
     return DigitalIdentity(
       id: json["id"],
-      version: json["version"] == null ? null : json["version"],
+      index: json["index"],
+      version: json["version"],
       name: json["name"],
       pubKeyExchange: json[
           "pubKeyExchange"],
@@ -47,16 +44,14 @@ class DigitalIdentity {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
       "id": id,
+      "index": index,
+      "version": version,
       "name": name,
       "pubKeyExchange": pubKeyExchange,
       "pubKeySignature": pubKeySignature,
       "cdate": cdate,
       "mdate": mdate,
     };
-
-    if (version != null) {
-      jsonMap.addAll(toJsonVersion());
-    }
 
     return jsonMap;
   }

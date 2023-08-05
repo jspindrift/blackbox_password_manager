@@ -11,14 +11,10 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import "package:bip39/bip39.dart" as bip39;
+
 import '../helpers/AppConstants.dart';
 import '../helpers/WidgetUtils.dart';
-import '../helpers/bip39_dictionary.dart';
 import '../managers/FileManager.dart';
-import '../models/NoteItem.dart';
-import '../models/PasswordItem.dart';
-import '../models/KeyItem.dart';
 import '../models/RecoveryKeyCode.dart';
 import '../models/VaultItem.dart';
 import '../models/GenericItem.dart';
@@ -57,7 +53,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
   VaultItem? _localVaultItem;
   int _localVaultItemSize = 0;
-  // bool _hasMatchingLocalVaultId = false;
 
   bool _hasMatchingLocalVaultKeyData = false;
   bool _localVaultHasRecoveryKeys = false;
@@ -73,7 +68,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
   bool _shouldHideRecoveryPasswordField = true;
 
-  // bool _hasMatchingVault = false;
   bool _isInitState = true;
 
   List<int> _backupFileSizes = [];
@@ -171,6 +165,10 @@ class _BackupsScreenState extends State<BackupsScreen> {
       }
     } else {
       vaultFileString = await fileManager.readVaultData();
+
+      /// TODO: change to detailed file name
+      // var namedVaultFileString = await fileManager.readNamedVaultData();
+      // logManager.logger.d("read named vault file: ${namedVaultFileString}");
     }
 
     // logManager.logger.d("read vault file: ${vaultFileString}");
@@ -380,7 +378,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
   Widget getNewBackupTile() {
     var fsize = (_localVaultItemSize / 1024);
-    // var fblocksize = _localVaultItemSize/16;
     var funit = "KB";
     if (_localVaultItemSize > pow(1024, 2)) {
       funit = "MB";
@@ -415,7 +412,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
               _localVaultItem?.id != null
                   ? "${(_localVaultItem?.numItems)!} items\nmodified: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse((_localVaultItem?.mdate)!))}"
                   "\nencryptedBlocks: ${(_localVaultNumEncryptedBlocks > 0 ? _localVaultNumEncryptedBlocks: "?")}\nkey health: ${(100* (AppConstants.maxEncryptionBlocks-_localVaultNumEncryptedBlocks)/AppConstants.maxEncryptionBlocks).toStringAsFixed(6)} %\n\n"
-                  "fingerprint: ${_localVaultHash.substring(0, 32)}\nchanged: ${_vaultKeyIsDifferent}" // \n\nsalt: ${base64.encode(cryptor.salt ?? [])}\nlocalVaultSalt: ${(_localVaultItem?.encryptedKey.salt)!}
+                  "fingerprint: ${_localVaultHash.substring(0, 32)}"
                   : "",
               style: TextStyle(
                 color: _isDarkModeEnabled ? Colors.white : null,
@@ -522,7 +519,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
               child:IconButton(
                 icon: Icon(
                   Icons.delete,
-                  color: Colors.redAccent, //_isDarkModeEnabled ? Colors.redAccent : Colors.blueAccent,
+                  color: Colors.redAccent,
                 ),
                 onPressed: () {
                   print("delete");
@@ -682,11 +679,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
             visible: (_localVaultItem != null),
             child: getNewBackupTile(),
           ),
-          // Visibility(
-          //   visible: false,
-          //   child: getOldBackupUI(),
-          // ),
-
           Visibility(
             visible: false,
             child: Padding(
@@ -838,6 +830,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
   }
 
   _decryptWithScannedRecoveryItem(String recoveryItem) async {
+    EasyLoading.show(status: "Decrypting...");
+
     try {
       RecoveryKeyCode key = RecoveryKeyCode.fromRawJson(recoveryItem);
       if (key != null && _localVaultRecoveryKeys != null) {
@@ -876,6 +870,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
       print(e);
       settingsManager.setIsScanningQRCode(false);
     }
+
+    EasyLoading.dismiss();
   }
 
   void _displayBackupInfo(VaultItem item) async {
@@ -1071,6 +1067,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         // logManager.logger.d('test1');
 
         var items = await keyManager.getAllItemsForBackup() as GenericItemList;
+        final numItems = items.list.length;
         // logManager.logger.d('test2: ${items}');
 
         var testItems = json.encode(items);
@@ -1176,6 +1173,11 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
         /// write backup to default directory
         await fileManager.writeVaultData(backupItemString);
+
+        /// TODO: change to detailed file name
+        // final normDate = mdate.replaceAll(":", "_");
+        // final backupFileName = "Blackbox-$backupName-(${numItems} items, ${recoveryKeys?.length} recovery keys)-${normDate}";
+        // await fileManager.writeNamedVaultData(backupFileName, backupItemString);
 
         return true;
       }
@@ -1606,6 +1608,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
     if (Platform.isAndroid) {
       await fileManager.clearVaultFileSDCard();
     }
+
+    await fileManager.clearNamedVaultFile();
 
     await fileManager.clearVaultFile();
 

@@ -2886,6 +2886,51 @@ class Cryptor {
     }
   }
 
+  /// keyed HMAC function
+  Future<String> keyedHmac256(String? message, SecretKey key) async {
+    if (message == null) {
+      return "";
+    }
+
+    if (_authSecretKey == null) {
+      return "";
+    }
+
+    try {
+      final mac = await hmac_algo_256.calculateMac(
+        hex.decode(sha256(message)),
+        secretKey: key!,
+      );
+      return hex.encode(mac.bytes);
+    } catch(e) {
+      logger.e(e);
+      return "";
+    }
+  }
+
+  Future<String> keyedHmac256_2(String? nonce, SecretKey key) async {
+    if (nonce == null) {
+      return "";
+    }
+
+    if (_authSecretKey == null) {
+      return "";
+    }
+
+    // logger.d("nonce: $nonce");
+
+    try {
+      final mac = await hmac_algo_256.calculateMac(
+        hex.decode(nonce),
+        secretKey: key!,
+      );
+      return hex.encode(mac.bytes);
+    } catch(e) {
+      logger.e(e);
+      return "";
+    }
+  }
+
   /// HMAC function - ReKey
   Future<String> hmac256ReKey(String? message) async {
     if (message == null) {

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import "package:flutter/services.dart";
 import 'package:flutter/foundation.dart';
 import "package:flutter_barcode_scanner/flutter_barcode_scanner.dart";
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:neon_widgets/neon_widgets.dart';
 
 import '../helpers/HearbeatTimer.dart';
@@ -1377,6 +1378,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   _decryptWithRecoveryKey(RecoveryKeyCode key) async {
     // print("_decryptWithRecoveryKey");
 
+    EasyLoading.show(status: "Decrypting...");
+
     final keyId = key.id;
     final keyData = key.key;
     // print("keyId: ${keyId}");
@@ -1418,6 +1421,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     } else {
       logManager.logger.d("cant find recovery key item");
     }
+
+    EasyLoading.dismiss();
   }
 
 

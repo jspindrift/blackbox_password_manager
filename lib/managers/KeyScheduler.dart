@@ -745,11 +745,11 @@ class KeyScheduler {
 
           final rekeyedIdentity = DigitalIdentity(
             id: id.id,
+            index: id.index,
             version: AppConstants.digitalIdentityVersion,
             name: id.name,
             pubKeyExchange: reencryptedY,
             pubKeySignature: reencryptedX,
-            // intermediateKey: reencryptedZ,
             cdate: id.cdate,
             mdate: timestamp,
           );
@@ -781,7 +781,10 @@ class KeyScheduler {
 
             /// Re-Key Recovery Key
             final newRecoveryKey = await _reKeyRecoveryKey(
-                _mainPrivExchangeKeySeed, identityPubKeyExchange);
+                _mainPrivExchangeKeySeed,
+                identityPubKeyExchange,
+                // rkey.index,
+            );
 
             if (newRecoveryKey != null) {
               _reKeyedRecoveryKeys.add(newRecoveryKey);
@@ -848,6 +851,7 @@ class KeyScheduler {
       // _publicKeyHashes.add(pubKeyHash);
 
       final recoveryKey = RecoveryKey(
+        // index: keyIndex,
         id: pubKeyHash,
         data: encryptedKeys,
         cdate: DateTime.now().toIso8601String(),
