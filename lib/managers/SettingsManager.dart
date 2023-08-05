@@ -289,6 +289,7 @@ class SettingsManager {
       _numBytesEncrypted += nbytes;
       _numBlocksEncrypted += nblocks;
     }
+    // logger.d("_numBlocksEncrypted: n[${_numBlocksEncrypted}]");
   }
 
   void setIsScanningQRCode(bool value) {

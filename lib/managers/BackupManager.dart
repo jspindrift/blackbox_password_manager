@@ -145,11 +145,11 @@ class BackupManager {
 
         final idString =
             "${localVault.id}-${localVault.deviceId}-${localVault.version}-${localVault.cdate}-${localVault.mdate}-${localVault.name}";
-        logManager.logger.d("decryption: ${idString}");
+        // logManager.logger.d("decryption: ${idString}");
 
 
         final decryptedBlob = await cryptor.decryptBackupVault(encryptedBlob, idString);
-        logManager.logger.d("decryption: ${decryptedBlob.length}");
+        // logManager.logger.d("decryption: ${decryptedBlob.length}");
 
         if (testFail1) {
           logManager.logger.d("here1");
@@ -759,30 +759,6 @@ class BackupManager {
     var testItems = json.encode(items);
 
     var encryptedBlob = await cryptor.encryptBackupVault(testItems, idString);
-    settingsManager.doEncryption(utf8.encode(testItems).length);
-
-
-    final keyNonce = _convertEncryptedBlocksNonce();
-    logManager.logger.d("keyNonce: ${keyNonce.length}: ${keyNonce}\n"
-        "keyNonce utf8: ${utf8.encode(keyNonce).length}: ${utf8.encode(keyNonce)}");
-
-    final encryptedKeyNonce = await cryptor.encrypt(keyNonce);
-    logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
-
-
-    final encryptedKey = EncryptedKey(
-      derivationAlgorithm: kdfAlgo,
-      salt: salt,
-      rounds: rounds,
-      type: type,
-      version: version,
-      memoryPowerOf2: memoryPowerOf2,
-      encryptionAlgorithm: encryptionAlgo,
-      keyMaterial: keyMaterial,
-      keyNonce: encryptedKeyNonce,
-      // blocksEncrypted: settingsManager.numBlocksEncrypted,
-      // blockRolloverCount: settingsManager.numRolloverEncryptionCounts,
-    );
 
 
     final identities = await keyManager.getIdentities();
@@ -799,6 +775,29 @@ class BackupManager {
     final encryptedDeviceData = await cryptor.encrypt(deviceDataString);
     logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
 
+
+    settingsManager.doEncryption(utf8.encode(testItems).length);
+
+
+    final keyNonce = _convertEncryptedBlocksNonce();
+    logManager.logger.d("keyNonce: ${keyNonce.length}: ${keyNonce}\n"
+        "keyNonce utf8: ${utf8.encode(keyNonce).length}: ${utf8.encode(keyNonce)}");
+
+    final encryptedKeyNonce = await cryptor.encrypt(keyNonce);
+    // logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
+
+
+    final encryptedKey = EncryptedKey(
+      derivationAlgorithm: kdfAlgo,
+      salt: salt,
+      rounds: rounds,
+      type: type,
+      version: version,
+      memoryPowerOf2: memoryPowerOf2,
+      encryptionAlgorithm: encryptionAlgo,
+      keyMaterial: keyMaterial,
+      keyNonce: encryptedKeyNonce,
+    );
 
     final backupItem = VaultItem(
       id: vaultId,

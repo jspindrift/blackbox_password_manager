@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.0.1+1
+version: 0.1.1+1
 
 environment:
   sdk: '>=3.0.3 <4.0.0'
@@ -38,9 +38,6 @@ dependencies:
 
   # easy loading dialog
   flutter_easyloading: ^3.0.5
-
-  # web service calls
-#  http: ^0.13.5
 
   # encryption and hashing
   cryptography: ^2.0.5
@@ -108,31 +105,14 @@ dependencies:
   # scanning qr codes, for iOS
   flutter_barcode_scanner: ^2.0.0
 
-  #  flutter_barcode_scanner:
-  #    git:
-  #      url: https://github.com/TylerByte666/flutter_barcode_scanner.git
-  #      ref: master
-
-  #  barcode_scanner: ^3.2.3
-
   # yet another code scanning library, this is for Android
   qr_code_scanner: ^1.0.1
 
   # geo location
   geolocator: ^9.0.2
 
-
   # ECDSA - signing
   ecdsa: ^0.0.4
-
-  # RSA encryption/decryption
-  #  rsa_encrypt: ^2.0.0
-
-  # RSA rsa_encrypt depends on this
-  #  pointycastle: ^3.7.2
-
-  # open MMS Messaging app, Mail app, etc
-#    url_launcher: ^6.1.10
 
   # data type validation methods
   string_validator: ^1.0.0

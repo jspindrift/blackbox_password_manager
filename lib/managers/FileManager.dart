@@ -62,25 +62,18 @@ class FileManager {
   Future<File> get _localLogFile async {
     final path = await _localPath;
 
-    // print("path: $path");
-
-    /// TODO: fix this directory file error, returning on exception for now
     try {
       final logDirExists = Directory("$path/logs/").existsSync();
-
       // print("logDirExists: $logDirExists");
+
       if (logDirExists) {
         final files = Directory("$path/logs/").listSync();
         // print("files: ${files.length}: $files");
 
-        // var numFiles = files.length;
-        // final logFileNumber = numFiles;
-
-        // print('1 file path: ${files.last.path}');
-        // print("return vault file: ${'${files.last.path}'}");
         return File('${files.last.path}');
       } else {
         Directory("$path/logs/").createSync();
+
         return File('$path/logs/logs.txt');
       }
     } catch (e) {
@@ -93,22 +86,14 @@ class FileManager {
   Future<File> get _localLogFileAppend async {
     final path = await _localPath;
 
-    // print("path: $path");
-
-    /// TODO: fix this directory file error, returning on exception for now
     try {
       final logDirExists = Directory("$path/bbxlogs/").existsSync();
-
       // print("logDirExists: $logDirExists");
+
       if (logDirExists) {
         final files = Directory("$path/bbxlogs/").listSync();
         // print("files: ${files.length}: $files");
 
-        // var numFiles = files.length;
-        // final logFileNumber = numFiles;
-
-        // print('1 file path: ${files.last.path}');
-        // print("return vault file: ${'${files.last.path}'}");
         return File('${files.last.path}');
       } else {
         Directory("$path/bbxlogs/").createSync();
@@ -124,34 +109,21 @@ class FileManager {
   Future<File> get _localVaultFile async {
     final path = await _localPath;
 
-    /// TODO: fix this directory file error, returning on exception for now
     try {
       final backupDirExists = Directory("$path/backups/").existsSync();
-
       // print("backupDirExists: $backupDirExists");
       if (backupDirExists) {
         final files = Directory("$path/backups/").listSync();
         // print("files: ${files.length}: $files");
 
-        var numFiles = files.length;
-        final logFileNumber = numFiles;
-
-        // print('1 file path: ${files.last.path}');
-        // print("return vault file: ${'${files.last.path}'}");
         return File('${files.first.path}');
-        // return File('$path/logs/log-0.txt');
-
       } else {
-        // final vaultDirCreateStatus =
         Directory("$path/backups/").createSync();
-        // if (vaultDirCreateStatus) {
-        //   print('create directory path /backups/vault.txt');
-        // }
+
         return File('$path/backups/vault.txt');
       }
     } catch (e) {
       // logManager.logger.w("FILE ERROR: $e");
-      // print("FILE ERROR: $e");
       return File('$path/backups/vault.txt');
     }
   }
@@ -168,26 +140,42 @@ class FileManager {
         final files = Directory("$path/backups/").listSync();
         // print("files: ${files.length}: $files");
 
-        var numFiles = files.length;
-        final logFileNumber = numFiles;
-
-        // print('1 file path: ${files.last.path}');
-        // print("return vault file: ${'${files.last.path}'}");
         return File('${files.first.path}');
-        // return File('$path/logs/log-0.txt');
-
       } else {
-        // final vaultDirCreateStatus =
         Directory("$path/backups/").createSync();
-        // if (vaultDirCreateStatus) {
-        //   print('create directory path /backups/vault.txt');
-        // }
+
         return File('$path/backups/vault.txt');
       }
     } catch (e) {
       // logManager.logger.w("FILE ERROR: $e");
-      // print("FILE ERROR: $e");
       return File('$path/backups/vault.txt');
+    }
+  }
+
+  Future<File> _localNamedVaultFileSDCard(String name) async {
+    final path = await _externalLocalPath;
+
+    /// TODO: fix this directory file error, returning on exception for now
+    try {
+      final backupDirExists = Directory("$path/backups/").existsSync();
+      // print("backupDirExists: $backupDirExists");
+
+      if (backupDirExists) {
+        final files = Directory("$path/backups/").listSync();
+
+        if (name.isEmpty) {
+          return File('${files.first.path}');
+        } else {
+          return File('$path/backups/$name.txt');
+        }
+      } else {
+        Directory("$path/backups/").createSync();
+
+        return File('$path/backups/$name.txt');
+      }
+    } catch (e) {
+      // logManager.logger.w("FILE ERROR: $e");
+      return File('$path/backups/$name.txt');
     }
   }
 
@@ -196,25 +184,25 @@ class FileManager {
 
     /// TODO: fix this directory file error, returning on exception for now
     try {
-      final backupDirExists = Directory("$path/Backups/").existsSync();
+      final backupDirExists = Directory("$path/backups/").existsSync();
 
       if (backupDirExists) {
-        final files = Directory("$path/Backups/").listSync();
+        final files = Directory("$path/backups/").listSync();
         // print("files: ${files.length}: $files");
 
         if (name.isEmpty) {
           return File('${files.first.path}');
         } else {
-          return File('$path/Backups/$name.json');
+          return File('$path/backups/$name.txt');
         }
       } else {
-        Directory("$path/Backups/").createSync();
+        Directory("$path/backups/").createSync();
 
-        return File('$path/Backups/$name.json');
+        return File('$path/backups/$name.txt');
       }
     } catch (e) {
       // logManager.logger.w("FILE ERROR: $e");
-      return File('$path/Backups/$name.json');
+      return File('$path/backups/$name.txt');
     }
   }
 
@@ -223,7 +211,6 @@ class FileManager {
   Future<File> get _localTempVaultFile async {
     final path = await _localPath;
 
-    /// TODO: fix this directory file error, returning on exception for now
     try {
       final backupDirExists = Directory("$path/temp/").existsSync();
 
@@ -232,18 +219,14 @@ class FileManager {
         final files = Directory("$path/temp/").listSync();
         // print("files: ${files.length}: $files");
 
-        // var numFiles = files.length;
-        // print('1 file path: ${files.last.path}');
-        // print("return vault file: ${'${files.last.path}'}");
         return File('${files.first.path}');
       } else {
-        // final vaultDirCreateStatus =
         Directory("$path/temp/").createSync();
 
         return File('$path/temp/vault.txt');
       }
     } catch (e) {
-      // print("FILE ERROR: $e");
+      // logManager.logger.w("FILE ERROR: $e");
       return File('$path/temp/vault.txt');
     }
   }
@@ -253,16 +236,13 @@ class FileManager {
   /// Log Data ----------------------------------------
   ///
   Future<File?> writeLogData(String data) async {
-    // print("write log file: ${data.length}");
-
     try {
       final file = await _localLogFile;
 
       // Write the file
       return file.writeAsString(data, mode: FileMode.writeOnly, flush: true);
-      // return file.writeAsString(data, mode: FileMode.append);
     } catch (e) {
-      // print("Exception: File: $e");
+      logger.e("Exception: write log error: $e");
       return null;
     }
   }
@@ -291,40 +271,32 @@ class FileManager {
   /// Append Only Log Data ----------------------------------------
   ///
   Future<File?> writeLogDataAppend(String data) async {
-    // print("write log file: ${data.length}");
-
     try {
       final file = await _localLogFileAppend;
 
       // Write the file
       return file.writeAsString(data,
           mode: FileMode.writeOnlyAppend, flush: false);
-      // return file.writeAsString(data, mode: FileMode.append);
     } catch (e) {
-      // print("Exception: writeLogDataAppend: $e");
+      logger.e("Exception: write log error: $e");
       return null;
     }
   }
 
   Future<File> clearLogFileAppend() async {
-    // print("clear log file");
     final file = await _localLogFileAppend;
 
     // Write the file
     return file.writeAsString("", mode: FileMode.writeOnly);
-    // return file.writeAsString(data, mode: FileMode.append);
   }
 
   Future<String> readLogDataAppend() async {
-    // print("read log file");
-
     try {
       final file = await _localLogFileAppend;
 
       // Read the file
       final contents = await file.readAsString();
       // print("read log file: ${contents.length}");
-
       return contents;
     } catch (e) {
       return '';
@@ -339,9 +311,8 @@ class FileManager {
 
       // Write the file
       return file.writeAsString(data, mode: FileMode.writeOnly);
-      // return file.writeAsString(data, mode: FileMode.append);
     } catch (e) {
-      // print("write vault error: $e");
+      logger.e("Exception: write vault error: $e");
       return null;
     }
   }
@@ -351,7 +322,6 @@ class FileManager {
 
     // Write the file
     return file.writeAsString("", mode: FileMode.writeOnly);
-    // return file.writeAsString(data, mode: FileMode.append);
   }
 
   Future<String> readVaultData() async {
@@ -369,28 +339,35 @@ class FileManager {
 
   /// Backup Vault Data - Android External Storage (SD card) ------------------
   ///
-  Future<File?> writeVaultDataSDCard(String data) async {
+  Future<File?> writeVaultDataSDCard(String backupName, String data) async {
     try {
-      final file = await _localVaultFileSDCard;
+      await clearVaultFileSDCard();
+
+      final file = await _localNamedVaultFileSDCard(backupName);
       // Write the file
       return file.writeAsString(data, mode: FileMode.writeOnly);
     } catch (e) {
-      logger.e("write vault error: $e");
+      logger.e("Exception: write vault error: $e");
       return null;
     }
   }
 
   Future<File> clearVaultFileSDCard() async {
-    final file = await _localVaultFileSDCard;
+    var file;
+    try {
+      file = await _localNamedVaultFileSDCard("");
 
-    // Write the file
-    return file.writeAsString("", mode: FileMode.writeOnly);
-    // return file.writeAsString(data, mode: FileMode.append);
+      await file.delete();
+    } catch (e) {
+      return file;
+    }
+
+    return file;
   }
 
   Future<String> readVaultDataSDCard() async {
     try {
-      final file = await _localVaultFileSDCard;
+      final file = await _localNamedVaultFileSDCard("");
 
       // Read the file
       final contents = await file.readAsString();
@@ -406,13 +383,13 @@ class FileManager {
   Future<File?> writeTempVaultData(String data) async {
     try {
       final file = await _localTempVaultFile;
-      print("writeTempVaultData[${data.length}]: $file");
+      // logger.d("writeTempVaultData[${data.length}]: $file");
 
       // Write the file
       return file.writeAsString(data, mode: FileMode.writeOnly);
       // return file.writeAsString(data, mode: FileMode.append);
     } catch (e) {
-      // print("write vault error: $e");
+      logger.e("Exception: write vault error: $e");
       return null;
     }
   }
@@ -443,6 +420,10 @@ class FileManager {
   ///
   Future<File?> writeNamedVaultData(String backupName, String data) async {
     try {
+
+      /// clear the current file before saving a new one
+      await clearNamedVaultFile();
+
       final file = await _localNamedVaultFile(backupName);
 
       // Write the file
@@ -454,10 +435,16 @@ class FileManager {
   }
 
   Future<File> clearNamedVaultFile() async {
-    final file = await _localNamedVaultFile("");
+    var file;
+    try {
+      file = await _localNamedVaultFile("");
 
-    // Write the file
-    return file.writeAsString("", mode: FileMode.writeOnly);
+      await file.delete();
+    } catch (e) {
+      return file;
+    }
+
+    return file;
   }
 
   Future<String> readNamedVaultData() async {

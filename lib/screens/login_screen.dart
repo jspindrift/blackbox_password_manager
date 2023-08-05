@@ -310,7 +310,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     }
 
     /// check local document backup file
-    final vaultFileString = await fileManager.readVaultData();
+    final vaultFileString = await fileManager.readNamedVaultData();
 
     if (vaultFileString.isNotEmpty) {
       setState(() {
@@ -454,7 +454,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                   });
                 });
 
-                final vaultFileString = await fileManager.readVaultData();
+                final vaultFileString = await fileManager.readNamedVaultData();
 
                 if (vaultFileString.isNotEmpty) {
                   setState(() {
@@ -1003,7 +1003,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       });
     });
 
-    final vaultFileString = await fileManager.readVaultData();
+    final vaultFileString = await fileManager.readNamedVaultData();
 
     if (vaultFileString.isNotEmpty) {
       setState(() {

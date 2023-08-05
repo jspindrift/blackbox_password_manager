@@ -28,6 +28,7 @@ import '../managers/Hasher.dart';
 import '../widgets/QRScanView.dart';
 import 'home_tab_screen.dart';
 
+
 class BackupsScreen extends StatefulWidget {
   const BackupsScreen({
     Key? key,
@@ -115,7 +116,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
   }
 
   Future<GenericItemList> _getKeychainVaultState() async {
-    // _localGenericItemList
     var finalGenericItemList = GenericItemList(list: []);
     var localGenericItemList = await keyManager.getAllItemsForBackup() as GenericItemList;
     var list = localGenericItemList.list;
@@ -126,16 +126,10 @@ class _BackupsScreenState extends State<BackupsScreen> {
       return b.data.compareTo(a.data);
     });
 
-    // tempGenList.list = list;
     final itree = await localGenericItemList.calculateMerkleTree();
     finalGenericItemList = GenericItemList(list: list);
 
-    // _localGenericItemList.list =
-    // /// TODO: merkle root
-    // _localGenericItemList.calculateMerkleRoot();
-
     return finalGenericItemList;
-
   }
 
   _fetchBackups() async {
@@ -161,14 +155,15 @@ class _BackupsScreenState extends State<BackupsScreen> {
       vaultFileString = await fileManager.readVaultDataSDCard();
       if (vaultFileString.isEmpty) {
         /// if no SD card vault, get default file vault location
-        vaultFileString = await fileManager.readVaultData();
+        // vaultFileString = await fileManager.readVaultData();
+        vaultFileString = await fileManager.readNamedVaultData();
       }
     } else {
-      vaultFileString = await fileManager.readVaultData();
+      // vaultFileString = await fileManager.readVaultData();
 
       /// TODO: change to detailed file name
-      // var namedVaultFileString = await fileManager.readNamedVaultData();
-      // logManager.logger.d("read named vault file: ${namedVaultFileString}");
+      vaultFileString = await fileManager.readNamedVaultData();
+      logManager.logger.d("read named vault file: ${vaultFileString}");
     }
 
     // logManager.logger.d("read vault file: ${vaultFileString}");
@@ -250,8 +245,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
               final ablock = keyNonce.sublist(8, 12);
               final bblock = keyNonce.sublist(12, 16);
 
-              // logManager.logger.d("ablock: ${ablock}\n"
-              //     "bblock: ${bblock}");
+              logManager.logger.d("ablock: ${ablock}\n"
+                  "bblock: ${bblock}");
 
               final rolloverBlockCount = int.parse(
                   hex.encode(ablock), radix: 16);
@@ -464,7 +459,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
             visible: _loginScreenFlow && _localVaultHasRecoveryKeys,
             child: IconButton(
               icon: Icon(
-                Icons.qr_code,
+                Icons.camera,
                 color: _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
               ),
               onPressed: () {
@@ -502,7 +497,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
                 color: _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
               ),
               onPressed: () {
-                print("edit");
                 _showChangeLocalBackupNameDialog();
               },
             ),
@@ -522,7 +516,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
                   color: Colors.redAccent,
                 ),
                 onPressed: () {
-                  print("delete");
                   _showDeleteLocalBackupItemDialog();
                 },
               ),
@@ -1008,16 +1001,11 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
   /// create a backup with a user specified name
   Future<bool> _createBackup() async {
-    // _startEasyLoadingScreen();
 
     var backupName = _dialogTextFieldController.text;
-    // print('_createBackup: backupName: $backupName');
 
     var cdate = DateTime.now().toIso8601String();
     var mdate = DateTime.now().toIso8601String();
-    // print('cdate: $cdate');
-    // print('mdate: $mdate');
-    // mdate = "2023-04-08T17:43:11.591311";
 
     if (_localVaultItem != null &&
         _localVaultItem?.id == keyManager.vaultId &&
@@ -1049,9 +1037,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
           cdate = currentVault.cdate;
         }
 
-        // logManager.logger.d('deviceData: ${settingsManager.deviceManager.deviceData}');
-        // logManager.logger.d('test0: ${_localVaultItem?.toJson()}');
-
         var numRounds = cryptor.rounds;
 
         /// create EncryptedKey object
@@ -1064,19 +1049,15 @@ class _BackupsScreenState extends State<BackupsScreen> {
         final encryptionAlgo =
             EnumToString.convertToString(EncryptionAlgorithm.aes_ctr_256);
         final keyMaterial = keyManager.encryptedKeyMaterial;
-        // logManager.logger.d('test1');
 
         var items = await keyManager.getAllItemsForBackup() as GenericItemList;
         final numItems = items.list.length;
-        // logManager.logger.d('test2: ${items}');
 
         var testItems = json.encode(items);
 
         /// TODO: Digital ID
         final myId = await keyManager.getMyDigitalIdentity();
-        // logManager.logger.d('test3: ${myId}');
 
-        // var backupNameFinal = '$backupName - ${items.list.length} items';
         if (currentVault != null) {
           backupName = currentVault.name;
         }
@@ -1090,53 +1071,47 @@ class _BackupsScreenState extends State<BackupsScreen> {
             "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${backupName}";
         logManager.logger.d("idString: $idString ");
 
-        // final idHash = Hasher().sha256Hash(idString);
-        // print("idHash: $idHash");
-        /// TODO: implement this outside of this function
-        settingsManager.doEncryption(utf8.encode(testItems).length);
-        // cryptor.setTempKeyIndex(keyIndex);
-        // logManager.logger.d("keyIndex: $keyIndex");
-
-        final keyNonce = _convertEncryptedBlocksNonce();
-        logManager.logger.d("keyNonce: $keyNonce");
-        
-        final encryptedKeyNonce = await cryptor.encrypt(keyNonce);
-        logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
-
-        final encryptedKey = EncryptedKey(
-            derivationAlgorithm: kdfAlgo,
-            salt: salt,
-            rounds: rounds,
-            type: type,
-            version: version,
-            memoryPowerOf2: memoryPowerOf2,
-            encryptionAlgorithm: encryptionAlgo,
-            keyMaterial: keyMaterial,
-            keyNonce: encryptedKeyNonce,
-        );
-        logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
         // logManager.logger.d('items: ${items.toJson()}');
         // logManager.logger.d('items.toString: ${items.toString().length}: ${items.toString()}');
-
         // logManager.logger.d('testItems: ${testItems.length}: ${testItems}');
 
         var encryptedBlob = await cryptor.encryptBackupVault(testItems, idString);
         // logManager.logger.d('encryptedBlob: ${encryptedBlob.length}: $encryptedBlob');
 
         final identities = await keyManager.getIdentities();
-
         final recoveryKeys = await keyManager.getRecoveryKeyItems();
 
         final deviceDataString = settingsManager.deviceManager.deviceData.toString();
         // logManager.logger.d("deviceDataString: $deviceDataString");
         logManager.logLongMessage("deviceDataString: $deviceDataString");
-
         // logManager.logger.d("deviceData[utsname.version:]: ${settingsManager.deviceManager.deviceData["utsname.version:"]}");
 
         settingsManager.doEncryption(utf8.encode(deviceDataString).length);
         final encryptedDeviceData = await cryptor.encrypt(deviceDataString);
         // logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
+
+        /// TODO: implement this outside of this function
+        settingsManager.doEncryption(utf8.encode(testItems).length);
+
+        final keyNonce = _convertEncryptedBlocksNonce();
+        logManager.logger.d("keyNonce: $keyNonce");
+
+        final encryptedKeyNonce = await cryptor.encrypt(keyNonce);
+        logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
+
+        final encryptedKey = EncryptedKey(
+          derivationAlgorithm: kdfAlgo,
+          salt: salt,
+          rounds: rounds,
+          type: type,
+          version: version,
+          memoryPowerOf2: memoryPowerOf2,
+          encryptionAlgorithm: encryptionAlgo,
+          keyMaterial: keyMaterial,
+          keyNonce: encryptedKeyNonce,
+        );
+        logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
         final backupItem = VaultItem(
           id: uuid,
@@ -1166,18 +1141,18 @@ class _BackupsScreenState extends State<BackupsScreen> {
         logManager.log(
             "BackupsScreen", "_createBackup", "backup hash:\n$backupHash\n\nvault id: ${uuid}");
 
+        /// TODO: change to detailed file name
+        final normDate = mdate.replaceAll(":", "_");
+        final backupFileName = "Blackbox-$backupName-(${numItems} items, ${recoveryKeys?.length} recovery keys)-${normDate}";
+
         if (Platform.isAndroid && _shouldSaveToSDCard) {
           /// write backup to SD card
-          await fileManager.writeVaultDataSDCard(backupItemString);
+          await fileManager.writeVaultDataSDCard(backupFileName, backupItemString);
         }
 
         /// write backup to default directory
-        await fileManager.writeVaultData(backupItemString);
-
-        /// TODO: change to detailed file name
-        // final normDate = mdate.replaceAll(":", "_");
-        // final backupFileName = "Blackbox-$backupName-(${numItems} items, ${recoveryKeys?.length} recovery keys)-${normDate}";
-        // await fileManager.writeNamedVaultData(backupFileName, backupItemString);
+        // await fileManager.writeVaultData(backupItemString);
+        await fileManager.writeNamedVaultData(backupFileName, backupItemString);
 
         return true;
       }
@@ -1198,7 +1173,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
     final numBlocks = settingsManager.numBlocksEncrypted;
     // final currentNonce = zeroBlock.sublist(0, 8) + cbytes + zeroBlock.sublist(0, 4);
     // final shortNonce = zeroBlock.sublist(0, 8) + cbytes;// + zeroBlock.sublist(0, 4);
-    
+    logManager.logger.d("_convertEncryptedBlocksNonce: numBlocks: $numBlocks");
+
     var aindex = int.parse("${numRollover}").toRadixString(16);
     logManager.logger.d("aindex: $aindex");
 
@@ -1268,8 +1244,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
       final mdate = DateTime.now().toIso8601String();
 
       // final appVersion = settingsManager.packageInfo.version;
-      final appVersion = settingsManager.versionAndBuildNumber();//settingsManager.packageInfo.version;
-      // final appVersion = AppConstants.appVersion + "-${AppConstants.appBuildNumber}";
+      final appVersion = settingsManager.versionAndBuildNumber();
 
       final uuid = keyManager.vaultId;
 
@@ -1287,6 +1262,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
       }
 
       var itemList = GenericItemList.fromRawJson(tempDecryptedBlob);
+      final numItems = itemList.list.length;
       if (itemList == null) {
         return false;
       }
@@ -1352,13 +1328,17 @@ class _BackupsScreenState extends State<BackupsScreen> {
       logManager.log(
           "BackupsScreen", "_changeBackupName", "backup hash: $backupHash");
 
+      /// TODO: named backup files
+      final normDate = mdate.replaceAll(":", "_");
+      final backupFileName = "Blackbox-$backupName-(${numItems} items, ${currentVault!.recoveryKeys?.length} recovery keys)-${normDate}";
 
       if (Platform.isAndroid && _shouldSaveToSDCard) {
         /// write backup to SD card
-        await fileManager.writeVaultDataSDCard(backupItemString);
+        await fileManager.writeVaultDataSDCard(backupFileName, backupItemString);
       }
 
-      await fileManager.writeVaultData(backupItemString);
+      // await fileManager.writeVaultData(backupItemString);
+      await fileManager.writeNamedVaultData(backupFileName, backupItemString);
 
       return true;
     }
@@ -1610,8 +1590,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
     }
 
     await fileManager.clearNamedVaultFile();
-
-    await fileManager.clearVaultFile();
 
     _fetchBackups();
   }

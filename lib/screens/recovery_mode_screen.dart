@@ -218,13 +218,15 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
               await _scanQR(context);
             },
           ),
-          IconButton(
+          Visibility(
+            visible: true,
+            child: IconButton(
             icon: Icon(Icons.import_export),
             color: _isDarkModeEnabled ? Colors.greenAccent : null,
             onPressed: () async {
               _showModalImportPublicKeyView();
             },
-          ),
+          ),),
         ],
       ),
       body: ListView.separated(
