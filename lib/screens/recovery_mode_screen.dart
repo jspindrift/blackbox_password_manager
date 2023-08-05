@@ -1304,6 +1304,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     await fetchRecoveryIdentities();
   }
 
+  /// TODO: may not be a good idea depending on the implementation and usage
   _deriveRecoveryKey(DigitalIdentity identity, bool increment) async {
 
     final encryptedIdentity = _publicIds.firstWhere((element) => element.id == identity.id);
