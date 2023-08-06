@@ -20,7 +20,6 @@ import '../screens/diagnostics_screen.dart';
 import '../screens/recovery_mode_screen.dart';
 import '../screens/home_tab_screen.dart';
 import '../testing/test_crypto.dart';
-import '../testing/test_key_gen.dart';
 
 class AdvancedSettingsScreen extends StatefulWidget {
   const AdvancedSettingsScreen({
@@ -758,6 +757,9 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
 
   void _runTests() async {
     logManager.logger.d("running experimental tests");
+
+    // final bytes = List.filled(64, 69);
+    // TestCrypto().processDataErrorCorrection(bytes);
   }
 
 
