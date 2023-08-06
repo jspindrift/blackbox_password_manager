@@ -1,4 +1,7 @@
 /// https://bitcointalk.org/index.php?topic=403231.msg9054025#msg9054025
+///
+/// Functions and methods from:
+///
 /// https://pub.dev/packages/dart_merkle_lib
 
 import 'dart:typed_data';
