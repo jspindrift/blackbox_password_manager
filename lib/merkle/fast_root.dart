@@ -1,5 +1,7 @@
-import 'dart:typed_data';
+/// https://pub.dev/packages/dart_merkle_lib
+///
 
+import 'dart:typed_data';
 import './typedefs.dart';
 
 /// constant-space merkle root calculation algorithm
