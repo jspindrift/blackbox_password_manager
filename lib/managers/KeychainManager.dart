@@ -1262,7 +1262,6 @@ class KeychainManager {
       logManager.logger.d("KeychainManager - saveItem: success: $id");
       return true;
     } catch (e) {
-      // print('error writing data');
       logManager.log("KeychainManager", "saveItem", "failure: $e");
       logManager.logger.w("Keychain saveItem failure: $e");
       return false;
@@ -1271,20 +1270,13 @@ class KeychainManager {
 
   /// get all our password items
   Future<GenericItemList> getAllItems() async {
-    // Future<List<Object?>> getAllItems() async {
-    // Future<List<dynamic>> getAllItems() async {
-
-    // print('debug: getAllItems');
     logger.d("getAllItems");
-
     try {
       _items = await _storage.readAll(
         iOptions: _getIOSOptionsItem(),
         aOptions: _getAndroidOptionsItem(),
         mOptions: _getMacOptionsItem(),
       );
-
-      // print("items: ${_items.length}: $_items");
 
       var allItems = _items.entries
           .map((entry) => GenericItem.fromRawJson(entry.value))
@@ -1337,71 +1329,46 @@ class KeychainManager {
         mOptions: _getMacOptionsItem(),
       );
 
-      // print("items: ${_items.length}: $_items");
-
       var allItems = _items.entries
           .map((entry) => GenericItem.fromRawJson(entry.value))
           .toList(growable: false);
 
-      // print("first item: ${allItems.first.type}: ${allItems.first.data}");
-      // logger.d("AllItems: $allItems2");
       allItems.sort((a, b) {
         return b.data.compareTo(a.data);
       });
 
-      var genItemList = GenericItemList(list: allItems);
-      // final itemTree = await genItemList.calculateMerkleTree();
-
       _passwordItemsSize = 0;
       _numberOfPreviousPasswords = 0;
       allItems.forEach((element) {
-        // print("xx: ${element.type}");
         if (element.type == "password") {
           final item = PasswordItem.fromRawJson(element.data);
-          // print("PasswordItem2: ${item.toRawJson()}");
           if (item != null) {
             _numberOfPreviousPasswords += item.previousPasswords.length;
             _passwordItemsSize += element.data.length;
-            // return test;
           }
         } else if (element.type == "note") {
           final item = NoteItem.fromRawJson(element.data);
-          // print("NoteItem2: ${item.toRawJson()}");
           if (item != null) {
-            // _numberOfPreviousPasswords += item.previousPasswords.length;
             _passwordItemsSize += element.data.length;
-            // return test;
           }
         } else if (element.type == "key") {
           final item = KeyItem.fromRawJson(element.data);
-          // print("NoteItem2: ${item.toRawJson()}");
           if (item != null) {
-            // _numberOfPreviousPasswords += item.previousPasswords.length;
             _passwordItemsSize += element.data.length;
-            // return test;
           }
         }
-        // else {
-        //   print("different item: element.value");
-        // }
       });
 
-      // print("_passwordItemsSize: $_passwordItemsSize bytes");
-      // print("_numberOfPreviousPasswords: $_numberOfPreviousPasswords bytes");
-
-      // logManager.log("KeychainManager", "getAllItems",
-      //     "success: ${pwdItems.length} items");
       logManager.log("KeychainManager", "getAllItemsForBackup",
           "success: ${allItems.length} items");
 
       final genItemListFinal = GenericItemList(list: allItems);
-      // final genItemList = GenericItemList(list: allItems, merkle: null, hashes: null);
+
       return genItemListFinal;
     } catch (e) {
       logManager.log("KeychainManager", "getAllItems", "failure: $e");
       logManager.logger.w("Keychain getAllItems Exception: $e");
       return GenericItemList(list: []);
-      // return GenericItemList(list: [], merkle: null, hashes: null);
     }
   }
 
