@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:blackbox_password_manager/helpers/ivHelper.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import "package:flutter/material.dart";
@@ -11,12 +10,13 @@ import 'package:elliptic/elliptic.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
-import '../models/RecoveryKeyCode.dart';
+import '../helpers/ivHelper.dart';
 import '../helpers/AppConstants.dart';
 import '../managers/Cryptor.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
+import '../models/RecoveryKeyCode.dart';
 import '../models/DigitalIdentity.dart';
 import '../models/DigitalIdentityCode.dart';
 import '../models/MyDigitalIdentity.dart';
@@ -25,7 +25,6 @@ import '../widgets/QRScanView.dart';
 import '../widgets/qr_code_view.dart';
 import '../screens/home_tab_screen.dart';
 
-/// show this BIP39 mnemonic as a numbered word list
 
 class RecoveryModeScreen extends StatefulWidget {
   const RecoveryModeScreen({
@@ -173,7 +172,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     _matchingRecoveryKeyIndexes = [];
     _recoveryKeyIds = [];
     final recoveryKeys = await keyManager.getRecoveryKeyItems();
-    // print("recovery items: ${recoveryKeys?.length}: $recoveryKeys");
+    print("recovery items: ${recoveryKeys?.length}: ${recoveryKeys!.first.toJson()}");
 
     if (recoveryKeys != null) {
       for (var rkey in recoveryKeys) {
@@ -219,7 +218,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
             },
           ),
           Visibility(
-            visible: true,
+            visible: false,
             child: IconButton(
             icon: Icon(Icons.import_export),
             color: _isDarkModeEnabled ? Colors.greenAccent : null,
@@ -353,7 +352,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                       child: Text(
                         // "pubKeyExchange: ${_decryptedPublicKeysE[index - 1]}\n\naddress: ${cryptor.sha256(_decryptedPublicKeysE[index - 1])}",
                         // "address: ${cryptor.sha256(_decryptedPublicKeysE[index - 1]).substring(0,32)}",
-                        "Address: ${_publicKeyHashes[index-1].substring(0, 32)}\nindex: ${_publicIds[index-1].index}",
+                        "Address: ${_publicKeyHashes[index-1].substring(0, 32)}",
                         style: TextStyle(
                           color: _isDarkModeEnabled ? Colors.white : null,
                           fontSize: 14,
@@ -373,22 +372,22 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                     color: _isDarkModeEnabled ? Colors.black54 : Colors.white,
                     child: Row(
                       children: [
-                        Spacer(),
-                        IconButton(
-                          icon: Icon(
-                            Icons.info,
-                            color: _isDarkModeEnabled
-                                ? Colors.greenAccent
-                                : Colors.blueAccent,
-                          ),
-                          onPressed: () {
-                            _displayIdentityInfo(
-                                _decryptedPublicKeysE[index - 1],
-                                _decryptedPublicKeysS[index - 1],
-                              _publicIds[index-1].index,
-                            );
-                          },
-                        ),
+                        // Spacer(),
+                        // IconButton(
+                        //   icon: Icon(
+                        //     Icons.info,
+                        //     color: _isDarkModeEnabled
+                        //         ? Colors.greenAccent
+                        //         : Colors.blueAccent,
+                        //   ),
+                        //   onPressed: () {
+                        //     _displayIdentityInfo(
+                        //         _decryptedPublicKeysE[index - 1],
+                        //         _decryptedPublicKeysS[index - 1],
+                        //       _publicIds[index-1].index,
+                        //     );
+                        //   },
+                        // ),
                         Spacer(),
                         IconButton(
                           icon: Icon(
@@ -430,18 +429,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                             _computeAndShowRecoveryCode(_decryptdePublicIdentities[index - 1]);
                           },
                         ),
-                        // Spacer(),
-                        // IconButton(
-                        //   icon: Icon(
-                        //     Icons.key,
-                        //     color: _isDarkModeEnabled
-                        //         ? Colors.greenAccent
-                        //         : Colors.blueAccent,
-                        //   ),
-                        //   onPressed: () {
-                        //     _deriveRecoveryCode(_decryptdePublicIdentities[index - 1], true);
-                        //   },
-                        // ),
                         Spacer(),
                         IconButton(
                           icon: Icon(
@@ -461,51 +448,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                       ],
                     ),
                   ),
-                  Visibility(
-                    visible: false,
-                    child: Divider(
-                     color: Colors.grey[400],
-                    ),
-                  ),
-                  Visibility(
-                    visible: false,
-                    child: Card(
-                    elevation: 1,
-                    color: _isDarkModeEnabled ? Colors.black : Colors.white,
-                    child: Row(
-                    children: [
-                      Spacer(),
-                      Text(
-                          "Increment Recovery Key",
-                        style: TextStyle(
-                          color: _isDarkModeEnabled ? Colors.white : null,
-                        ),
-                      ),
-                      Spacer(),
-                      IconButton(
-                        onPressed: (){
-                          _deriveRecoveryKey(_decryptdePublicIdentities[index - 1], false);
-                        },
-                        icon: Icon(
-                            Icons.remove,
-                          size: 30,
-                          color: _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
-                        ),
-                      ),
-                      Spacer(),
-                      IconButton(
-                        onPressed: (){
-                          _deriveRecoveryKey(_decryptdePublicIdentities[index - 1], true);
-                        },
-                        icon: Icon(
-                          Icons.add,
-                          size: 30,
-                          color: _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
-                        ),
-                      ),
-                      Spacer(),
-                    ],),
-                  ),),
                 ],
               ),
             );
@@ -614,17 +556,20 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
       keyPair: privSeedPair,
       remotePublicKey: bobPublicKey,
     );
-    // final sharedSecretBytes = await sharedSecret.extractBytes();
-    final ikey_recovery = await cryptor.keyedHmac256("${identity.index}", sharedSecret);
+    final sharedSecretBytes = await sharedSecret.extractBytes();
+    // final secretKey = SecretKey(sharedSecretBytes);
+
+    // final ikey_recovery = await cryptor.keyedHmac256("${identity.index}", sharedSecret);
     // logManager.logger.d('Shared secret: ${sharedSecretBytes.length}: ${sharedSecretBytes}');
     // logManager.logger.d('Shared ikey_recovery: ${identity.index}: ${ikey_recovery}');
 
-    final secretIndexKey = SecretKey(hex.decode(ikey_recovery));
-    final secretIndexKeyBytes = await secretIndexKey.extractBytes();
 
-    final indexedCode = RecoveryKeyCode(
+    // final secretIndexKey = SecretKey(hex.decode(ikey_recovery));
+    // final secretIndexKeyBytes = await secretIndexKey.extractBytes();
+
+    final recoveryCode = RecoveryKeyCode(
       id: ahash,
-      key: base64.encode(secretIndexKeyBytes),
+      key: base64.encode(sharedSecretBytes),
     );
     // print("secret key: ${hex.encode(sharedSecretBytes)}");
 
@@ -632,7 +577,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => QRCodeView(
-          data: indexedCode.toRawJson(),
+          data: recoveryCode.toRawJson(),
           isDarkModeEnabled: _isDarkModeEnabled,
           isEncrypted: false,
         ),
@@ -1273,21 +1218,21 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
       keyPair: privSeedPair,
       remotePublicKey: bobPublicKey,
     );
-    // final sharedSecretBytes = await sharedSecret.extractBytes();
+    final sharedSecretBytes = await sharedSecret.extractBytes();
     
-    final indexedNonce = ivHelper().convertToBytes(keyIndex, 16);
+    // final indexedNonce = ivHelper().convertToBytes(keyIndex, 16);
+    // final indexedSharedSecret = await cryptor.keyedHmac256_2(hex.encode(indexedNonce), sharedSecret);
     // logManager.logger.d('indexedNonce: ${indexedNonce.length}: ${indexedNonce}');
-    final indexedSharedSecret = await cryptor.keyedHmac256_2(hex.encode(indexedNonce), sharedSecret);
     // logManager.logger.d('Shared ikey_recovery: ${keyIndex}: ${ikey_recovery}');
 
-    // final sharedSecretKey = SecretKey(sharedSecretBytes);
-    final secretIndexKey = SecretKey(hex.decode(indexedSharedSecret));
+    final sharedSecretKey = SecretKey(sharedSecretBytes);
+    // final secretIndexKey = SecretKey(hex.decode(sharedSecretBytes));
 
     final rootKey = cryptor.aesRootSecretKeyBytes;
 
-    // final encryptedRootKey = await cryptor.encryptRecoveryKey(sharedSecretKey, rootKey);
-    final encryptedRootKeyIndexed = await cryptor.encryptRecoveryKey(secretIndexKey, rootKey);
-    // logManager.logger.d('encryptedRootKey:[${encryptedRootKey.length}]: ${encryptedRootKey}');
+    final encryptedRootKey = await cryptor.encryptRecoveryKey(sharedSecretKey, rootKey);
+    // final encryptedRootKeyIndexed = await cryptor.encryptRecoveryKey(sharedSecretKey, rootKey);
+    logManager.logger.d('encryptedRootKey:[${encryptedRootKey.length}]: ${encryptedRootKey}');
     // logManager.logger.d('encryptedRootKeyIndexed:[${keyIndex}]:${encryptedRootKeyIndexed.length}: ${encryptedRootKeyIndexed}');
     
     final pubKeyHash = cryptor.sha256(pubKeyExchange);
@@ -1295,99 +1240,18 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
     final recoveryKey = RecoveryKey(
       id: pubKeyHash,
-      data: encryptedRootKeyIndexed,
+      data: encryptedRootKey,
       cdate: DateTime.now().toIso8601String(),
     );
     
-    // logManager.logger.d("recoveryKey: ${recoveryKey.toRawJson()}");
+    logManager.logger.d("recoveryKey: ${recoveryKey.toRawJson()}");
 
     await keyManager.saveRecoveryKey(pubKeyHash, recoveryKey.toRawJson());
 
     await fetchRecoveryIdentities();
   }
 
-  /// TODO: may not be a good idea depending on the implementation and usage
-  _deriveRecoveryKey(DigitalIdentity identity, bool increment) async {
 
-    final encryptedIdentity = _publicIds.firstWhere((element) => element.id == identity.id);
-    var keyIndex = identity.index;
-
-    if (keyIndex == 1 && !increment) {
-      return;
-    }
-
-    if (increment){
-      keyIndex++;
-    } else {
-      keyIndex--;
-    }
-    final algorithm = X25519();
-
-    // print("bob pubKeyExchange: ${encryptedIdentity.toJson()}");
-    final pubBytes = hex.decode(identity.pubKeyExchange);
-    // print("bob pubBytes: $pubBytes");
-    final bobPublicKey = SimplePublicKey(pubBytes, type: KeyPairType.x25519);
-
-    final aliceSeed = _pubExchangeKeySeed;
-    final seedBytes = hex.decode(aliceSeed);
-    final privSeedPair = await algorithm.newKeyPairFromSeed(seedBytes);
-
-    // We can now calculate a shared secret.
-    final sharedSecret = await algorithm.sharedSecretKey(
-      keyPair: privSeedPair,
-      remotePublicKey: bobPublicKey,
-    );
-
-    final updatedIdentity = DigitalIdentity(
-      id: encryptedIdentity.id,
-      index: keyIndex,
-      version: AppConstants.digitalIdentityVersion,
-      name: encryptedIdentity.name,
-      pubKeySignature: encryptedIdentity.pubKeySignature,
-      pubKeyExchange: encryptedIdentity.pubKeyExchange,
-      cdate: encryptedIdentity.cdate,
-      mdate: DateTime.now().toIso8601String(),
-    );
-
-    final updatedIdentityString = updatedIdentity.toRawJson();
-    // print("identityObjectString: $identityObjectString");
-
-    final statusId = await keyManager.saveIdentity(updatedIdentity.id, updatedIdentityString);
-
-    if (statusId) {
-      final indexedNonce = ivHelper().convertToBytes(keyIndex, 16);
-      // logManager.logger.d('indexedNonce: ${indexedNonce.length}: ${indexedNonce}');
-
-      final indexedSharedSecret = await cryptor.keyedHmac256_2(hex.encode(indexedNonce), sharedSecret);
-      // logManager.logger.d('indexedSharedSecret: ${keyIndex}: ${indexedSharedSecret}');
-      final secretIndexKey = SecretKey(hex.decode(indexedSharedSecret));
-      // final secretIndexKeyBytes = await secretIndexKey.extractBytes();
-
-      final rootKey = cryptor.aesRootSecretKeyBytes;
-      final encryptedRootKeyIndexed = await cryptor.encryptRecoveryKey(secretIndexKey, rootKey);
-      // logManager.logger.d('encryptedRootKeyIndexed:[${keyIndex}]:${encryptedRootKeyIndexed.length}: ${encryptedRootKeyIndexed}');
-
-      final pubKeyHash = cryptor.sha256(identity.pubKeyExchange);
-      _publicKeyHashes.add(pubKeyHash);
-
-      final recoveryKey = RecoveryKey(
-        id: pubKeyHash,
-        data: encryptedRootKeyIndexed,
-        cdate: DateTime.now().toIso8601String(),
-      );
-      // logManager.logger.d("recoveryKey: ${recoveryKey.toRawJson()}");
-
-      final recoveryStatus = await keyManager.saveRecoveryKey(pubKeyHash, recoveryKey.toRawJson());
-
-      if (recoveryStatus) {
-        await fetchRecoveryIdentities();
-      } else {
-        _showErrorDialog("Could derive recovery key");
-      }
-    } else {
-      _showErrorDialog("Could derive recovery key");
-    }
-  }
 
   _displaySaveIdentityNameDialog(
       BuildContext context, DigitalIdentityCode item) async {
@@ -1396,7 +1260,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         builder: (context) {
           return StatefulBuilder(builder: (context, setState) {
             return AlertDialog(
-              title: Text('Create Backup'),
+              title: Text('Recovery Identity Name'),
               actions: <Widget>[
                 OutlinedButton(
                   onPressed: () {
@@ -1415,27 +1279,21 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                           _saveScannedIdentity(item,
                                   _dialogIdentityNameTextFieldController.text)
                               .then((value) {
-                            EasyLoading.showToast("Saved Scanned Item");
-                            // _updatePasswordItemList();
+                            EasyLoading.showToast("Saved Recovery Item");
                           });
-                          // await _createBackup().then((value) {
-                          //
-                          //   // _fetchBackups();
-                          //
+
                           setState(() {
                             _dialogIdentityNameTextFieldController.text = '';
                             _enableBackupNameOkayButton = false;
                           });
-                          //
+
                           Navigator.of(context).pop();
-                          // });
                         }
                       : null,
                   child: Text('Save'),
                 ),
               ],
               content: TextField(
-                // obscureText: ,
                 decoration: InputDecoration(
                   hintText: "Identity Name",
                 ),
@@ -1494,14 +1352,18 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
   void _showDeleteRecoveryKeyDialog(String id, int index) {
     showDialog(
       context: context,
-      // useRootNavigator: true,
       // barrierColor: Colors.black,
       builder: (ctx) => AlertDialog(
         title: Text("Delete Recovery Key"),
         content: Text("Are you sure you want to delete the Recovery Key for this Backup?"),
         actions: <Widget>[
+          OutlinedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Cancel'),
+          ),
           ElevatedButton(
-
             style: ButtonStyle(
                 foregroundColor: MaterialStateProperty.all<Color>(Colors.white),
               backgroundColor: MaterialStateProperty.all<Color>(Colors.red),
@@ -1511,7 +1373,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
               final status = await keyManager.deleteRecoveryKeyItem(id);
               // _createRecoveryKey(pubKeyExchange);
-              // print("deleteRecoveryKeyItem: $status");
+              print("deleteRecoveryKeyItem-dialog-status: $status");
               if (status) {
                 setState(() {
                   var idx = 0;
@@ -1527,13 +1389,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
               Navigator.of(ctx).pop();
             },
-            child: Text("Delete Key"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-            },
-            child: Text("Cancel"),
+            child: Text("Delete"),
           ),
         ],
       ),
@@ -1545,15 +1401,26 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text("Delete Identity"),
-        content: Text("Are you sure you want to delete this identity?"),
+        content: Text("Are you sure you want to delete this identity?\n\nThis will also delete the Recovery Key for this identity if it is available."),
         actions: <Widget>[
+          OutlinedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Cancel'),
+          ),
           ElevatedButton(
+            style: ButtonStyle(
+              backgroundColor:
+              MaterialStateProperty.all<Color>(Colors.redAccent),
+            ),
             onPressed: () async {
               // print("delete identity");
-
-              final statusID = await keyManager.deleteIdentity(id);
+              Navigator.of(ctx).pop();
 
               final statusRecovery = await keyManager.deleteRecoveryKeyItem(pubHash);
+
+              final statusID = await keyManager.deleteIdentity(id);
 
               if (!statusID){
                 logManager.logger.w("Could not delete identity with id: $id");
@@ -1565,16 +1432,8 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
               }
 
               await fetchRecoveryIdentities();
-
-              Navigator.of(ctx).pop();
-            },
+              },
             child: Text("Delete"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-            },
-            child: Text("Cancel"),
           ),
         ],
       ),

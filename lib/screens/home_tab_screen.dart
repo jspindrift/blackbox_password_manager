@@ -201,8 +201,8 @@ class _HomeTabScreenState extends State<HomeTabScreen>
     switch (state) {
       case AppLifecycleState.inactive:
         // print("INACTIVE-------------------------------");
-        logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
-            "AppLifecycleState: inactive");
+        // logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
+        //     "AppLifecycleState: inactive");
         logManager.logger.d("AppLifecycleState: inactive - HomeTabScreen");
         // Navigator.of(context).pop();
 
@@ -217,8 +217,8 @@ class _HomeTabScreenState extends State<HomeTabScreen>
 
         break;
       case AppLifecycleState.resumed:
-        logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
-            "AppLifecycleState: resumed");
+        // logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
+        //     "AppLifecycleState: resumed");
         logManager.logger.d("AppLifecycleState: resumed - HomeTabScreen");
 
         /// we want to only clear the clipboard after they have copied from the app and
@@ -239,8 +239,8 @@ class _HomeTabScreenState extends State<HomeTabScreen>
 
         break;
       case AppLifecycleState.paused:
-        logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
-            "AppLifecycleState: paused");
+        // logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
+        //     "AppLifecycleState: paused");
         logManager.logger.d("AppLifecycleState: paused - HomeTabScreen");
 
         if (settingsManager.isLockOnExitEnabled &&
@@ -258,6 +258,8 @@ class _HomeTabScreenState extends State<HomeTabScreen>
           });
 
           cryptor.clearAllKeys();
+
+          logManager.logger.wtf("AppLifecycleState: paused - HomeTabScreen - lock");
 
           /// Push LockScreen
           Navigator.push(
@@ -280,8 +282,8 @@ class _HomeTabScreenState extends State<HomeTabScreen>
       case AppLifecycleState.detached:
         cryptor.clearAllKeys();
         logManager.logger.d("AppLifecycleState: detached");
-        logManager.log("WelcomeScreen", "didChangeAppLifecycleState",
-            "AppLifecycleState: detached");
+        // logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
+        //     "AppLifecycleState: detached");
         break;
     }
   }

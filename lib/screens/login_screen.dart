@@ -87,8 +87,12 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
 
+    /// add observer for app lifecycle state transitions
+    WidgetsBinding.instance.addObserver(this);
+
     logManager.initialize();
 
+    settingsManager.initializeLaunchSettings();
     // keyManager.deleteAll();
     // logManager.logger.d("now: ${DateTime.now().toIso8601String()}");
 
@@ -101,9 +105,6 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     _startup();
 
     _readRecoveryMode();
-
-    /// add observer for app lifecycle state transitions
-    WidgetsBinding.instance.addObserver(this);
 
     /// setup subscription streams
     resetAppSubscription = settingsManager.onResetAppRecieved.listen((event) {
@@ -149,6 +150,11 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   void _calculateDevices() async {
     await _getAppSettings();
 
+    final check = await biometricManager.doBiometricCheck();
+    setState(() {
+      _isBiometricLoginEnabled = check;
+    });
+
     if (Platform.isIOS) {
       final idList = await keyManager.readLocalDeviceKeys();
       final thisId = await deviceManager.getDeviceId();
@@ -174,11 +180,6 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           _isFirstLaunch = false;
         });
       } else {
-        // if (foundID) {
-        //   setState(() {
-        //     _isFirstLaunch = false;
-        //   });
-        // } else {
           logManager.logger.d("delete for startup!!");
           await keyManager.deleteForStartup();
           setState(() {
@@ -190,20 +191,35 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
               DateTime.now().toIso8601String(),
             );
           }
-        // }
       }
     } else {
-      final status = settingsManager.hasLaunched;
-      if (!status) {
-        logManager.logger.d("delete for startup");
-        keyManager.deleteForStartup();
-        settingsManager.saveHasLaunched();
+      if (!settingsManager.launchSettingInitialized) {
+        logManager.logger.d("settingsManager.launchSettingInitialized: ${settingsManager.launchSettingInitialized}");
+          Future.delayed(Duration(seconds: 2), () {
+            if (settingsManager.launchSettingInitialized) {
+              _checkHasLaunchedState();
+            }
+          });
       } else {
-        setState(() {
-          _isFirstLaunch = false;
-        });
-        // print("we are good to go");
+        _checkHasLaunchedState();
       }
+    }
+  }
+
+  _checkHasLaunchedState() async {
+    final status = settingsManager.hasLaunched;
+    logManager.logger.d("hasLaunched: $status");
+
+    if (!status) {
+      logManager.logger.d("delete for startup");
+      keyManager.deleteForStartup();
+      settingsManager.saveHasLaunched();
+
+      _showErrorDialog("Deleted for Startup");
+    } else {
+      setState(() {
+        _isFirstLaunch = false;
+      });
     }
   }
 
@@ -223,10 +239,10 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       return;
     }
 
-    final check = await biometricManager.doBiometricCheck();
-    setState(() {
-      _isBiometricLoginEnabled = check;
-    });
+    // final check = await biometricManager.doBiometricCheck();
+    // setState(() {
+    //   _isBiometricLoginEnabled = check;
+    // });
 
     /// get log key ready for authenticating logs
     keyManager.readLogKey();
@@ -277,8 +293,22 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       _isSigningUp = !keyManager.hasPasswordItems;
     });
 
-    // print("keystatus: $keyStatus");
-    // print("_isSigningUp: $_isSigningUp");
+    /// check biometric key
+    final bioStatus = await keyManager.renderBiometricKey();
+    setState(() {
+      _isBiometricLoginEnabled = bioStatus;
+    });
+
+    final checkBioAvailability = await biometricManager.doBiometricCheck();
+    setState(() {
+      _isBiometricLoginEnabled = checkBioAvailability;
+    });
+
+    if (!checkBioAvailability) {
+      keyManager.deleteBiometricKey();
+    }
+
+    _readRecoveryMode();
 
     // lets go dark... :)
     if (_isSigningUp || !keyStatus) {
@@ -294,11 +324,11 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       });
     }
 
-    /// check biometric key
-    final bioStatus = await keyManager.renderBiometricKey();
-    setState(() {
-      _isBiometricLoginEnabled = bioStatus;
-    });
+    // /// check biometric key
+    // final bioStatus = await keyManager.renderBiometricKey();
+    // setState(() {
+    //   _isBiometricLoginEnabled = bioStatus;
+    // });
 
     /// invoke on first instantiation
     if (bioStatus && !_isFirstLaunch && !_isSigningUp) {
@@ -315,6 +345,10 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     if (vaultFileString.isNotEmpty) {
       setState(() {
         _hasBackups = true;
+      });
+    } else {
+      setState(() {
+        _hasBackups = false;
       });
     }
 
@@ -342,7 +376,6 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
 
   /// track the lifecycle of the app
-  /// TODO: Use StreamSubscription to trigger on clear Clipboard after sensitive field is copied
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     super.didChangeAppLifecycleState(state);
@@ -374,6 +407,16 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
         if (!_isInit) {
           _readRecoveryMode();
+
+          /// check biometrics
+          final checkBioAvailability = await biometricManager.doBiometricCheck();
+          setState(() {
+            _isBiometricLoginEnabled = checkBioAvailability;
+          });
+
+          if (!checkBioAvailability) {
+            keyManager.deleteBiometricKey();
+          }
         }
         break;
       case AppLifecycleState.paused:
@@ -404,6 +447,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     // print("$_isOnLoginScreen, $_isFirstLaunch, $_isInit");
     if (_isOnLoginScreen && !_isFirstLaunch && !_isInit) {
       keyManager.readPinCodeKey().then((value) {
+        // print("readPinCodeKey-login: $value");
         if (value) {
           _isOnLoginScreen = false;
           Navigator.push(
@@ -498,32 +542,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
               icon: Icon(Icons.camera),
               color: _isDarkModeEnabled ? Colors.greenAccent : null,
               onPressed: () async {
-                /// TODO: fix the Android bug that does not let the camera operate
-                if (Platform.isIOS) {
-                  await _scanQR();
-                } else {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    Navigator.of(context)
-                        .push(MaterialPageRoute(
-                      builder: (context) => QRScanView(),
-                    ))
-                        .then((value) {
-                      if (value != null) {
-                        RecoveryKeyCode keyCode =
-                            RecoveryKeyCode.fromRawJson(value);
-
-                        if (keyCode != null) {
-                          /// try to decrypt item
-                          _decryptWithRecoveryKey(keyCode);
-                        } else {
-                          _showErrorDialog("Invalid code format");
-                        }
-                      } else {
-                        _showErrorDialog("Invalid code format");
-                      }
-                    });
-                  });
-                }
+                await _scanQR();
               },
             ),
             ),
@@ -1009,17 +1028,21 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       setState(() {
         _hasBackups = true;
       });
+    } else {
+      setState(() {
+        _hasBackups = false;
+      });
     }
 
-    // print("_hasBackups: $_hasBackups");
-
     /// check android backup file
-    if (Platform.isAndroid && !_hasBackups) {
+    if (Platform.isAndroid) {
       var vaultFileString = await fileManager.readVaultDataSDCard();
       setState(() {
         _hasBackups = vaultFileString.isNotEmpty;
       });
     }
+
+    logManager.logger.d("_hasBackups: $_hasBackups");
 
     /// check for pin code
     final pinStatus = await keyManager.readPinCodeKey(); //.then((value) {
@@ -1246,6 +1269,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     }
 
     final status = await biometricManager.authenticateWithBiometrics();
+    EasyLoading.show(status: "Authenticating...");
+
     if (status) {
       // if valid auth, create biometric key
       final setStatus = await keyManager.setBiometricKey();
@@ -1300,6 +1325,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       logManager.saveLogs();
       _showErrorDialog('Biometric error');
     }
+
+    EasyLoading.dismiss();
   }
 
   /// show backups screen for user to restore from
@@ -1350,29 +1377,52 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       return;
     }
 
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    try {
-      barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
-          "#ff6666", "Cancel", true, ScanMode.QR);
-      // logManager.logger.d(barcodeScanRes);
-
+    if (Platform.isIOS) {
+      // Platform messages may fail, so we use a try/catch PlatformException.
       try {
-        RecoveryKeyCode keyCode = RecoveryKeyCode.fromRawJson(barcodeScanRes);
+        barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
+            "#ff6666", "Cancel", true, ScanMode.QR);
+        // logManager.logger.d(barcodeScanRes);
 
-        if (keyCode != null) {
-          /// try to decrypt item
-          _decryptWithRecoveryKey(keyCode);
-        } else {
-          _showErrorDialog("Exception: Invalid code format");
+        try {
+          RecoveryKeyCode keyCode = RecoveryKeyCode.fromRawJson(barcodeScanRes);
+
+          if (keyCode != null) {
+            /// try to decrypt item
+            await _decryptWithRecoveryKey(keyCode);
+          } else {
+            _showErrorDialog("Exception: Invalid code format");
+          }
+        } catch (e) {
+          logManager.logger.d("something went wrong: $e");
+          _showErrorDialog("Exception: Could not scan code.");
         }
-      } catch (e) {
-        logManager.logger.d("something went wrong: $e");
-        _showErrorDialog("Exception: Could not scan code.");
+      } on PlatformException {
+        barcodeScanRes = "Failed to get platform version.";
+        _showErrorDialog("Exception: Failed to get platform version.");
       }
-    } on PlatformException {
-      barcodeScanRes = "Failed to get platform version.";
-      _showErrorDialog("Exception: Failed to get platform version.");
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context)
+            .push(MaterialPageRoute(
+          builder: (context) => QRScanView(),
+        ))
+            .then((value) async {
+          if (value != null) {
+            RecoveryKeyCode keyCode =
+            RecoveryKeyCode.fromRawJson(value);
+
+            if (keyCode != null) {
+              /// try to decrypt item
+              await _decryptWithRecoveryKey(keyCode);
+            } else {
+              _showErrorDialog("Invalid code format");
+            }
+          }
+        });
+      });
     }
+
   }
 
   _decryptWithRecoveryKey(RecoveryKeyCode key) async {
@@ -1382,15 +1432,15 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
     final keyId = key.id;
     final keyData = key.key;
-    // print("keyId: ${keyId}");
-    // print("keyData: ${keyData}");
+    // logManager.logger.d("keyId: ${keyId}");
+    // logManager.logger.d("keyData: ${keyData}");
 
     final recoveryItem = await keyManager.getRecoveryKeyItem(keyId);
 
     if (recoveryItem != null) {
       SecretKey skey = SecretKey(base64.decode(keyData));
       final encryptedKeys = recoveryItem.data;
-      // print("encryptedKeys: ${encryptedKeys}");
+      logManager.logger.d("encryptedKeys: ${encryptedKeys}");
 
       final decryptedKeys = await cryptor.decryptRecoveryKey(skey, encryptedKeys);
       // print("decrypted4Keys: ${decryptedKeys}");
@@ -1420,6 +1470,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       }
     } else {
       logManager.logger.d("cant find recovery key item");
+      _showErrorDialog("Could not get Recovery Key");
     }
 
     EasyLoading.dismiss();

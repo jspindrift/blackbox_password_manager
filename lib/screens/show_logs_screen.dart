@@ -41,38 +41,36 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
   }
 
   void _readLogs() async {
-    await fileManager.readLogData().then((value) async {
-      if (value != null) {
-        if (value.isNotEmpty) {
-          setState(() {
-            _blockchain = Blockchain.fromRawJson(value);
-            _blocks = _blockchain.blocks;
-            // _blockHeight = _blockchain.blocks.length;
+    final logData = await fileManager.readLogData();
+    logManager.logger.wtf("_readLogs: $logData");
+    if (logData != null) {
+      if (logData.isNotEmpty) {
+        setState(() {
+          _blockchain = Blockchain.fromRawJson(logData);
+          _blocks = _blockchain.blocks;
 
-            _blocks.sort((a, b) {
-              return b.time.compareTo(a.time);
-            });
-
-            sessionTimes = [];
-            _blocks.forEach((element) {
-              final a = DateTime.parse(element.logList.list.first.time);
-              final b = DateTime.parse(element.logList.list.last.time);
-
-              final dt = b.difference(a).inSeconds;
-              sessionTimes.add(dt);
-            });
+          _blocks.sort((a, b) {
+            return b.time.compareTo(a.time);
           });
 
-          await logManager.verifyLogFile().then((value) {
-            // setState(() {
-            //   _lifeTimeInSeconds = logManager.lifeTimeInSeconds;
-            // });
-          });
+          sessionTimes = [];
+          _blocks.forEach((element) {
+            logManager.logger.wtf("${element.toJson()}");
+            final a = DateTime.parse(element.logList.list.first.time);
+            final b = DateTime.parse(element.logList.list.last.time);
 
-          buildTimeLapse();
-        }
+            final dt = b.difference(a).inSeconds;
+            sessionTimes.add(dt);
+          });
+        });
+
+        await logManager.verifyLogFile().then((value) {
+
+        });
+
+        buildTimeLapse();
       }
-    });
+    }
   }
 
   void buildTimeLapse() {
@@ -145,9 +143,6 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
       currentTimeLapseString = '';
       timeLapseIndex = 0;
     }
-
-    // print(timeIntervals);
-    // print('windows: $windowTimeIntervals');
   }
 
   @override

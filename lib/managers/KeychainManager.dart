@@ -863,6 +863,8 @@ class KeychainManager {
         mOptions: _getMacOptionsPinCode(),
       );
 
+      // logger.d("readPinCodeKey: ${(items != null)}");
+
       if (items != null) {
         final pinItem = PinCodeItem.fromRawJson(items.entries.first.value);
         if (pinItem != null) {
@@ -1126,11 +1128,12 @@ class KeychainManager {
 
           _isBiometricLoginEnabled = false;
           logManager.log("KeychainManager", "setBiometricKey", "failure");
+          logManager.logger.w("Keychain setBiometricKey failure - 1");
           return false;
         }
 
         logManager.log("KeychainManager", "setBiometricKey", "failure");
-        logManager.logger.w("Keychain setBiometricKey failure");
+        logManager.logger.w("Keychain setBiometricKey failure - 2");
         _isBiometricLoginEnabled = false;
         return false;
       } catch (e) {
@@ -1169,11 +1172,12 @@ class KeychainManager {
 
             _isBiometricLoginEnabled = false;
             logManager.log("KeychainManager", "setBiometricKey", "failure");
+            logManager.logger.w("Keychain setBiometricKey failure - 1");
             return false;
           }
 
           logManager.log("KeychainManager", "setBiometricKey", "failure");
-          logManager.logger.w("Keychain setBiometricKey failure");
+          logManager.logger.w("Keychain setBiometricKey failure - 2");
           _isBiometricLoginEnabled = false;
           return false;
         } catch (e) {
@@ -1544,14 +1548,25 @@ class KeychainManager {
   Future<RecoveryKey?> getRecoveryKeyItem(String id) async {
     logger.d("getRecoveryKeyItem: $id");
     try {
-      final backupItem = await _storage.read(
+      var recItem = await _storage.read(
         key: id,
         iOptions: _getIOSOptionsRecoveryKey(),
         aOptions: _getAndroidOptionsRecoveryKey(),
         mOptions: _getMacOptionsRecoveryKey(),
       );
 
-      final item = RecoveryKey.fromRawJson(backupItem!);
+      /// try this method again...seems to be a bug in Android
+      if (recItem == null) {
+        recItem = await _storage.read(
+          key: id,
+          iOptions: _getIOSOptionsRecoveryKey(),
+          aOptions: _getAndroidOptionsRecoveryKey(),
+          mOptions: _getMacOptionsRecoveryKey(),
+        );
+      }
+
+      final item = RecoveryKey.fromRawJson(recItem!);
+      // logger.d("getRecoveryKeyItem: ${item.toJson()}");
       logManager.log("KeychainManager", "getRecoveryKeyItem", "success: $id");
       return item;
     } catch (e) {
@@ -1570,16 +1585,18 @@ class KeychainManager {
         mOptions: _getMacOptionsRecoveryKey(),
       );
 
+      logManager.logger.d("KeychainManager: success: ${recoveryItems.entries.first}");
+
       final items = recoveryItems.entries
           .map((entry) => RecoveryKey.fromRawJson(entry.value))
           .toList(growable: false);
 
-      logManager.log("KeychainManager", "hasBackupItems", "success");
+      logManager.log("KeychainManager", "getRecoveryKeyItems", "success");
 
       return items;
     } catch (e) {
-      logManager.log("KeychainManager", "hasBackupItems", "failure: $e");
-      logManager.logger.w("Keychain hasBackupItems failure: $e");
+      logManager.log("KeychainManager", "getRecoveryKeyItems", "failure: $e");
+      logManager.logger.w("Keychain getRecoveryKeyItems failure: $e");
       return [];
     }
   }
@@ -1618,6 +1635,7 @@ class KeychainManager {
         aOptions: _getAndroidOptionsRecoveryKey(),
         mOptions: _getMacOptionsRecoveryKey(),
       );
+      // logger.d("deleteRecoveryKeyItem-hasKey: $hasKey");
 
       if (hasKey) {
         await _storage.delete(
@@ -1626,10 +1644,14 @@ class KeychainManager {
           aOptions: _getAndroidOptionsRecoveryKey(),
           mOptions: _getMacOptionsRecoveryKey(),
         );
+        // logger.d("deleteRecoveryKeyItem: success");
+
         logManager.log(
             "KeychainManager", "deleteRecoveryKeyItem", "success: $id");
         return true;
       }
+
+      // logger.e("deleteRecoveryKeyItem: failure");
 
       logManager.log(
           "KeychainManager", "deleteRecoveryKeyItem", "failure: $id");

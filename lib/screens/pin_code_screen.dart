@@ -56,12 +56,8 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
 
     _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
 
-    // settingsManager.pinCodeLength;
-
     if (widget.flow == PinCodeFlow.lock) {
       keyManager.getPinCodeItem().then((value) {
-        // print("getPinCodeItem pincodescreen: $value");
-
         setState(() {
           _pinCodeAttemptsLeft = 3 - value!.attempts;
         });
@@ -82,7 +78,6 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
       child: Scaffold(
       backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
       appBar: AppBar(
-        // title: Text('Pin Code'),
         backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
         automaticallyImplyLeading:
             widget.flow == PinCodeFlow.create ? true : false,
@@ -174,14 +169,12 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
   void _createPinCode(String code) async {
     try {
       final pinJsonString = await cryptor.derivePinKey(code);
+      logManager.logger.wtf("_createPinCode: derivePinKey: $pinJsonString");
 
       if (pinJsonString.isNotEmpty) {
         final status = await keyManager.savePinCode(pinJsonString);
-        // print("save status: $status");
+        logManager.logger.wtf("_createPinCode: save status: $status");
 
-        // setState(() {
-        //   _isCalculatingPinKey = false;
-        // });
         if (status) {
           /// delete biometric key
           // final deleteStatus =
@@ -194,16 +187,25 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
             _isConfirmingPinCode = false;
           });
 
-          /// Android may require a second delete for biometric key
-          if (Platform.isAndroid) {
-            await keyManager.deleteBiometricKey();
+          if (!settingsManager.isOnLockScreen) {
+            Navigator.of(context).pop('setPin');
+          } else {
+            setState(() {
+              _isCreatingPinCode = false;
+              _initialPinCode = '';
+            });
           }
-
-          Navigator.of(context).pop('setPin');
         } else {
           _showErrorDialog('Could Not Save Pin');
           logManager.logger.w('Exception: _createPinCode: failure');
         }
+      } else {
+        /// this occurs while backgrounding the app while creating/deriving the key
+        setState(() {
+          _isConfirmingPinCode = false;
+          _isCreatingPinCode = false;
+          _initialPinCode = '';
+        });
       }
     } catch (e) {
       logManager.logger.w('Exception: _createPinCode: $e');
@@ -243,6 +245,8 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
 
             if (statusSave) {
               Navigator.of(context).pop('login');
+              // Navigator.pop(context, 'login');
+
             } else {
               _showErrorDialog("Couldn't Save Pin Code");
 

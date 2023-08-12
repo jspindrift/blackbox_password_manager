@@ -86,18 +86,18 @@ class BackupManager {
   }
 
 
-  Future<bool> restoreLocalBackupItem(
-      VaultItem localVault, String password, String salt) async {
+  Future<bool> restoreBackupItem(
+      VaultItem vault, String password, String salt) async {
     /// first must check password before restoring
     // final keyManager = KeychainManager();
     // final cryptor = Cryptor();
 
-    logManager.logger.d("restoreLocalBackupItem:\nvaultId: ${localVault.id}:\ndeviceId: ${localVault.deviceId}\n"
-        "name: ${localVault.name}");
+    logManager.logger.d("restoreLocalBackupItem:\nvaultId: ${vault.id}:\ndeviceId: ${vault.deviceId}\n"
+        "name: ${vault.name}");
     logManager.log(
-        "BackupManager", "restoreLocalBackupItem", "id: ${localVault.id}");
-    logManager.logger.d("restoreLocalBackupItem:\neKey: ${localVault.encryptedKey.toJson()}:\n"
-        "mdate: ${localVault.mdate}\ncdate: ${localVault.cdate}");
+        "BackupManager", "restoreLocalBackupItem", "id: ${vault.id}");
+    logManager.logger.d("restoreLocalBackupItem:\neKey: ${vault.encryptedKey.toJson()}:\n"
+        "mdate: ${vault.mdate}\ncdate: ${vault.cdate}");
 
     try {
       // if (!keyManager.salt.isEmpty) {
@@ -109,11 +109,11 @@ class BackupManager {
         }
       // }
 
-      final backupHash = cryptor.sha256(localVault.toRawJson());
+      final backupHash = cryptor.sha256(vault.toRawJson());
       logManager.log("BackupManager", "restoreLocalBackupItem",
           "backup hash: $backupHash");
 
-      final ek = localVault.encryptedKey;
+      final ek = vault.encryptedKey;
       final keyMaterial = ek.keyMaterial;
 
       final result = await cryptor.deriveKeyCheckAgainst(
@@ -132,7 +132,7 @@ class BackupManager {
         logManager.logger.d("here!! result good");
 
         KeyMaterial newKeyMaterial = KeyMaterial(
-          id: localVault.id,
+          id: vault.id,
           salt: salt,
           rounds: ek.rounds,
           key: keyMaterial,
@@ -141,10 +141,10 @@ class BackupManager {
 
         /// delete keys
         ///
-        var encryptedBlob = localVault.blob;
+        var encryptedBlob = vault.blob;
 
         final idString =
-            "${localVault.id}-${localVault.deviceId}-${localVault.version}-${localVault.cdate}-${localVault.mdate}-${localVault.name}";
+            "${vault.id}-${vault.deviceId}-${vault.version}-${vault.cdate}-${vault.mdate}-${vault.name}";
         // logManager.logger.d("decryption: ${idString}");
 
 
@@ -177,7 +177,7 @@ class BackupManager {
             if (genericItems != null) {
               // await keyManager.deleteForBackup();
 
-              final encryptedKeyNonce = localVault.encryptedKey.keyNonce;
+              final encryptedKeyNonce = vault.encryptedKey.keyNonce;
               logManager.logger.d("encryptedKeyNonce: ${encryptedKeyNonce}");
 
               final decryptedKeyNonce = await cryptor.decrypt(encryptedKeyNonce);//.then((value) {
@@ -315,7 +315,7 @@ class BackupManager {
           }
           logManager.logger.d("here-fallthrough4");
 
-        } else if (localVault.numItems > 0) {
+        } else if (vault.numItems > 0) {
           // logManager.logger.d("here-decryptedBlob no empty");
 
           responseStatusCode = 1;
@@ -330,11 +330,11 @@ class BackupManager {
 
         /// save my identity
         ///
-        if (localVault.myIdentity != null) {
+        if (vault.myIdentity != null) {
           logManager.logger.d("here-restore myIdentity");
 
-          final myId = localVault.myIdentity as MyDigitalIdentity;
-          final status = await keyManager.saveMyIdentity(localVault.id, myId.toRawJson());
+          final myId = vault.myIdentity as MyDigitalIdentity;
+          final status = await keyManager.saveMyIdentity(vault.id, myId.toRawJson());
           if (testFail3) {
             logManager.logger.d("here-restore myIdentity 1");
 
@@ -358,10 +358,10 @@ class BackupManager {
 
         /// save identities
         ///
-        if (localVault.identities != null) {
+        if (vault.identities != null) {
           logManager.logger.d("here-restore identities");
 
-          for (var id in localVault.identities!) {
+          for (var id in vault.identities!) {
             final status = await keyManager.saveIdentity(id.id, id.toRawJson());
             if (testFail4) {
               logManager.logger.d("here-restore identities 4");
@@ -392,10 +392,10 @@ class BackupManager {
 
         /// save recovery keys
         ///
-        if (localVault.recoveryKeys != null) {
+        if (vault.recoveryKeys != null) {
           logManager.logger.d("here-restore recoveryKeys");
 
-          for (var key in localVault.recoveryKeys!) {
+          for (var key in vault.recoveryKeys!) {
             final status = await keyManager.saveRecoveryKey(key.id, key.toRawJson());
             if (testFail5) {
               logManager.logger.d("here-restore recoveryKeys - 5");
@@ -687,13 +687,6 @@ class BackupManager {
 
           /// re-read and refresh our variables
           await keyManager.readEncryptedKey();
-
-          // final backupDocumentFile =
-          // await fileManager.writeVaultData(backupItem!.toRawJson());
-
-          // if (backupDocumentFile != null) {
-          //   logManager.logger.d("create backup vault file: $backupDocumentFile");
-          // }
         }
 
         return status;
@@ -701,8 +694,6 @@ class BackupManager {
         return await _recoverVault();
       }
 
-      logManager.logger.w("BackupManager - restoreLocalBackupItem - Failure");
-      return false;
     } catch (e) {
       logManager.logger
           .w("BackupManager - restoreLocalBackupItem - Exception: $e");

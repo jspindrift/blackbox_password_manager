@@ -28,6 +28,7 @@ enum SharedPreferenceKey {
   heartbeats,
   numGestureInteractions,
   saveToSDCard,
+  saveToSDCardOnly,
   recoveryMode,
 }
 
@@ -58,10 +59,15 @@ class SettingsManager {
     return _packageInfo;
   }
 
+  bool _launchSettingInitialized = false;
+  int _initCount = 0;
+  int _initCount2 = 0;
+
   bool _isDarkModeEnabled = false;
   bool _isLockOnExitEnabled = false;
   bool _isRecoveredSession = false;
   bool _saveToSDCard = false;
+  bool _saveToSDCardOnly = false;
 
   int _inactivityTime = 5 * 60;
 
@@ -95,8 +101,16 @@ class SettingsManager {
 
   VaultItem? _androidBackup;
 
+  bool get launchSettingInitialized {
+    return _launchSettingInitialized;
+  }
+
   bool get saveToSDCard {
     return _saveToSDCard;
+  }
+
+  bool get saveToSDCardOnly {
+    return _saveToSDCardOnly;
   }
 
   bool get isRecoveryModeEnabled {
@@ -211,12 +225,29 @@ class SettingsManager {
 
   SettingsManager._internal();
 
-  Future<void> initialize() async {
+  initializeLaunchSettings() async {
+    // final startTime = DateTime.now();
+    // logger.d("initializeLaunchSettings-begin: $_initCount2");
     await _readHasLaunched();
+
+    // final endTime = DateTime.now();
+    // final timeDiff = endTime.difference(startTime);
+    // logger.d("initializeLaunchSettings time diff[$_initCount2]: ${timeDiff.inMilliseconds} ms");
+    // logger.d("initializeLaunchSettings-done: $_initCount2");
+    // _initCount2++;
+  }
+
+  Future<void> initialize() async {
+    // final startTime = DateTime.now();
+    // logger.d("initialize-begin: $_initCount");
+
+    // await _readHasLaunched();
 
     await readRecoveryModeEnabled();
 
     await _readSaveToSDCard();
+
+    await _readSaveToSDCardOnly();
 
     await _readLockOnExit();
 
@@ -243,6 +274,12 @@ class SettingsManager {
     await _initPackageInfo();
 
     await deviceManager.initialize();
+
+    // final endTime = DateTime.now();
+    // final timeDiff = endTime.difference(startTime);
+    // logger.d("initialize time diff[$_initCount]: ${timeDiff.inMilliseconds} ms");
+    // logger.d("initialize-done: $_initCount");
+    // _initCount++;
   }
 
   Future<void> _initPackageInfo() async {
@@ -375,6 +412,7 @@ class SettingsManager {
       }
 
       _hasLaunched = boolData;
+      _launchSettingInitialized = true;
     } catch (e) {
       logger.e(e);
     }
@@ -697,7 +735,7 @@ class SettingsManager {
     }
   }
 
-  /// Blocks Encrypted
+
   Future<void> _readSaveToSDCard() async {
     if (Platform.isAndroid) {
       try {
@@ -730,6 +768,39 @@ class SettingsManager {
       logger.e(e);
     }
   }
+
+  /// Blocks Encrypted
+  Future<void> _readSaveToSDCardOnly() async {
+    if (Platform.isAndroid) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+
+        var boolData = prefs.getBool(
+            EnumToString.convertToString(SharedPreferenceKey.saveToSDCardOnly));
+        if (boolData == null) {
+          return;
+        }
+
+        _saveToSDCardOnly = boolData;
+      } catch (e) {
+        logger.e(e);
+      }
+    }
+  }
+
+  Future<void> saveSaveToSDCardOnly(bool saveToSDOnly) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setBool(
+          EnumToString.convertToString(SharedPreferenceKey.saveToSDCardOnly),
+          saveToSDOnly);
+
+      _saveToSDCardOnly = saveToSDOnly;
+    } catch (e) {
+      logger.e(e);
+    }
+  }
+
 
   /// Tags
   void saveItemTags(List<String> tags) async {

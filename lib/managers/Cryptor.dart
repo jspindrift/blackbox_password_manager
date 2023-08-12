@@ -1162,7 +1162,6 @@ class Cryptor {
   }
 
   /// deriveNewKey - Derive new key on a master password change
-  /// TODO: dont change secret salt
   ///
   Future<KeyMaterial?> deriveNewKey(String password) async {
     // logger.d("PBKDF2 - deriving new key");
@@ -1178,7 +1177,7 @@ class Cryptor {
         bits: 512, // 512
       );
 
-      if (_salt.isEmpty) {
+      if (_salt.isEmpty || _salt == null) {
         logger.d("_salt is empty!!!");
         return null;
       }
@@ -1215,7 +1214,7 @@ class Cryptor {
             "Ky: ${Ky}\n");
       }
 
-      if (_aesRootSecretKeyBytes.isNotEmpty) {
+      if (_aesRootSecretKeyBytes.isNotEmpty || _aesRootSecretKeyBytes == null) {
         // Generate a random 128-bit nonce.
         final iv_new = algorithm_nomac.newNonce();
         final rootKey = _aesRootSecretKeyBytes;
@@ -1270,7 +1269,7 @@ class Cryptor {
 
         return newKeyMaterial;
       } else {
-        logger.w("_aesSecretKeyBytes was empty!!!");
+        logger.wtf("_aesRootSecretKeyBytes was empty!!!");
         return null;
       }
     } catch (e) {
@@ -1490,6 +1489,10 @@ class Cryptor {
 
       /// append keys together
       final rootKey = _aesRootSecretKeyBytes;
+      if (rootKey == null || rootKey.isEmpty) {
+        logger.wtf("derivePinKey: rootKey is NULL");
+        return "";
+      }
 
       /// Encrypt
       final secretBox = await algorithm_nomac.encrypt(
@@ -2064,7 +2067,7 @@ class Cryptor {
 
   /// Used for Recovery Key decryption
   Future<List<int>> decryptRecoveryKey(SecretKey key, String data) async {
-    logger.d("decrypt4");
+    logger.d("decryptRecoveryKey");
 
     try {
       if (key != null && data.isNotEmpty) {
@@ -2096,7 +2099,7 @@ class Cryptor {
         }
 
         if (encodedMac == encodedMacCheck) {
-          // logger.d("mac check success");
+          // logger.d("decryptRecoveryKey: MAC CHECK SUCCESS");
 
           final secretBox = SecretBox(ciphertext, nonce: iv, mac: Mac([]));
 

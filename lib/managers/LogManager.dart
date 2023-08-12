@@ -840,35 +840,39 @@ class LogManager {
   /// so wee manually add the calling class and function here
   void log(String callingClass, String callingFunction, String message) {
     // CustomTrace programInfo = CustomTrace(StackTrace.current);
-    final timestamp = DateTime.now();
+    if (!_isSavingLogs) {
+      final timestamp = DateTime.now();
 
-    // if (!timestamp.isAfter(DateTime.parse(_minCreationTime))) {
-    //   print('invalid time: failed to log');
-    //   return;
-    // }
-    // print("second: ${(timestamp.millisecondsSinceEpoch/(60*1000)).toInt()}");
-    // print("minute: ${DateTime.now().toUtc().minute}");
+      // if (!timestamp.isAfter(DateTime.parse(_minCreationTime))) {
+      //   print('invalid time: failed to log');
+      //   return;
+      // }
+      // print("second: ${(timestamp.millisecondsSinceEpoch/(60*1000)).toInt()}");
+      // print("minute: ${DateTime.now().toUtc().minute}");
 
-    final logLine = LogLine(
-      time: timestamp.toIso8601String(),
-      callingFunction: "$callingClass.$callingFunction",
-      message: message,
-    );
+      final logLine = LogLine(
+        time: timestamp.toIso8601String(),
+        callingFunction: "$callingClass.$callingFunction",
+        message: message,
+      );
 
-    // if (_logManagerType == 0) {
-    _logLineList.list.add(logLine);
-    // } else {
+      // if (_logManagerType == 0) {
+      _logLineList.list.add(logLine);
+      // } else {
 
-    _logLineCount += 1;
+      _logLineCount += 1;
 
-    final logLine2 = BasicLogLine(
-      time: timestamp.toIso8601String(),
-      index: _logLineCount,
-      callingFunction: "$callingClass.$callingFunction",
-      message: message,
-    );
+      final logLine2 = BasicLogLine(
+        time: timestamp.toIso8601String(),
+        index: _logLineCount,
+        callingFunction: "$callingClass.$callingFunction",
+        message: message,
+      );
 
-    _basicLogLineList.list.add(logLine2);
+      _basicLogLineList.list.add(logLine2);
+    } else {
+      logger.wtf("isSavingLogs->TRUE: not appending");
+    }
   }
 
   void logLongMessage(String message) {
@@ -877,11 +881,12 @@ class LogManager {
 
   /// save collected logs to the log file
   Future<void> saveLogs() async {
-    // print("save logs: $_isSavingLogs");
     if (_deletedLogs) {
       // print("deleted logs, ignoring saving.");
       return;
     }
+
+    _isSavingLogs = true;
 
     try {
       final timestamp = DateTime.now();
@@ -1081,6 +1086,12 @@ class LogManager {
           }
           // print('blockchainStringData length: ${blockchainStringData.length}');
 
+          /// check for empty list (concurrency error)
+          if (_logLineList.list.length == 0) {
+            _isSavingLogs = false;
+            return;
+          }
+
           final f = await fileManager.writeLogData(blockchainStringData);
           // if (f != null) {
           //   print('write data: ${f.path}');
@@ -1108,6 +1119,7 @@ class LogManager {
     } catch (e) {
       logger.w("Error in LogManager: $e");
       log("LogManager", "saveLogs", "Error in LogManager: ${e.toString()}");
+      _isSavingLogs = false;
     }
   }
 

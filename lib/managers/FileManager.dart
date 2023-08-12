@@ -261,7 +261,7 @@ class FileManager {
     try {
       final file = await _localLogFile;
       final contents = await file.readAsString();
-      // print("read log file: ${contents.length}");
+      // logger.d("read log file: ${contents.length}");
       return contents;
     } catch (e) {
       return '';

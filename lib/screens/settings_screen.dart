@@ -24,7 +24,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
 
   static const _timeList = [
     "1 minute",
@@ -49,7 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ];
 
   bool _isBiometricSupported = false;
-  bool _isBiometricLoginEnabled = false;
+  bool _isBiometricKeyAvailable = false;
   bool _isLockOnExitEnabled = false;
   bool _isPinCodeEnabled = false;
   bool _isDarkModeEnabled = false;
@@ -68,6 +68,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+
+    /// add observer for app lifecycle state transitions
+    WidgetsBinding.instance.addObserver(this);
 
     logManager.log("SettingsScreen", "initState", "initState");
     // logManager.logger.d("SettingsScreen - initState");
@@ -89,27 +92,81 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
     });
 
-    /// local authentication check
-    biometricManager.isDeviceSecured().then((bool isSupported) {
-      biometricManager.checkBiometrics().then((value) {
-        setState(() {
-          _isBiometricSupported = isSupported && value;
-        });
-      });
+    // /// local authentication check
+    // biometricManager.isDeviceSecured().then((bool isSupported) {
+    //   biometricManager.checkBiometrics().then((value) {
+    //     setState(() {
+    //       _isBiometricSupported = isSupported && value;
+    //     });
+    //   });
+    // });
 
+    biometricManager.doBiometricCheck().then((value) {
+      setState(() {
+        _isBiometricSupported = value;
+      });
     });
 
     keyManager.renderBiometricKey().then((value) {
       setState(() {
-        _isBiometricLoginEnabled = value;
+        _isBiometricKeyAvailable = value;
       });
     });
   }
 
+
+  /// track the lifecycle of the app
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.inactive:
+        // logManager.log("SettingsScreen", "didChangeAppLifecycleState",
+        //     "AppLifecycleState: inactive");
+        logManager.logger.d("AppLifecycleState: inactive - SettingsScreen");
+
+        break;
+      case AppLifecycleState.resumed:
+        // logManager.log("SettingsScreen", "didChangeAppLifecycleState",
+        //     "AppLifecycleState: resumed");
+        logManager.logger.d("AppLifecycleState: resumed - SettingsScreen");
+
+        /// check biometrics
+        final checkBioAvailability = await biometricManager.doBiometricCheck();
+        setState(() {
+          _isBiometricSupported = checkBioAvailability;
+        });
+
+        if (!checkBioAvailability) {
+          final deleteBioStatus = await keyManager.deleteBiometricKey();
+          if (deleteBioStatus) {
+            setState(() {
+              _isBiometricKeyAvailable = false;
+            });
+          }
+        }
+
+        break;
+      case AppLifecycleState.paused:
+        // logManager.log("SettingsScreen", "didChangeAppLifecycleState",
+        //     "AppLifecycleState: paused");
+        logManager.logger.d("AppLifecycleState: paused - SettingsScreen");
+
+        break;
+      case AppLifecycleState.detached:
+        logManager.logger.d("AppLifecycleState: detached - SettingsScreen");
+        // logManager.log("SettingsScreen", "didChangeAppLifecycleState",
+        //     "AppLifecycleState: detached");
+        break;
+    }
+  }
+
+
   /// update and read values after popping back from backup screen
   /// this is in case the user restored from a backup
-  void updateKeysAndStates() {
-    keyManager.readEncryptedKey().then((value) {});
+  void updateKeysAndStates() async {
+    await keyManager.readEncryptedKey();
 
     if (mounted) {
       setState(() {
@@ -118,21 +175,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
     }
 
-    keyManager.renderBiometricKey().then((value) {
-      if (mounted) {
-        setState(() {
-          _isBiometricLoginEnabled = value  && biometricManager.canCheckBiometrics;
-        });
-      }
-    });
+    final bioRenderStatus = await keyManager.renderBiometricKey();
+    final isBiometricSupported = await biometricManager.doBiometricCheck();
 
-    keyManager.readPinCodeKey().then((value) {
-      if (mounted) {
-        setState(() {
-          _isPinCodeEnabled = value;
-        });
-      }
-    });
+    if (mounted) {
+      setState(() {
+        _isBiometricSupported = isBiometricSupported;
+        _isBiometricKeyAvailable = bioRenderStatus  && _isBiometricSupported;
+      });
+    }
+
+    if (!isBiometricSupported) {
+      await keyManager.deleteBiometricKey();
+    }
+
+    final pinStatus = await keyManager.readPinCodeKey();//.then((value) {
+    if (mounted) {
+      setState(() {
+        _isPinCodeEnabled = pinStatus;
+      });
+    }
 
     setState(() {
       _selectedTimeIndex =
@@ -330,7 +392,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontWeight: FontWeight.bold,
                               color: _isDarkModeEnabled ? Colors.white : null),
                         ),
-                        subtitle: !_isBiometricLoginEnabled && _isPinCodeEnabled
+                        subtitle: !_isBiometricKeyAvailable && _isPinCodeEnabled
                             ? Text(
                                 'This will replace your pin code',
                                 style: TextStyle(
@@ -342,14 +404,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         trailing: Switch(
                           thumbColor:
                               MaterialStateProperty.all<Color>(Colors.white),
-                          trackColor: _isBiometricLoginEnabled
+                          trackColor: _isBiometricKeyAvailable
                               ? (_isDarkModeEnabled
                                   ? MaterialStateProperty.all<Color>(
                                       Colors.greenAccent)
                                   : MaterialStateProperty.all<Color>(
                                       Colors.blue))
                               : MaterialStateProperty.all<Color>(Colors.grey),
-                          value: _isBiometricLoginEnabled,
+                          value: _isBiometricKeyAvailable,
                           onChanged: (value) {
                             _pressedBiometricSwitch(value);
                           },
@@ -377,7 +439,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontWeight: FontWeight.bold,
                               color: _isDarkModeEnabled ? Colors.white : null),
                         ),
-                        subtitle: _isBiometricLoginEnabled && !_isPinCodeEnabled
+                        subtitle: _isBiometricSupported && !_isPinCodeEnabled
                             ? Text(
                                 'This will replace ${biometricManager.biometricType}',
                                 style: TextStyle(
@@ -692,14 +754,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// authenticate the user with biometrics and create the biometric
   /// keychain item to unwrap our encryption keys when authenticated
-  void _pressedBiometricSwitch(bool value) async {
+  void _pressedBiometricSwitch(bool shouldCreate) async {
     logManager.log(
         "SettingsScreen", "_pressedBiometricSwitch", "creating biometric key");
     try {
-      if (value) {
+      if (shouldCreate) {
         final status = await biometricManager.authenticateWithBiometrics();
         if (status) {
           final saveStatus = await keyManager.saveBiometricKey();
+          setState(() {
+            _isBiometricKeyAvailable = saveStatus;
+          });
 
           if (saveStatus) {
             // delete pin code
@@ -707,16 +772,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             if (status2) {
               setState(() {
-                _isBiometricLoginEnabled = true;
                 _isPinCodeEnabled = false;
               });
             } else {
-              /// Android bug for deletion
+              /// Android bug for deletion (try again)
               final status3 = await keyManager.deletePinCode();
 
               if (status3) {
                 setState(() {
-                  _isBiometricLoginEnabled = true;
                   _isPinCodeEnabled = false;
                 });
               }
@@ -727,14 +790,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final deleteStatus = await keyManager.deleteBiometricKey();
         if (deleteStatus) {
           setState(() {
-            _isBiometricLoginEnabled = false;
+            _isBiometricKeyAvailable = false;
           });
         }
       }
     } catch (e) {
       logManager.logger.d(e);
       setState(() {
-        _isBiometricLoginEnabled = !value;
+        _isBiometricKeyAvailable = !shouldCreate;
       });
     }
   }
@@ -754,9 +817,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ).then((value) {
         if (value != null) {
           if (value == 'setPin') {
+            logManager.logger.wtf("setPinCode");
             setState(() {
               _isPinCodeEnabled = true;
-              _isBiometricLoginEnabled = false;
+              _isBiometricKeyAvailable = false;
             });
           }
         } else {

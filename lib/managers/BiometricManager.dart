@@ -119,13 +119,41 @@ class BiometricManager {
     }
   }
 
+  /// Get available biometrics
+  Future<bool> hasAvailableBiometrics() async {
+    late List<BiometricType> availableBiometrics;
+    try {
+      availableBiometrics = await auth.getAvailableBiometrics();
+    } on PlatformException catch (e) {
+      availableBiometrics = <BiometricType>[];
+      print(e);
+      return false;
+    }
+
+    _availableBiometrics = availableBiometrics;
+    // print('debug: available biometrics: ${availableBiometrics[0]}');
+    if (_availableBiometrics != null) {
+      if (_availableBiometrics!.length > 0) {
+        logManager.log("BiometricManager", "getAvailableBiometrics",
+            "Available Biometrics: ${_availableBiometrics![0]}");
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   Future<bool> doBiometricCheck() async {
     final status1 = await isDeviceSecured();
+    // logManager.logger.d("status1: $status1");
     if (status1) {
       final status2 = await checkBiometrics();
+      // logManager.logger.d("status2: $status2");
       if (status2) {
         await getAvailableBiometrics();
-        return true;
+        final status3 = await hasAvailableBiometrics();
+        // logManager.logger.d("status3: $status3");
+        return status3;
       }
     }
     return false;
@@ -134,13 +162,6 @@ class BiometricManager {
   /// Authenticate using biometrics
   Future<bool> authenticateWithBiometrics() async {
     bool authenticated = false;
-
-    // await getAvailableBiometrics();
-    //
-    // if (_availableBiometrics == null){
-    //   print("no available biometrics");
-    //   return false;
-    // }
 
     try {
       authenticated = await auth.authenticate(
@@ -152,13 +173,13 @@ class BiometricManager {
         ),
       );
 
-      // print('authenticated: $authenticated');
+      // logManager.logger.d("authenticateWithBiometrics: ${authenticated}");
       logManager.log("BiometricManager", "authenticateWithBiometrics",
           "Authenticated Biometrics: $authenticated");
 
       return authenticated;
     } on PlatformException catch (e) {
-      print(e);
+      logManager.logger.wtf("Exception-Biometric: ${e.code}: ${e.message}");
       logManager.log("BiometricManager", "authenticateWithBiometrics",
           "Authenticated Biometrics Error: $e");
       return false;

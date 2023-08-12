@@ -577,11 +577,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           _confirmPasswordTextController.text = "";
           _passwordHintTextController.text = "";
 
-          // String encodedSalt = keyParams.salt;
-          // String encodedEncryptedKey = keyParams.key;
-
-          // newKeyParams.hint = hint;
-
           KeyMaterial updatedKeyParams = KeyMaterial(
             id: keyParams.id,
             salt: keyParams.salt,
@@ -589,23 +584,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             key: keyParams.key,
             hint: hint,
           );
-          /// Save secret salt
-          /// if we are changing password, we must have the secret salt
-          ///
-          // final statusSalt = await keyManager.saveSecretSalt(
-          //   vault.id,
-          //   vault.deviceId,
-          //   base64.encode(cryptor.salt!),
-          // );
-          //
-          // print("status salt: $statusSalt");
 
           // save new password details
           final saveStatus = await keyManager.saveMasterPassword(
               updatedKeyParams,
           );
-            //.then((value) async {
-          // await keyManager.saveLogKey(cryptor.logKeyMaterial);
+
           setState(() {
             _isAuthenticating = false;
           });
@@ -638,10 +622,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           setState(() {
             _isAuthenticating = false;
           });
-          Navigator.of(context).pop();
-          _showErrorDialog('An error occurred');
+
+          /// check if app was backgrounded while deriving key
+          if (!settingsManager.isOnLockScreen) {
+            Navigator.of(context).pop();
+            _showErrorDialog('An error occurred');
+          }
         }
-      // });
     } catch (e) {
       logManager.logger.w(e);
       logManager.log(

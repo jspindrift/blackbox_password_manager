@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:neon_widgets/neon_widgets.dart';
 import '../helpers/HearbeatTimer.dart';
 import '../helpers/InactivityTimer.dart';
@@ -67,44 +68,40 @@ class _LockScreenState extends State<LockScreen> {
     });
 
     /// read encrypted key material data
-    keyManager.readEncryptedKey().then((value) {
-      // setState(() {
-      //   _isBiometricLoginEnabled = keyManager.isBiometricLoginEnabled;
-      // });
-      // print("_isBiometricLoginEnabled: $_isBiometricLoginEnabled");
-    });
+    keyManager.readEncryptedKey().then((value) {});
 
     /// check biometric key
     keyManager.renderBiometricKey().then((value) {
       setState(() {
         _isBiometricLoginEnabled = value;
       });
-      // print("_isBiometricLoginEnabled 2: $_isBiometricLoginEnabled");
     });
 
-    /// check pin code, if set show pin code screen
-    keyManager.readPinCodeKey().then((value) {
-      // print("readPinKey lockscreen: $value");
-      if (value) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PinCodeScreen(
-              flow: PinCodeFlow.lock,
-            ),
-            fullscreenDialog: true,
-          ),
-        ).then((value) {
-          if (value == 'login') {
-            Navigator.of(context).pop();
-
-            HeartbeatTimer().startHeartbeatTimer();
-          }
-        });
-      }
-    });
+    _checkPinCodeScreenStatus();
 
     _validateField();
+  }
+
+  _checkPinCodeScreenStatus() async {
+    /// check pin code, if set show pin code screen
+    final status = await keyManager.readPinCodeKey();//.then((value) {
+    if (status) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              PinCodeScreen(
+                flow: PinCodeFlow.lock,
+              ),
+          fullscreenDialog: true,
+        ),
+      ).then((value) {
+        if (value == 'login') {
+          Navigator.of(context).pop();
+          HeartbeatTimer().startHeartbeatTimer();
+        }
+      });
+    }
   }
 
   @override
@@ -358,24 +355,26 @@ class _LockScreenState extends State<LockScreen> {
 
   /// authenticate the user with biometrics to unlock
   void _pressedBiometricButton() async {
-    await biometricManager.getAvailableBiometrics();
+    // await biometricManager.getAvailableBiometrics();
+    final isBiometricsSupported = await biometricManager.doBiometricCheck();
 
     // print("no available biometrics: ${biometricManager.availableBiometrics}");
 
-    if (biometricManager.availableBiometrics == null ||
-        biometricManager.availableBiometrics!.isEmpty) {
+    if (!isBiometricsSupported) {
       // print("no available biometrics");
       _showErrorDialog('Biometrics unavailable');
       setState(() {
         _isBiometricLoginEnabled = false;
       });
 
-      await keyManager.deleteBiometricKey();
-
+      // await keyManager.deleteBiometricKey();
+      EasyLoading.dismiss();
       return;
     }
 
     final status = await biometricManager.authenticateWithBiometrics();
+    EasyLoading.show(status: "Authenticating...");
+
     if (status) {
       final setStatus = await keyManager.setBiometricKey();
       if (setStatus) {
@@ -394,13 +393,15 @@ class _LockScreenState extends State<LockScreen> {
       logManager.saveLogs();
       _showErrorDialog('Biometric error');
     }
+
+    EasyLoading.dismiss();
   }
 
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('An error occured'),
+        title: Text('Error'),
         content: Text(message),
         actions: <Widget>[
           ElevatedButton(
