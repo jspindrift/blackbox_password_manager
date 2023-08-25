@@ -579,6 +579,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
           KeyMaterial updatedKeyParams = KeyMaterial(
             id: keyParams.id,
+            keyId: keyParams.keyId,
             salt: keyParams.salt,
             rounds: keyParams.rounds,
             key: keyParams.key,
@@ -655,4 +656,5 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       ),
     );
   }
+
 }

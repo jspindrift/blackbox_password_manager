@@ -21,6 +21,7 @@ final cryptor = Cryptor();
 
 class PasswordItem {
   String id;
+  String keyId;  // root key identifier
   int? version;  // add version for future-proofing implementations
   String name; // encrypted
   String username; // encrypted
@@ -29,16 +30,16 @@ class PasswordItem {
   bool favorite;
   bool isBip39;
   // PasswordPolicy? policy;  // TODO: remove this
-  List<String>? tags;
-  /// TODO: enable geo-encryption
+  List<String> tags;
   GeoLockItem? geoLock;
-  /// TODO: merkle root hash
   String notes; // encrypted
+  String mac; // mac of json object
   String cdate;
   String mdate;
 
   PasswordItem({
     required this.id,
+    required this.keyId,
     required this.version,
     required this.name,
     required this.username,
@@ -49,6 +50,7 @@ class PasswordItem {
     required this.tags,
     required this.geoLock,
     required this.notes,
+    required this.mac,
     required this.cdate,
     required this.mdate,
   });
@@ -58,18 +60,12 @@ class PasswordItem {
 
   String toRawJson() => json.encode(toJson());
 
-  Map<String, dynamic> toJsonTagItem() => {
-        "tags": List<String>.from(tags!),
-  };
-
-  Map<String, dynamic> toJsonVersion() => {
-    "version": version!,
-  };
 
   factory PasswordItem.fromJson(Map<String, dynamic> json) {
     return PasswordItem(
       id: json['id'],
-      version: json["version"] == null ? null : json["version"],
+      keyId: json['keyId'],
+      version: json["version"],
       name: json['name'],
       username: json['username'],
       password: json['password'],
@@ -77,11 +73,12 @@ class PasswordItem {
           json["previousPasswords"].map((x) => PreviousPassword.fromJson(x))),
       favorite: json['favorite'],
       isBip39: json['isBip39'],
-      tags: json['tags'] == null ? null : List<String>.from(json["tags"]),
+      tags:  List<String>.from(json["tags"]),
       geoLock: json['geoLock'] == null
           ? null
           : GeoLockItem.fromJson(json['geoLock']),
       notes: json['notes'],
+      mac: json['mac'],
       cdate: json['cdate'],
       mdate: json['mdate'],
     );
@@ -90,7 +87,8 @@ class PasswordItem {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
       "id": id,
-      // "version": version,
+      "keyId": keyId,
+      "version": version,
       "name": name,
       "username": username,
       "password": password,
@@ -100,13 +98,10 @@ class PasswordItem {
       "notes": notes,
       "tags": tags,
       "geoLock": geoLock,
+      "mac": mac,
       "cdate": cdate,
       "mdate": mdate,
     };
-
-    if (version != null) {
-      jsonMap.addAll(toJsonVersion());
-    }
 
     return jsonMap;
   }
@@ -133,19 +128,7 @@ class PasswordItem {
       final encryptedUsername = await cryptor.encrypt(username);
       final encryptedNotes = await cryptor.encrypt(notes);
 
-      isBip39 = cryptor.validateMnemonic(password);
       String encryptedPassword = '';
-
-      if (isBip39) {
-        final seed = cryptor.mnemonicToEntropy(password);
-
-        /// Encrypt seed here
-        encryptedPassword = await cryptor.encrypt(seed);
-      } else {
-        /// Encrypt password here
-        encryptedPassword = await cryptor.encrypt(password);
-      }
-
       GeoLockItem? geoItem;
 
       /// add for geo-encryption
@@ -178,8 +161,12 @@ class PasswordItem {
       notes = encryptedNotes;
       geoLock = geoItem;
 
+      mac = "";
+      mac = await cryptor.hmac256(toRawJson());
+      // logger.d("toJSON final: ${toJson()}");
+
     } catch (e) {
-      logger.w("encryptParams for PasswordItem failed.");
+      logger.w("encryptParams for PasswordItem failed: $e");
     }
   }
 
@@ -274,6 +261,10 @@ class PasswordItem {
       notes = encryptedNotes;
       geoLock = geoItem;
 
+      mac = "";
+      mac = await cryptor.hmac256(toRawJson());
+      // logger.d("toJSON final: ${toJson()}");
+
     } catch (e) {
       logger.w("encryptParams2 Failed with Password Item");
     }
@@ -310,6 +301,98 @@ class PasswordItem {
       logger.w("geoLockEncryption Failed on PasswordItem");
       return null;
     }
+  }
+
+  // Future<PasswordItem?> decryptObject() async {
+  decryptObject() async {
+    // var item = PasswordItem.fromJson(toJson());
+    // var ditem = item;
+    // var itemCopy = PasswordItem.fromJson(item.toJson());
+
+    final macCheck = mac;
+    mac = "";
+    var objString = toRawJson();
+    // logger.d("objString: $objString");
+
+    final computedMac = await cryptor.hmac256(objString);
+    // logger.d("macCheck: $macCheck\ncomputedMac: $computedMac");
+
+    if (computedMac != macCheck && macCheck.isNotEmpty) {
+      logger.wtf("incorrect mac");
+      return null;
+    }
+
+    mac = computedMac;
+
+    final decryptedName = await cryptor.decrypt(name);
+    final decryptedUsername = await cryptor.decrypt(username);
+
+    var decryptedNote = await cryptor.decrypt(notes);
+
+    var decryptedPassword = password;
+    if (geoLock == null) {
+      decryptedPassword = await cryptor.decrypt(password);
+      if (isBip39) {
+        decryptedPassword = cryptor.entropyToMnemonic(decryptedPassword);
+      }
+    }
+
+    name = decryptedName;
+    username = decryptedUsername;
+    password = decryptedPassword;
+    notes = decryptedNote;
+
+    // logger.d("decryptObject(): ${toRawJson()}");
+  }
+
+  Future<PasswordItem?> decryptObjectCopy() async {
+    var item = PasswordItem.fromJson(toJson());
+    var ditem = item;
+    var itemCopy = PasswordItem.fromJson(item.toJson());
+
+    final macCheck = item.mac!;
+    itemCopy.mac = "";
+    var objString = itemCopy.toRawJson();
+
+    final computedMac = await cryptor.hmac256(objString);
+    // logger.d("macCheck: $macCheck\ncomputedMac: $computedMac");
+
+    if (computedMac != macCheck && macCheck.isNotEmpty) {
+      logger.wtf("incorrect mac");
+      return null;
+    }
+
+    final decryptedName = await cryptor.decrypt(item.name);
+    final decryptedUsername = await cryptor.decrypt(item.username);
+
+    var decryptedNote = await cryptor.decrypt(item.notes);
+
+    var decryptedPassword = password;
+    if (geoLock == null) {
+      decryptedPassword =
+      await cryptor.decrypt(password);
+      if (isBip39) {
+        decryptedPassword = cryptor.entropyToMnemonic(decryptedPassword);
+      }
+    }
+
+    ditem.name = decryptedName;
+    ditem.username = decryptedUsername;
+    ditem.password = decryptedPassword;
+    ditem.notes = decryptedNote;
+    // logger.d("ditem: ${ditem.toJson()}");
+
+    return ditem;
+  }
+
+  Future<bool> checkMAC() async {
+    final checkMac = mac;
+    mac = "";
+    final computedMac = await cryptor.hmac256(toRawJson());
+    mac = checkMac;
+    // logger.d("toRawJson()-added back: ${toRawJson()}");
+
+    return checkMac == computedMac;
   }
 
 }

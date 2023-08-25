@@ -9,12 +9,13 @@ import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart';
 import "package:uuid/uuid.dart";
 import "package:bip39/bip39.dart" as bip39;
-import 'package:ecdsa/ecdsa.dart';
+import 'package:ecdsa/ecdsa.dart' as ecdsa;
 import 'package:elliptic/elliptic.dart';
 
 import "../helpers/bip39_dictionary.dart";
 import '../helpers/WidgetUtils.dart';
 import '../helpers/AppConstants.dart';
+import "../helpers/ivHelper.dart";
 import '../models/DecryptedGeoLockItem.dart';
 import '../models/MyDigitalIdentity.dart';
 import '../models/VaultItem.dart';
@@ -49,7 +50,7 @@ class Cryptor {
 
   // PBKDF2 derived key parameters
   static const _saltLength = 32;
-  static const _rounds = 300000; //262144; // 262144 = 2^18 //300000; //100000;
+  static const _rounds = 300000;
   static const _roundsPin = 100000; // pin code rounds
 
   List<int> _salt = [];
@@ -327,7 +328,7 @@ class Cryptor {
 
   List<int> getRandomBytes(int nbytes) {
     final rng = Random.secure();
-    final rand = new List.generate(nbytes, (_) => rng.nextInt(255));
+    final rand = new List.generate(nbytes, (_) => rng.nextInt(256));
     return rand;
   }
 
@@ -416,8 +417,6 @@ class Cryptor {
   Future<KeyMaterial?> deriveKey(String uuid, String password, String hint) async {
     // logger.d("PBKDF2 - deriving key");
     try {
-
-      // var rounds = 100000;
       // final startTime = DateTime.now();
       final pbkdf2 = Pbkdf2(
         macAlgorithm: hmac_algo_512,
@@ -432,7 +431,7 @@ class Cryptor {
       final secretKey = SecretKey(utf8.encode(password.trim()));
 
       // create a random salt
-      // final rng = Random();
+      // final rng = Random.secure;
       _salt = getRandomBytes(_saltLength);
 
       // logger.d("random salt: $_salt");
@@ -536,7 +535,9 @@ class Cryptor {
       // var confirmMacPhrase = macWordList[0] + " " + macWordList[1] + " " + macWordList.last;
       var confirmMacPhrase = macWordList[0] + " " + macWordList.last;
 
-      logger.d("confirmMacPhrase: $confirmMacPhrase");
+      if (AppConstants.debugKeyData) {
+        logger.d("confirmMacPhrase: $confirmMacPhrase");
+      }
 
       var keyMaterial = iv + mac.bytes + secretBox.cipherText;
 
@@ -548,8 +549,11 @@ class Cryptor {
         // logger.d("${},${},${},${},${}");
       }
 
+      final keyId = getUUID();
+
       KeyMaterial keyParams = KeyMaterial(
         id: uuid,
+        keyId: keyId,
         rounds: _rounds,
         salt: base64.encode(_salt),
         key: base64.encode(keyMaterial),
@@ -623,10 +627,8 @@ class Cryptor {
     _aesGenSecretKeyBytes = Kb;
     _authSecretKeyBytes = Kc;
 
-    _aesGenSecretKey = SecretKey(Kb);
-
     _aesSecretKey = SecretKey(Ka);
-
+    _aesGenSecretKey = SecretKey(Kb);
     _authSecretKey = SecretKey(Kc);
 
     if (AppConstants.debugKeyData){
@@ -636,7 +638,6 @@ class Cryptor {
     }
 
     return;
-    // return derivedSecretKeyBytes;
   }
 
   Future<void> expandSecretTempRootKey(List<int> skey) async {
@@ -754,33 +755,21 @@ class Cryptor {
     try {
       final cdate = DateTime.now().toIso8601String();
 
-      final x = await createDigitalIdentityExchange();
-      final y = await createDigitalIdentitySigning();
+      final Kx = await createDigitalIdentityExchange();
+      final Ky = await createDigitalIdentitySigning();
 
-      // final intKey = bip39.generateMnemonic(strength: 256);
-      // // logger.d("intKey: $intKey");
-      // final intKey2 = bip39.mnemonicToEntropy(intKey);
-
-      /// TODO: check this
-      // settingsManager.doEncryption(utf8.encode(intKey2).length);
-      // logger.d("keyIndex: $keyIndex");
-
-      // final encryptedIntKey = await encrypt(intKey2);
-
-      // if (AppConstants.debugKeyData){
-      //   logger.d("intKey: ${intKey}\n"
-      //       "intKey2: ${intKey2}\n"
-      //       "encryptedIntKey: ${encryptedIntKey}");
-      // }
-
-      final myId = MyDigitalIdentity(
+      var myId = MyDigitalIdentity(
+        keyId: KeychainManager().keyId,
         version: AppConstants.myDigitalIdentityItemVersion,
-        privKeyExchange: x, // encrypted
-        privKeySignature: y, // encrypted
-        // intermediateKey: encryptedIntKey,
+        privKeyExchange: Kx, // encrypted
+        privKeySignature: Ky, // encrypted
+        mac: "",
         cdate: cdate,
         mdate: cdate,
       );
+
+      final myIdMac = await hmac256(myId.toRawJson());
+      myId.mac = myIdMac;
 
       return myId;
     } catch (e) {
@@ -806,8 +795,8 @@ class Cryptor {
       if (AppConstants.debugKeyData){
         logger.d("randomSeed: ${randomSeed}\n");
       }
-      final keyIndex = settingsManager.doEncryption(utf8.encode(hex.encode(randomSeed)).length);
-      // logger.d("keyIndex: $keyIndex");
+
+      settingsManager.doEncryption(utf8.encode(hex.encode(randomSeed)).length);
 
       /// base64 encoded encrypted hex string key
       final encryptedKey = await encrypt(hex.encode(randomSeed));
@@ -1113,7 +1102,9 @@ class Cryptor {
         // var confirmMacPhrase = macWordList[0] + " " + macWordList[1] + " " + macWordList.last;
         var confirmMacPhrase = macWordList[0] + " " + macWordList.last;
 
-        logger.d("confirmMacPhrase: $confirmMacPhrase");
+        if (AppConstants.debugKeyData) {
+          logger.d("confirmMacPhrase: $confirmMacPhrase");
+        }
 
         if (encodedMac == encodedMacCheck) {
           List<int> empty_mac = [];
@@ -1169,8 +1160,8 @@ class Cryptor {
     if (currentKeyParams == null) {
       return null;
     }
+
     try {
-      // final startTime = DateTime.now();
       final pbkdf2 = Pbkdf2(
         macAlgorithm: Hmac.sha512(),
         iterations: currentKeyParams.rounds,
@@ -1178,29 +1169,22 @@ class Cryptor {
       );
 
       if (_salt.isEmpty || _salt == null) {
-        logger.d("_salt is empty!!!");
+        logger.e("_salt is empty!!!");
         return null;
       }
-      // double strength = estimatePasswordStrength(password.trim());
-      // logger.d("master pwd strength: ${strength.toStringAsFixed(3)}");
 
       // password we want to hash
-      // final secretKey = SecretKey(password.codeUnits);
       final secretKey = SecretKey(utf8.encode(password.trim()));
 
-      // use same salt (secret salt)
-      final sameSalt = _salt;
+      final rng = Random.secure();
+      _salt = List.generate(_saltLength, (_) => rng.nextInt(256));
+      // logger.d("new salt: ${hex.encode(_salt)}\n");
 
       // Calculate a hash that can be stored in the database
       final derivedSecretKey = await pbkdf2.deriveKey(
         secretKey: secretKey,
-        nonce: sameSalt,
+        nonce: _salt,
       );
-
-      // final endTime = DateTime.now();
-
-      // final timeDiff = endTime.difference(startTime);
-      // logger.d("pbkdf2 time diff: ${timeDiff.inMilliseconds} ms");
 
       final derivedSecretKeyBytes = await derivedSecretKey.extractBytes();
       final Kx = derivedSecretKeyBytes.sublist(0,32);
@@ -1251,7 +1235,9 @@ class Cryptor {
         // for (var mword in macWordList) {
         //   confirmMacPhrase = confirmMacPhrase + " " + mword;
         // }
-        logger.d("confirmMacPhrase: $confirmMacPhrase");
+        if (AppConstants.debugKeyData) {
+          logger.d("confirmMacPhrase: $confirmMacPhrase");
+        }
 
         if (AppConstants.debugKeyData){
           logger.d("mac: ${mac}\n");
@@ -1261,10 +1247,11 @@ class Cryptor {
 
         KeyMaterial newKeyMaterial = KeyMaterial(
           id: currentKeyParams.id,
-          salt: base64.encode(sameSalt),
+          keyId: currentKeyParams.keyId,
+          salt: base64.encode(_salt),
           rounds: currentKeyParams.rounds,
           key: base64.encode(keyMaterial),
-          hint: "pwd change",
+          hint: "",
         );
 
         return newKeyMaterial;
@@ -1346,6 +1333,10 @@ class Cryptor {
         _tempReKeyRootSecretKeyBytes = newRootSecret;
         _tempReKeyRootSecretKey = SecretKey(_tempReKeyRootSecretKeyBytes);
 
+        var kid = getUUID();
+
+        KeychainManager().setNewReKeyId(kid);
+
         await expandSecretTempRootKey(_tempReKeyRootSecretKeyBytes);
         // Generate a random 128-bit nonce.
         final iv_new = algorithm_nomac.newNonce();
@@ -1404,7 +1395,8 @@ class Cryptor {
         logger.d("blob_keyNonce: ${blob_keyNonce}");
 
 
-        final ek = EncryptedKey(
+        var encryptedKey = EncryptedKey(
+            keyId: kid,
             derivationAlgorithm: kdfAlgo,
             salt: base64.encode(newSalt),
             rounds: rounds,
@@ -1414,15 +1406,24 @@ class Cryptor {
             encryptionAlgorithm: encryptionAlgo,
             keyMaterial: base64.encode(keyMaterial),
             keyNonce: base64.encode(blob_keyNonce),
-            // blocksEncrypted: 0,
-            // blockRolloverCount: 0,
+            mac: "",
         );
+
+        final paramsHash = sha256(encryptedKey.toRawJson());
+
+        final keyParamsMac = await hmac_algo_256.calculateMac(
+          hex.decode(paramsHash),
+          secretKey: secretKy,
+        );
+
+        encryptedKey.mac = hex.encode(keyParamsMac.bytes);
+
+
         if (AppConstants.debugKeyData){
-          logger.d("ek: ${ek}\n"
-              "ek.json: ${ek.toJson()}\n");
+          logger.d("ek.json: ${encryptedKey.toJson()}\n");
         }
 
-        return ek;
+        return encryptedKey;
       } else {
         logger.w("_aesSecretKeyBytes was empty!!!");
         return null;
@@ -1466,9 +1467,8 @@ class Cryptor {
       final secretKey = SecretKey(utf8.encode(pin.trim()));
 
       // create a random salt
-      final rng = Random();
-      final salt = List.generate(_saltLength, (_) => rng.nextInt(255));
-      // logger.d("random salt: $_salt");
+      final rng = Random.secure();
+      final salt = List.generate(_saltLength, (_) => rng.nextInt(256));
 
       // Calculate a hash that can be stored in the database
       final derivedSecretKey = await pbkdf2.deriveKey(
@@ -1485,7 +1485,6 @@ class Cryptor {
 
       // Generate a random 128-bit nonce.
       final iv = algorithm_nomac.newNonce();
-
 
       /// append keys together
       final rootKey = _aesRootSecretKeyBytes;
@@ -1642,8 +1641,8 @@ class Cryptor {
       logger.d("UTF8 pwd: $argonPassword2");
       // var salt = "somesalt".toBytesLatin1();
       // create a random salt
-      final rng = Random();
-      _salt = List.generate(_saltLength, (_) => rng.nextInt(255));
+      final rng = Random.secure();
+      _salt = List.generate(_saltLength, (_) => rng.nextInt(256));
 
       logger.d("argon2: starting time");
       final uint8Salt = Uint8List.fromList(_salt);
@@ -1770,6 +1769,7 @@ class Cryptor {
     }
   }
 
+
   /// intakes the currently encrypted item with current key
   /// and decrypts with current key, then re-encrypts with new temp root key
   Future<String> reKeyEncryption(bool ishex, String ciphertext) async {
@@ -1885,6 +1885,46 @@ class Cryptor {
         // logger.d("encyptedMaterial2: ${encyptedMaterial2.length} : $encyptedMaterial2");
 
         return base64.encode(encyptedMaterial2);
+      } else {
+        return "";
+      }
+    } catch (e) {
+      logger.w(e);
+      return "";
+    }
+  }
+
+
+  /// generic key encryption
+  Future<String> encryptWithKeyNoMac(List<int> Kenc, String plaintext) async {
+    logger.d("encryptWithKeyNoMac");
+    try {
+      if (Kenc != null && Kenc.length == 32) {
+
+        // Generate a random 128-bit nonce.
+        final iv = algorithm_nomac.newNonce();
+        // logger.d("ctr new nonce: ${nonce.length}, nonce");
+
+        final encodedPlaintext = utf8.encode(plaintext);
+        // logger.d("encoded password: $encodedPlaintext");
+
+        final key = SecretKey(Kenc);
+
+        /// Encrypt
+        final secretBox = await algorithm_nomac.encrypt(
+          encodedPlaintext,
+          secretKey: key,
+          nonce: iv,
+        );
+
+        final encyptedMaterial = iv + secretBox.cipherText;
+
+        if (AppConstants.debugKeyData){
+          logger.d("Kenc: ${Kenc}\n"
+              "encyptedMaterial: ${hex.encode(encyptedMaterial)}");
+        }
+
+        return base64.encode(encyptedMaterial);
       } else {
         return "";
       }
@@ -3097,11 +3137,11 @@ class Cryptor {
     //
     // logger.d("hash: ${hash}");
 
-    var sig = signature(priv, hash);
+    var sig = ecdsa.signature(priv, hash);
     // logger.d("sig.R: ${sig.R}");
     // logger.d("sig.S: ${sig.S}");
 
-    var result = verify(pub, hash, sig);
+    var result = ecdsa.verify(pub, hash, sig);
     // logger.d("result: ${result}");
 
     return priv;

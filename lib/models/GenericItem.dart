@@ -51,7 +51,6 @@ class GenericItem {
 
 }
 
-
 class GenericItemList {
   List<GenericItem> list;
 
@@ -68,14 +67,12 @@ class GenericItemList {
     return GenericItemList(
       list: List<GenericItem>.from(
           json["list"].map((x) => GenericItem.fromJson(x))),
-      // tree: List<String>.from(json["tree"]),
     );
   }
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
       "list": list,
-      // "tree": tree,
     };
 
     return jsonMap;
@@ -292,6 +289,80 @@ class GenericItemList {
 
 
     return root == checkTree.last;
+  }
+
+}
+
+
+class GenericObject {
+  String type;
+  String id;
+  String keyId;
+  String data;  // JSON string data (encrypted)
+  String mac;
+
+  GenericObject({
+    required this.type,
+    required this.id,
+    required this.keyId,
+    required this.data,
+    required this.mac,
+  });
+
+  factory GenericObject.fromRawJson(String str) =>
+      GenericObject.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  factory GenericObject.fromJson(Map<String, dynamic> json) {
+    return GenericObject(
+      type: json['type'],
+      id: json['id'],
+      keyId: json['keyId'],
+      data: json['data'],
+      mac: json['mac'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonMap = {
+      "type": type,
+      "id": id,
+      "keyId": keyId,
+      "data": data,
+      "mac": mac,
+    };
+
+    return jsonMap;
+  }
+
+}
+
+class GenericObjectList {
+  List<GenericObject> items;
+
+  GenericObjectList({
+    required this.items,
+  });
+
+  factory GenericObjectList.fromRawJson(String str) =>
+      GenericObjectList.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  factory GenericObjectList.fromJson(Map<String, dynamic> json) {
+    return GenericObjectList(
+      items: List<GenericObject>.from(
+          json["items"].map((x) => GenericObject.fromJson(x))),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonMap = {
+      "items": items,
+    };
+
+    return jsonMap;
   }
 
 }

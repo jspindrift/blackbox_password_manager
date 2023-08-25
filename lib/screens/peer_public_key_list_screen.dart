@@ -49,6 +49,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
 
   KeyItem _keyItem = KeyItem(
     id: "",
+    keyId: "",
     version: 0,
     name: "",
     key: "",
@@ -60,6 +61,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
     isBip39: true,
     peerPublicKeys: [],
     tags: [],
+    mac: "",
     cdate: "",
     mdate: "",
   );

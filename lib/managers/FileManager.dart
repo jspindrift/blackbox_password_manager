@@ -45,7 +45,7 @@ class FileManager {
 
   Future<String> get _externalLocalPath async {
     final directories = await getExternalStorageDirectories();
-    logger.d("directories: $directories");
+    // logger.d("directories: $directories");
 
     /// find the correct directory
 

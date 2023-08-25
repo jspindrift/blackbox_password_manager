@@ -47,7 +47,7 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
   List<String> _allTags = [];
   String _dropDownValue = "Title";
 
-  final _allCategories = ["Password", "Secure Note", "Key"]; //, "Credit Card"];
+  final _allCategories = ["Password", "Secure Note", "Key"];
 
   List<String> _decryptedPasswordList = [];
 
@@ -76,165 +76,117 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
     _allTags = [];
     _decryptedPasswordList = [];
 
-    final items = await keyManager.getAllItems();
+    try {
+      final items = await keyManager.getAllItems();
 
-    // iterate through items
-    for (var item in items.list) {
-      if (item.type == "password") {
-        var passwordItem = PasswordItem.fromRawJson(item.data);
-        if (passwordItem != null) {
-          for (var tag in (passwordItem?.tags)!) {
-            if (!_allTags.contains(tag)) {
-              _allTags.add(tag);
+      // iterate through items
+      for (var item in items.list) {
+        if (item.type == "password") {
+          var passwordItem = PasswordItem.fromRawJson(item.data);
+          if (passwordItem != null) {
+            for (var tag in (passwordItem?.tags)!) {
+              if (!_allTags.contains(tag)) {
+                _allTags.add(tag);
+              }
             }
-          }
-          // var keyIndex = 0;
-          //
-          // if (passwordItem?.keyIndex != null) {
-          //   keyIndex = (passwordItem?.keyIndex)!;
-          // }
-          // final keyIndex = (passwordItem?.keyIndex)!;
-          final decryptedName = await cryptor.decrypt(passwordItem.name);
-          final decryptedUsername =
-              await cryptor.decrypt(passwordItem.username);
 
-          passwordItem.name = decryptedName;
-          passwordItem.username = decryptedUsername;
+            // logManager.logger.d("passwordItem: ${passwordItem.toRawJson()}");
+            passwordItem.decryptObject();
 
-          if (passwordItem.favorite) {
-            // final itemId = passwordItem.id + "-" + passwordItem.cdate + "-" + passwordItem.mdate;
-            _favoriteItems.add(passwordItem);
-          }
-
-          if (passwordItem.geoLock == null) {
-            final decryptedPassword =
-                await cryptor.decrypt(passwordItem.password);
-            if (passwordItem.isBip39) {
-              final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
-              _decryptedPasswordList.add(mnemonic);
-            } else {
-              _decryptedPasswordList.add(decryptedPassword);
+            if (passwordItem.favorite) {
+              _favoriteItems.add(passwordItem);
             }
-          }
 
-          _allItems.add(passwordItem);
-        }
-      } else if (item.type == "note"){
-        var noteItem = NoteItem.fromRawJson(item.data);
-        if (noteItem != null) {
-          for (var tag in (noteItem?.tags)!) {
-            if (!_allTags.contains(tag)) {
-              _allTags.add(tag);
+            _decryptedPasswordList.add(passwordItem.password);
+
+            _allItems.add(passwordItem);
+          }
+        } else if (item.type == "note") {
+          var noteItem = NoteItem.fromRawJson(item.data);
+          if (noteItem != null) {
+            for (var tag in (noteItem?.tags)!) {
+              if (!_allTags.contains(tag)) {
+                _allTags.add(tag);
+              }
             }
-          }
-          // var keyIndex = 0;
-          //
-          // if (noteItem?.keyIndex != null) {
-          //   keyIndex = (noteItem?.keyIndex)!;
-          // }
+            // var keyIndex = 0;
+            //
+            // if (noteItem?.keyIndex != null) {
+            //   keyIndex = (noteItem?.keyIndex)!;
+            // }
 
-          // final keyIndex = (noteItem?.keyIndex)!;
+            // final keyIndex = (noteItem?.keyIndex)!;
 
-          if (noteItem.geoLock == null) {
-            final decryptedName = await cryptor.decrypt(noteItem.name);
-            final decryptedNote = await cryptor.decrypt(noteItem.notes);
+            if (noteItem.geoLock == null) {
+              final decryptedName = await cryptor.decrypt(noteItem.name);
+              final decryptedNote = await cryptor.decrypt(noteItem.notes);
 
-            noteItem.name = decryptedName;
-            noteItem.notes = decryptedNote;
-            // _favoriteItems.add(noteItem);
-          }
-
-          if (noteItem.favorite) {
-            // final itemId = noteItem.id + "-" + noteItem.cdate + "-" + noteItem.mdate;
-            _favoriteItems.add(noteItem);
-          }
-
-          _allItems.add(noteItem);
-        }
-      } else if (item.type == "key") {
-        var keyItem = KeyItem.fromRawJson(item.data);
-        if (keyItem != null) {
-          for (var tag in (keyItem?.tags)!) {
-            if (!_allTags.contains(tag)) {
-              _allTags.add(tag);
+              noteItem.name = decryptedName;
+              noteItem.notes = decryptedNote;
+              // _favoriteItems.add(noteItem);
             }
+
+            if (noteItem.favorite) {
+              // final itemId = noteItem.id + "-" + noteItem.cdate + "-" + noteItem.mdate;
+              _favoriteItems.add(noteItem);
+            }
+
+            _allItems.add(noteItem);
           }
-          // var keyIndex = 0;
-          //
-          // if (keyItem?.keyIndex != null) {
-          //   keyIndex = (keyItem?.keyIndex)!;
-          // }
+        } else if (item.type == "key") {
+          var keyItem = KeyItem.fromRawJson(item.data);
+          if (keyItem != null) {
+            for (var tag in (keyItem?.tags)!) {
+              if (!_allTags.contains(tag)) {
+                _allTags.add(tag);
+              }
+            }
 
-          // final keyIndex = (keyItem?.keyIndex)!;
+            final decryptedName = await cryptor.decrypt(keyItem.name);
+            keyItem.name = decryptedName;
 
-          final decryptedName = await cryptor.decrypt(keyItem.name);
-          keyItem.name = decryptedName;
+            final decryptedNote = await cryptor.decrypt(keyItem.notes);
+            keyItem.notes = decryptedNote;
 
-          final decryptedNote = await cryptor.decrypt(keyItem.notes);
-          keyItem.notes = decryptedNote;
-            // _favoriteItems.add(noteItem);
+            if (keyItem.favorite) {
+              _favoriteItems.add(keyItem);
+            }
 
-
-          if (keyItem.favorite) {
-            // final itemId = noteItem.id + "-" + noteItem.cdate + "-" + noteItem.mdate;
-            _favoriteItems.add(keyItem);
+            _allItems.add(keyItem);
           }
-
-          _allItems.add(keyItem);
         }
       }
+
+      _favoriteItems
+          .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
+      if (_dropDownValue == sortList[0]) {
+        setState(() {
+          _allItems.sort(
+                  (a, b) =>
+                  a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        });
+      } else if (_dropDownValue == sortList[1]) {
+        setState(() {
+          _allItems.sort(
+                  (a, b) =>
+                  b.cdate.toLowerCase().compareTo(a.cdate.toLowerCase()));
+        });
+      } else if (_dropDownValue == sortList[2]) {
+        setState(() {
+          _allItems.sort(
+                  (a, b) =>
+                  b.mdate.toLowerCase().compareTo(a.mdate.toLowerCase()));
+        });
+      }
+
+      _allTags.sort((e1, e2) => e1.compareTo(e2));
+
+      settingsManager.saveItemTags(_allTags);
+
+    } catch (e) {
+      logManager.logger.wtf("Exception: $e");
     }
-
-    /// sort passwords by name with tag
-    // _passwordsWithTag.sort(
-    //         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-
-    // _favoriteItems.sort(
-    //         (a, b) => b.mdate.toLowerCase().compareTo(a.mdate.toLowerCase()));
-
-    _favoriteItems
-        .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-
-    if (_dropDownValue == sortList[0]) {
-      setState(() {
-        _allItems.sort(
-            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-      });
-    } else if (_dropDownValue == sortList[1]) {
-      setState(() {
-        _allItems.sort(
-            (a, b) => b.cdate.toLowerCase().compareTo(a.cdate.toLowerCase()));
-      });
-    } else if (_dropDownValue == sortList[2]) {
-      setState(() {
-        _allItems.sort(
-            (a, b) => b.mdate.toLowerCase().compareTo(a.mdate.toLowerCase()));
-      });
-      // setState(() {
-      //   _allItems
-      //       .sort((a, b) => a.cdate.toLowerCase().compareTo(b.cdate.toLowerCase()));
-      // });
-    }
-    // else if (_dropDownValue == sortList[3]) {
-    //
-    //   setState(() {
-    //     _allItems
-    //         .sort((a, b) => b.mdate.toLowerCase().compareTo(a.mdate.toLowerCase()));
-    //   });
-    // } else {
-    //   setState(() {
-    //     _allItems
-    //         .sort((a, b) => a.mdate.toLowerCase().compareTo(b.mdate.toLowerCase()));
-    //   });
-    //
-    // }
-
-    _allTags.sort((e1, e2) => e1.compareTo(e2));
-
-    settingsManager.saveItemTags(_allTags);
-
-    /// update UI
-    setState(() {});
   }
 
   @override

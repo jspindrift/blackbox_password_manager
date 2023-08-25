@@ -51,7 +51,8 @@ enum KeyPurposeType {
 ///TODO: add this item in
 class KeyItem {
   String id;
-  int? version;  // add version that signals how to decrypt/manipulate
+  String keyId;
+  int version;  // add version that signals how to decrypt/manipulate
   String name;
   String key;  // encrypted private key (asym or sym)
   String keyType;
@@ -62,11 +63,13 @@ class KeyItem {
   String notes;
   List<PeerPublicKey> peerPublicKeys; // used for asymmetric keys only
   List<String>? tags;
+  String mac;
   String cdate;
   String mdate;
 
   KeyItem({
     required this.id,
+    required this.keyId,
     required this.version,
     required this.name,
     required this.key,
@@ -78,6 +81,7 @@ class KeyItem {
     required this.favorite,
     required this.peerPublicKeys,
     required this.tags,
+    required this.mac,
     required this.cdate,
     required this.mdate,
   });
@@ -86,15 +90,12 @@ class KeyItem {
 
   String toRawJson() => json.encode(toJson());
 
-  Map<String, dynamic> toJsonVersion() => {
-    "version": version!,
-  };
-
 
   factory KeyItem.fromJson(Map<String, dynamic> json) {
     return KeyItem(
       id: json['id'],
-      version: json["version"] == null ? null : json["version"],
+      keyId: json['keyId'],
+      version: json["version"],
       name: json['name'],
       key: json['key'],
       keyType: json['keyType'],
@@ -106,6 +107,7 @@ class KeyItem {
       tags: json['tags'] == null ? null : List<String>.from(json["tags"]),
       peerPublicKeys: List<PeerPublicKey>.from(
           json["peerPublicKeys"].map((x) => PeerPublicKey.fromJson(x))),
+      mac: json['mac'],
       cdate: json['cdate'],
       mdate: json['mdate'],
     );
@@ -114,7 +116,8 @@ class KeyItem {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
       "id": id,
-      // "version": version,
+      "keyId": keyId,
+      "version": version,
       "name": name,
       "key": key,
       "keyType": keyType,
@@ -125,13 +128,10 @@ class KeyItem {
       "notes": notes,
       "tags": tags,
       "peerPublicKeys": peerPublicKeys,
+      "mac": mac,
       "cdate": cdate,
       "mdate": mdate,
     };
-
-    if (version != null) {
-      jsonMap.addAll(toJsonVersion());
-    }
 
     return jsonMap;
   }

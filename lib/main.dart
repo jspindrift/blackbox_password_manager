@@ -101,13 +101,14 @@ class MyApp extends StatelessWidget {
           AddNoteScreen.routeName: (ctx) => AddNoteScreen(
                 note: NoteItem(
                   id: "",
+                  keyId: "",
                   version: 0,
                   name: "",
                   notes: "",
                   favorite: false,
                   tags: [],
                   geoLock: null,
-                  // merkle: null,
+                  mac: "",
                   cdate: DateTime.now().toIso8601String(),
                   mdate: DateTime.now().toIso8601String(),
                 ),
@@ -162,6 +163,7 @@ class MyApp extends StatelessWidget {
           AddPeerPublicKeyScreen.routeName: (ctx) => AddPeerPublicKeyScreen(
             keyItem: KeyItem(
               id: "",
+              keyId: "",
               version: 0,
               name: "",
               key: "",
@@ -173,6 +175,7 @@ class MyApp extends StatelessWidget {
               isBip39: true,
               peerPublicKeys: [],
               tags: [],
+              mac: "",
               cdate: "",
               mdate: "",
             ),

@@ -63,38 +63,13 @@ class _NoteListScreenState extends State<NoteListScreen> {
       if (item.type == "note") {
         var noteItem = NoteItem.fromRawJson(item.data);
         if (noteItem != null) {
-          // final checkMerkle = noteItem.calculateMerkleRootCheck();
-          // if (!checkMerkle) {
-          //   WidgetUtils.showToastMessage("Merkle Corrupt:NoteItem: ${noteItem.id}", 3);
-          // }
 
-          // final keyIndex = (noteItem?.keyIndex)!;
-          // var keyIndex = 0;
+          final checkNoteMac = await noteItem.checkMAC();
+          if (checkNoteMac) {
+            await noteItem.decryptObject();
 
-          // if (noteItem?.keyIndex != null) {
-          //   keyIndex = (noteItem?.keyIndex)!;
-          // }
-          final decryptedName = await cryptor.decrypt(noteItem.name);
-
-          var decryptedNote = await cryptor.decrypt(noteItem.notes);
-
-          noteItem.name = decryptedName;
-          noteItem.notes = decryptedNote;
-          _notes.add(noteItem);
-          // var tempTags = noteItem.tags;
-          // if (tempTags != null) {
-          //   // iterate through item tags
-          //   for (var tag in tempTags) {
-          //     if (!_tags.contains(tag)) {
-          //       _tags.add(tag);
-          //       _tagCounts[tag] = 1;
-          //     } else {
-          //       if (_tagCounts[tag] != null) {
-          //         _tagCounts[tag] = _tagCounts[tag]! + 1;
-          //       }
-          //     }
-          //   }
-          // }
+            _notes.add(noteItem);
+          }
         }
       }
     }

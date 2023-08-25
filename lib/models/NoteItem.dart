@@ -1,14 +1,10 @@
 import 'dart:convert';
-import 'dart:typed_data';
-import 'package:convert/convert.dart';
+import 'package:logger/logger.dart';
 
 import '../managers/Cryptor.dart';
 import '../managers/SettingsManager.dart';
 import 'GeoLockItem.dart';
 
-import '../merkle/merkle_example.dart';
-
-import 'package:logger/logger.dart';
 
 var logger = Logger(
   printer: PrettyPrinter(),
@@ -24,24 +20,28 @@ final cryptor = Cryptor();
 
 class NoteItem {
   String id;
+  String keyId;  // root key identifier
   int version;
   String name;  // encrypted
   String notes; // encrypted
   bool favorite;
-  List<String>? tags;
+  List<String> tags;
   /// TODO: add geo-encryption?
   GeoLockItem? geoLock;
+  String mac; // mac of json object
   String cdate;
   String mdate;
 
   NoteItem({
     required this.id,
+    required this.keyId,
     required this.version,
     required this.name,  // encrypted
     required this.notes, // encrypted
     required this.favorite,
     required this.tags,
     required this.geoLock,
+    required this.mac,
     required this.cdate,
     required this.mdate,
   });
@@ -56,18 +56,23 @@ class NoteItem {
     "version": version!,
   };
 
+  Map<String, dynamic> toJsonItemMac() => {
+    "mac": mac!,
+  };
 
   factory NoteItem.fromJson(Map<String, dynamic> json) {
     return NoteItem(
       id: json['id'],
-      version: json["version"] == null ? null : json["version"],
+      keyId: json['keyId'],
+      version: json["version"], // == null ? null : json["version"],
       name: json['name'],
       notes: json['notes'],
       favorite: json['favorite'],
-      tags: json['tags'] == null ? null : List<String>.from(json["tags"]),
+      tags: List<String>.from(json["tags"]), //json['tags'] == null ? null : List<String>.from(json["tags"]),
       geoLock: json['geoLock'] == null
           ? null
           : GeoLockItem.fromJson(json['geoLock']),
+      mac: json['mac'], // == null ? null : json['mac'],
       cdate: json['cdate'],
       mdate: json['mdate'],
     );
@@ -76,19 +81,25 @@ class NoteItem {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
       "id": id,
-      // "version": version,
+      "keyId": keyId,
+      "version": version,
       "name": name,
       "notes": notes,
       "favorite": favorite,
       "tags": tags,
       "geoLock": geoLock,
+      "mac": mac,
       "cdate": cdate,
       "mdate": mdate,
     };
 
-    if (version != null) {
-      jsonMap.addAll(toJsonVersion());
-    }
+    // if (version != null) {
+    //   jsonMap.addAll(toJsonVersion());
+    // }
+    //
+    // if (mac != null) {
+    //   jsonMap.addAll(toJsonItemMac());
+    // }
 
     return jsonMap;
   }
@@ -106,6 +117,73 @@ class NoteItem {
     /// set fields
     name = encryptedName;
     notes = encryptedNotes;
+    mac = "";
+    mac = await cryptor.hmac256(toRawJson());
+    // logger.d("toJSON final: ${toJson()}");
+  }
+
+  decryptObject() async {
+    try {
+      final macCheck = mac;
+      mac = "";
+      var objString = toRawJson();
+
+      final computedMac = await cryptor.hmac256(objString);
+      // logger.d("macCheck: $macCheck\ncomputedMac: $computedMac");
+
+      if (computedMac != macCheck && macCheck.isNotEmpty) {
+        logger.wtf("incorrect mac");
+        return;
+      }
+
+      final decryptedName = await cryptor.decrypt(name);
+      final decryptedNote = await cryptor.decrypt(notes);
+
+      name = decryptedName;
+      notes = decryptedNote;
+      // logger.d("ditem: ${ditem.toJson()}");
+
+    } catch (e) {
+      logger.wtf("Exception: $e");
+    }
+  }
+
+  Future<NoteItem?> decryptObjectCopy() async {
+    var item = NoteItem.fromJson(toJson());
+    var ditem = item;
+
+    var itemCopy = NoteItem.fromJson(item.toJson());
+
+    final macCheck = item.mac!;
+    itemCopy.mac = "";
+    var objString = itemCopy.toRawJson();
+
+    final computedMac = await cryptor.hmac256(objString);
+    // logger.d("macCheck: $macCheck\ncomputedMac: $computedMac");
+
+    if (computedMac != macCheck && macCheck.isNotEmpty) {
+      logger.wtf("incorrect mac");
+      return item;
+    }
+
+    final decryptedName = await cryptor.decrypt(item.name);
+    var decryptedNote = await cryptor.decrypt(item.notes);
+
+    ditem.name = decryptedName;
+    ditem.notes = decryptedNote;
+    // logger.d("ditem: ${ditem.toJson()}");
+
+    return ditem;
+  }
+
+  Future<bool> checkMAC() async {
+    final checkMac = mac;
+    mac = "";
+    final computedMac = await cryptor.hmac256(toRawJson());
+    mac = checkMac;
+    // logger.d("toRawJson()-added back: ${toRawJson()}");
+
+    return checkMac == computedMac;
   }
 
 }

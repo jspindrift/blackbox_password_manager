@@ -654,11 +654,14 @@ class LogManager {
             // print('mac log with key: $logKey');
             // final logMac = await digester.hmac(logHash, logKey);
             // print('logMac: ${hex.encode(logMac)}');
-
-            final logHexMac = await digester.hmac(logHash, logKeyHex);
-            final logHexMacEncoded = hex.encode(logHexMac);
-            // print('logHexMac: ${logHexMacEncoded}');
-
+            var logHexMacEncoded = "";
+            try {
+              final logHexMac = await digester.hmac(logHash, logKeyHex);
+              logHexMacEncoded = hex.encode(logHexMac);
+              // print('logHexMac: ${logHexMacEncoded}');
+            } catch (e) {
+              logger.e("Exception: $e");
+            }
             /// TODO: diff logging
             // _logLineCount += 1;
             // final logLineHash = BasicLogLine(
@@ -870,9 +873,10 @@ class LogManager {
       );
 
       _basicLogLineList.list.add(logLine2);
-    } else {
-      logger.wtf("isSavingLogs->TRUE: not appending");
     }
+    // else {
+    //   logger.wtf("isSavingLogs->TRUE: not appending");
+    // }
   }
 
   void logLongMessage(String message) {
@@ -883,6 +887,9 @@ class LogManager {
   Future<void> saveLogs() async {
     if (_deletedLogs) {
       // print("deleted logs, ignoring saving.");
+      /// set back after the first time
+      _logLineList.list = [];
+      _deletedLogs = false;
       return;
     }
 
@@ -910,7 +917,7 @@ class LogManager {
             final logLineSpecial = LogLine(
               time: startTime,
               callingFunction:
-                  "LogManager.saveLogs", //programInfo.callerFunctionName,
+                  "LogManager.saveLogs",
               message: "deleted logs - deviceId: $deviceId",
             );
             _logLineList.list.add(logLineSpecial);
@@ -961,7 +968,7 @@ class LogManager {
             time: startTime,
             logList: _logLineList,
             hash: blockHash,
-            mac: base64.encode(blockMac),
+            mac: hex.encode(blockMac),
           );
 
           _blockchain = Blockchain(time: startTime, blocks: [_block]);
@@ -1070,7 +1077,7 @@ class LogManager {
             time: startTime,
             logList: _logLineList,
             hash: blockHash,
-            mac: base64.encode(blockMac),
+            mac: hex.encode(blockMac),
           );
 
           _blockchain.blocks.add(_block);
@@ -1217,12 +1224,6 @@ class LogManager {
         var bugBlocks = [];
 
         if (logKey != null && logKey.isNotEmpty) {
-          // final blockHash = hasher.sha256Hash(logLineJsonString);
-
-          // print('logKey: ${cryptor.logSecretKeyBytes}');
-          // print('mac log with key: $logKey');
-          // final blockMac = await digester.hmac(blockHash,logKey);
-
           var totalNumLines = 0;
           var macsVerified = true;
           _appUsageInSeconds = 0;
@@ -1254,15 +1255,22 @@ class LogManager {
             final blockMac = await digester.hmac(blockHash, logKey);
             // print('blockMac: ${base64.encode(blockMac)}');
 
-            if (block.mac != base64.encode(blockMac)) {
-              logger.e("Block Mac does not equal: ${block.blockNumber}");
+            if (block.mac != hex.encode(blockMac)) {
+              logger.wtf("Block Mac does not equal: ${block.blockNumber}");
               macsVerified = false;
             }
             // else {
             //   logger.d("Block Macs equal!!!");
             // }
-
+            // var index = 0;
             for (var line in block.logList.list) {
+              // if (index < block.logList.list.length) {
+              //   var a = DateTime.parse(line.time);
+              //   var b = DateTime.parse(block.logList.list[index+1].time);
+              //   // logger.wtf("diff[$index]: ${b.difference(a).inMilliseconds}");
+              // }
+              // index++;
+              DateTime.parse(line.time);
               // print('line: ${line.time} : ${line.callingFunction}: ${line
               //     .message}');
               if (line.message == "BUG REPORTED 🐞" && !hasReportedBug) {
@@ -1291,4 +1299,5 @@ class LogManager {
       return false;
     }
   }
+
 }

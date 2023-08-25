@@ -125,7 +125,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     _decryptedPublicKeysS = [];
     _decryptedPublicKeysE = [];
     _decryptdePublicIdentities = [];
-    // _decryptedPublicAddressKeysE = [];
 
     final ids = await keyManager.getIdentities();
 
@@ -138,17 +137,23 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         final ypub = await cryptor.decrypt(id.pubKeyExchange);
         final dname = await cryptor.decrypt(id.name);
 
-        final did = DigitalIdentity(
+        var digitalIdentity = DigitalIdentity(
             id: id.id,
+            keyId: id.keyId,
             index: id.index,
             name: dname,
             version: id.version,
             pubKeyExchange: ypub,
             pubKeySignature: xpub,
+            mac: "",
             cdate: id.cdate,
             mdate: id.mdate,
         );
-        _decryptdePublicIdentities.add(did);
+
+        final identityMac = await cryptor.hmac256(digitalIdentity.toRawJson());
+        digitalIdentity.mac = identityMac;
+
+        _decryptdePublicIdentities.add(digitalIdentity);
 
         /// hash of public exchange key
         final phash = cryptor.sha256(ypub);
@@ -172,7 +177,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     _matchingRecoveryKeyIndexes = [];
     _recoveryKeyIds = [];
     final recoveryKeys = await keyManager.getRecoveryKeyItems();
-    print("recovery items: ${recoveryKeys?.length}: ${recoveryKeys!.first.toJson()}");
+    // print("recovery items: ${recoveryKeys?.length}: ${recoveryKeys!.first.toJson()}");
 
     if (recoveryKeys != null) {
       for (var rkey in recoveryKeys) {
@@ -1177,16 +1182,21 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
     /// TODO: save encrypted block number with encryption
     /// TODO: change to encryptParams method for object
-    final identity = DigitalIdentity(
+    var identity = DigitalIdentity(
       id: uuid,
+      keyId: keyManager.keyId,
       index: 1,
       version: AppConstants.digitalIdentityVersion,
       name: encryptedName,
       pubKeySignature: encryptedPubS,
       pubKeyExchange: encryptedPubE,
+      mac: "",
       cdate: createDate.toIso8601String(),
       mdate: createDate.toIso8601String(),
     );
+
+    final identityMac = await cryptor.hmac256(identity.toRawJson());
+    identity.mac = identityMac;
 
     final identityObjectString = identity.toRawJson();
     // print("identityObjectString: $identityObjectString");
@@ -1324,6 +1334,12 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         content: Text("Add Recovery Key for this Identity?"),
         actions: <Widget>[
           ElevatedButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+            },
+            child: Text("Cancel"),
+          ),
+          ElevatedButton(
             onPressed: () async {
               // print("add recovery key");
 
@@ -1337,12 +1353,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
               Navigator.of(ctx).pop();
             },
             child: Text("Add Recovery Key"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-            },
-            child: Text("Cancel"),
           ),
         ],
       ),

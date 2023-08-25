@@ -134,16 +134,20 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
         /// check biometrics
         final checkBioAvailability = await biometricManager.doBiometricCheck();
-        setState(() {
-          _isBiometricSupported = checkBioAvailability;
-        });
+        if (mounted) {
+          setState(() {
+            _isBiometricSupported = checkBioAvailability;
+          });
+        }
 
         if (!checkBioAvailability) {
           final deleteBioStatus = await keyManager.deleteBiometricKey();
           if (deleteBioStatus) {
-            setState(() {
-              _isBiometricKeyAvailable = false;
-            });
+            if (mounted) {
+              setState(() {
+                _isBiometricKeyAvailable = false;
+              });
+            }
           }
         }
 
@@ -162,6 +166,12 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     }
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+
+    WidgetsBinding.instance.removeObserver(this);
+  }
 
   /// update and read values after popping back from backup screen
   /// this is in case the user restored from a backup
@@ -181,7 +191,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     if (mounted) {
       setState(() {
         _isBiometricSupported = isBiometricSupported;
-        _isBiometricKeyAvailable = bioRenderStatus  && _isBiometricSupported;
+        _isBiometricKeyAvailable = bioRenderStatus  && isBiometricSupported;
       });
     }
 
@@ -189,18 +199,17 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       await keyManager.deleteBiometricKey();
     }
 
-    final pinStatus = await keyManager.readPinCodeKey();//.then((value) {
+    final pinStatus = await keyManager.readPinCodeKey();
     if (mounted) {
       setState(() {
         _isPinCodeEnabled = pinStatus;
+
+        _selectedTimeIndex =
+            _timeIndexSeconds.indexOf(settingsManager.inactivityTime);
+        _selectedTimeString = _timeList[_selectedTimeIndex];
       });
     }
 
-    setState(() {
-      _selectedTimeIndex =
-          _timeIndexSeconds.indexOf(settingsManager.inactivityTime);
-      _selectedTimeString = _timeList[_selectedTimeIndex];
-    });
   }
 
   /// TODO: add inactivity time screen

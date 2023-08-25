@@ -13,6 +13,8 @@ class BiometricManager {
   /// Local Authentication
   final LocalAuthentication auth = LocalAuthentication();
   bool _biometricsIsSupported = false;
+  bool _biometricsIsAvailable = false;
+
   bool _canCheckBiometrics = false;
   List<BiometricType>? _availableBiometrics;
   String _biometricType = 'Biometrics';
@@ -23,6 +25,10 @@ class BiometricManager {
 
   bool get biometricsIsSupported {
     return _biometricsIsSupported;
+  }
+
+  bool get biometricsIsAvailable {
+    return _biometricsIsAvailable;
   }
 
   bool get canCheckBiometrics {
@@ -88,17 +94,10 @@ class BiometricManager {
       availableBiometrics = await auth.getAvailableBiometrics();
     } on PlatformException catch (e) {
       availableBiometrics = <BiometricType>[];
-      print(e);
+      // print(e);
     }
 
     _availableBiometrics = availableBiometrics;
-    // print('debug: available biometrics: ${availableBiometrics[0]}');
-    if (_availableBiometrics != null) {
-      if (_availableBiometrics!.length > 0) {
-        logManager.log("BiometricManager", "getAvailableBiometrics",
-            "Available Biometrics: ${_availableBiometrics![0]}");
-      }
-    }
 
     if (_availableBiometrics != null) {
       if (_availableBiometrics!.isNotEmpty) {
@@ -126,7 +125,7 @@ class BiometricManager {
       availableBiometrics = await auth.getAvailableBiometrics();
     } on PlatformException catch (e) {
       availableBiometrics = <BiometricType>[];
-      print(e);
+      // print(e);
       return false;
     }
 
@@ -134,8 +133,8 @@ class BiometricManager {
     // print('debug: available biometrics: ${availableBiometrics[0]}');
     if (_availableBiometrics != null) {
       if (_availableBiometrics!.length > 0) {
-        logManager.log("BiometricManager", "getAvailableBiometrics",
-            "Available Biometrics: ${_availableBiometrics![0]}");
+        // logManager.log("BiometricManager", "getAvailableBiometrics",
+        //     "Available Biometrics: ${_availableBiometrics![0]}");
         return true;
       }
     }
@@ -153,9 +152,13 @@ class BiometricManager {
         await getAvailableBiometrics();
         final status3 = await hasAvailableBiometrics();
         // logManager.logger.d("status3: $status3");
+        _biometricsIsAvailable = status3;
         return status3;
       }
     }
+
+    _biometricsIsAvailable = false;
+
     return false;
   }
 

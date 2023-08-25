@@ -128,11 +128,13 @@ class BackupManager {
         logManager.logger.d('password: ${password}\nek.rounds: ${ek
             .rounds}\nsalt:$salt\nkeyMaterial: ${keyMaterial}');
       }
+
       if (result) {
         logManager.logger.d("here!! result good");
 
         KeyMaterial newKeyMaterial = KeyMaterial(
           id: vault.id,
+          keyId: vault.encryptedKey.keyId,
           salt: salt,
           rounds: ek.rounds,
           key: keyMaterial,
@@ -161,13 +163,6 @@ class BackupManager {
         if (decryptedBlob.isNotEmpty) {
           logManager.logger.d("here-decryptedBlob no empty");
 
-          /// since our decryption is valid we can now delete local keys to re-save
-
-          // logManager.logger.d("decryption successfull: $decryptedBlob");
-
-          /// TODO: add this in
-          /// TODO: change this to GenericItemList after conversion
-          ///
           var genericItems;
           try {
             genericItems = GenericItemList.fromRawJson(decryptedBlob);
@@ -178,25 +173,23 @@ class BackupManager {
               // await keyManager.deleteForBackup();
 
               final encryptedKeyNonce = vault.encryptedKey.keyNonce;
-              logManager.logger.d("encryptedKeyNonce: ${encryptedKeyNonce}");
+              // logManager.logger.d("encryptedKeyNonce: ${encryptedKeyNonce}");
 
               final decryptedKeyNonce = await cryptor.decrypt(encryptedKeyNonce);//.then((value) {
                 // final decryptedKeyNonce = value;
-                logManager.logger.d("decryptedKeyNonce: ${decryptedKeyNonce}\n"
-                    "base64decoded keyNonce: ${hex.decode(decryptedKeyNonce)}");
+                // logManager.logger.d("decryptedKeyNonce: ${decryptedKeyNonce}\n"
+                //     "base64decoded keyNonce: ${hex.decode(decryptedKeyNonce)}");
 
                 final keyNonce = hex.decode(decryptedKeyNonce);
                 final ablock = keyNonce.sublist(8, 12);
                 final bblock = keyNonce.sublist(12, 16);
-
                 // logManager.logger.d("ablock: ${ablock}\n"
                 //     "bblock: ${bblock}");
 
                 final rolloverBlockCount = int.parse(hex.encode(ablock), radix: 16);
                 final encryptedBlockCount = int.parse(hex.encode(bblock), radix: 16);
-                logManager.logger.d("encryptedBlockCount: ${encryptedBlockCount}\n"
-                    "rolloverBlockCount: ${rolloverBlockCount}");
-              // });
+                // logManager.logger.d("encryptedBlockCount: ${encryptedBlockCount}\n"
+                //     "rolloverBlockCount: ${rolloverBlockCount}");
 
               if (encryptedBlockCount != null) {
                 await settingsManager.saveNumBytesEncrypted(
@@ -215,34 +208,6 @@ class BackupManager {
 
               await keyManager.deleteForBackup();
 
-              // if (false) {
-              //   /// Version 1 -----------------------------------------------------
-              //   if (localVault.encryptedKey.blocksEncrypted != null) {
-              //     final numBlocksEncrypted = localVault.encryptedKey
-              //         .blocksEncrypted;
-              //     if (numBlocksEncrypted != null) {
-              //       await settingsManager.saveNumBytesEncrypted(
-              //         numBlocksEncrypted * 16,
-              //       );
-              //
-              //       await settingsManager.saveNumBlocksEncrypted(
-              //           numBlocksEncrypted);
-              //     }
-              //   }
-              //
-              //   if (localVault.encryptedKey.blockRolloverCount != null) {
-              //     final blockRolloverCount = localVault.encryptedKey
-              //         .blockRolloverCount;
-              //     if (blockRolloverCount != null) {
-              //       await settingsManager.saveEncryptionRolloverCount(
-              //         blockRolloverCount,
-              //       );
-              //     }
-              //   }
-              //
-              //
-              //   /// Version 1 -----------------------------------------------------
-              // }
             } else {
               logManager.logger.d("here-fail3");
 
@@ -263,10 +228,6 @@ class BackupManager {
           // print("jbird: ${genericItems2.list}");
           if (genericItems.list.isNotEmpty) {
             // logManager.logger.d("try genericItems2 iteration");
-
-            // genericItems2.list.sort((a, b) {
-            //   return b.data.compareTo(a.data);
-            // });
 
             /// Go through each GenericItem
             for (var genericItem in genericItems.list) {
@@ -325,9 +286,6 @@ class BackupManager {
           return await _recoverVault();
         }
 
-        // logManager.logger.d("try myIdentity");
-
-
         /// save my identity
         ///
         if (vault.myIdentity != null) {
@@ -352,8 +310,6 @@ class BackupManager {
             return await _recoverVault();
           }
         }
-
-        // logManager.logger.d("try identities");
 
 
         /// save identities
@@ -388,7 +344,6 @@ class BackupManager {
           }
         }
 
-        // logManager.logger.d("try recovery keys");
 
         /// save recovery keys
         ///
@@ -460,13 +415,6 @@ class BackupManager {
           return await _recoverVault();
         }
 
-        /// TODO: save secret salt if imported backup
-        ///
-        // await keyManager.saveSalt(
-        //   localVault.id,
-        //   salt,
-        // );
-        // print("status salt: $statusSalt");
 
         /// re-save log key in-case we needed to create a new one
         await keyManager.saveLogKey(cryptor.logKeyMaterial);
@@ -491,12 +439,9 @@ class BackupManager {
       logManager.logger.w("BackupManager - restoreLocalBackupItem - Failure");
       return false; //await _recoverVault();
     } catch (e) {
-      // logManager.logger.d("here-restore restoreLocalBackupItem: false: _reExpandCurrentKey");
 
-      // print(e);
       logManager.logger
           .w("BackupManager - restoreLocalBackupItem - Exception: $e");
-
       logManager.log("BackupManager", "restoreLocalBackupItem", "$e");
       return await _recoverVault();
     }
@@ -661,6 +606,7 @@ class BackupManager {
 
       KeyMaterial newKeyMaterial = KeyMaterial(
         id: localVault.id,
+        keyId: localVault.encryptedKey.keyId,
         salt: salt!,
         rounds: ek.rounds,
         key: keyMaterial,
@@ -712,6 +658,8 @@ class BackupManager {
     logManager.logger.d("_backupCurrentVaultState");
 
     /// create EncryptedKey object
+    var keyId = keyManager.keyId;
+
     final salt = keyManager.salt;
     final kdfAlgo = EnumToString.convertToString(KDFAlgorithm.pbkdf2_512);
     final rounds = cryptor.rounds;
@@ -759,12 +707,12 @@ class BackupManager {
     // _currentRecoveryKeys = recoveryKeys;
 
     final deviceDataString = settingsManager.deviceManager.deviceData.toString();
-    logManager.logger.d("deviceDataString: $deviceDataString");
+    // logManager.logger.d("deviceDataString: $deviceDataString");
     // logManager.logger.d("deviceData[utsname.version:]: ${settingsManager.deviceManager.deviceData["utsname.version:"]}");
 
     settingsManager.doEncryption(utf8.encode(deviceDataString).length);
     final encryptedDeviceData = await cryptor.encrypt(deviceDataString);
-    logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
+    // logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
 
 
     settingsManager.doEncryption(utf8.encode(testItems).length);
@@ -778,7 +726,8 @@ class BackupManager {
     // logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
 
 
-    final encryptedKey = EncryptedKey(
+    var encryptedKey = EncryptedKey(
+      keyId: keyId,
       derivationAlgorithm: kdfAlgo,
       salt: salt,
       rounds: rounds,
@@ -788,9 +737,14 @@ class BackupManager {
       encryptionAlgorithm: encryptionAlgo,
       keyMaterial: keyMaterial,
       keyNonce: encryptedKeyNonce,
+      mac: "",
     );
 
-    final backupItem = VaultItem(
+    final keyParamsMac = await cryptor.hmac256(encryptedKey.toRawJson());
+    encryptedKey.mac = keyParamsMac;
+
+
+    var backupItem = VaultItem(
       id: vaultId,
       version: appVersion,
       name: backupName,
@@ -804,7 +758,13 @@ class BackupManager {
       blob: encryptedBlob,
       cdate: timestamp,
       mdate: timestamp,
+      mac: "",
     );
+
+    final backupMac = await cryptor.hmac256(backupItem.toRawJson());
+    backupItem.mac = backupMac;
+
+    // logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
     // print("passwordItems: $passwordItems");
     // print("genericItems: $items");
@@ -905,6 +865,7 @@ class BackupManager {
       logManager.logger.d(
           "status2: $status2, status3: $status3, status4: $status4");
 
+      final keyId = (_currentDeviceVault?.encryptedKey.keyId)!;
       final vaultId = (_currentDeviceVault?.id)!;
       final keyMaterial = (_currentDeviceVault?.encryptedKey.keyMaterial)!;
       final nrounds = (_currentDeviceVault?.encryptedKey.rounds)!;
@@ -914,6 +875,7 @@ class BackupManager {
 
       KeyMaterial newKeyMaterial = KeyMaterial(
         id: vaultId,
+        keyId: keyId,
         salt: encodedSalt,
         rounds: nrounds,
         key: keyMaterial,

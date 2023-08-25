@@ -120,17 +120,18 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
 
     logManager.log("AddPasswordScreen", "initState", "initState");
 
-    // _sectionTextControllers.add(TextEditingController());
-
     _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
-
     _selectedIndex = settingsManager.currentTabIndex;
-
-    // print("tags add password: ${settingsManager.itemTags}");
-
     _filteredTags = settingsManager.itemTags;
 
+    if (_testGeoLock) {
+      if (geolocationManager.geoLocationUpdate == null) {
+        geolocationManager.initialize();
+      }
+    }
+
     _isLocationSettingsEnabled = geolocationManager.isLocationSettingsEnabled;
+    logManager.logger.d("_isLocationSettingsEnabled: $_isLocationSettingsEnabled");
 
     /// We do this so tags show up in the UI when added.
     /// Not sure why this works but it does
@@ -841,8 +842,6 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
       _duplicatePassword = widget.passwordList.contains(password);
       _isPasswordBip39Valid = bip39.validateMnemonic(password);
     });
-
-    // print("$_isPasswordBip39Valid");
 
     if (name.isEmpty) {
       setState(() {
@@ -1725,6 +1724,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
 
     final passwordItem = PasswordItem(
       id: uuid,
+      keyId: keyManager.keyId,
       version: AppConstants.passwordItemVersion,
       name: name, //encryptedName,
       username: username, //encryptedUsername,
@@ -1735,6 +1735,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
       tags: _passwordTags,
       geoLock: null,
       notes: notes, //encryptedNotes,
+      mac: "",
       cdate: createDate,
       mdate: createDate,
     );
@@ -1745,8 +1746,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
     final passwordItemString = passwordItem.toRawJson();
     // logManager.logger.d('passwordItem toRawJson: ${passwordItemString}');
 
-    /// TODO: add GenericItem
-    ///
+
     final genericItem = GenericItem(type: "password", data: passwordItemString);
     // logManager.logger.d('genericItem toRawJson: ${genericItem.toRawJson()}');
 

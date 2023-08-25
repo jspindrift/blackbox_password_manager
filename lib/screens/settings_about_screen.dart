@@ -151,7 +151,7 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
                 ),
               ),
               Divider(
-                color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
+                color: _isDarkModeEnabled ? Colors.grey[500] : Colors.grey,
               ),
               ListTile(
                 enabled: false,
@@ -167,6 +167,27 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
                     fontSize: 16,
                     fontWeight: FontWeight.normal,
                     color: _isDarkModeEnabled ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+              Divider(
+                color: _isDarkModeEnabled ? Colors.grey[500] : Colors.grey,
+              ),
+              Visibility(
+                visible: true,
+                child: ListTile(
+                  title: Text(
+                    "Key ID:",
+                    style: TextStyle(
+                      color: _isDarkModeEnabled ? Colors.white : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    "${keyManager.keyId.toUpperCase()}\n",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _isDarkModeEnabled ? Colors.white : null,
+                    ),
                   ),
                 ),
               ),
@@ -199,7 +220,6 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
                         " bytes = ${(settingsManager.numBytesEncrypted / 1024).toStringAsFixed(2)} KB\n${settingsManager.numBlocksEncrypted}"
                         " blocks encrypted\n${settingsManager.numRolloverEncryptionCounts} roll-overs" : "tap icon to show details\n\n${settingsManager.numBlocksEncrypted} blocks encrypted",
 
-                  // "\n${(_passwordFileSize / 1024).toStringAsFixed(2)} KB",
                   style: TextStyle(
                       color: _isDarkModeEnabled ? Colors.white : null),
                 ),
@@ -227,13 +247,50 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
                 ),
                 subtitle: Text(
                   "% ${(100* (AppConstants.maxEncryptionBlocks-settingsManager.numBlocksEncrypted)/AppConstants.maxEncryptionBlocks).toStringAsFixed(6)}",
-                  // "\n${(_passwordFileSize / 1024).toStringAsFixed(2)} KB",
                   style: TextStyle(
-                      color: _isDarkModeEnabled ? Colors.white : null),
+                      color: _isDarkModeEnabled ? Colors.white : null,
+                  ),
                 ),
               ),
               Divider(
                 color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
+              ),
+              Visibility(
+                visible: false,
+                child: ListTile(
+                  title: Text(
+                    "Key ID:",
+                    style: TextStyle(
+                      color: _isDarkModeEnabled ? Colors.white : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    "${keyManager.keyId.toUpperCase()}\n",
+                    style: TextStyle(
+                      color: _isDarkModeEnabled ? Colors.white : null,
+                    ),
+                  ),
+                ),
+              ),
+              Divider(
+                color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
+              ),
+              Visibility(
+                visible: false,
+                child: ListTile(
+                title: Text(
+                    "Device Data:\n",
+                  style: TextStyle(
+                    color: _isDarkModeEnabled ? Colors.white : null,
+                  ),
+                ),
+                subtitle: Text(
+                    "${settingsManager.deviceManager.deviceData.toString()}\n",
+                  style: TextStyle(
+                    color: _isDarkModeEnabled ? Colors.white : null,
+                  ),
+                ),
+              ),
               ),
             ],
           ),

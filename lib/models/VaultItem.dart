@@ -14,7 +14,10 @@ enum EncryptionAlgorithm {
   unknown,
 }
 
+/// keyId tracts the underlying key to point to items encrypted under the key
+/// keyId should change for vault after re-keying
 class EncryptedKey {
+  String keyId;  // root key identifier
   String derivationAlgorithm;
   String? salt;
   int rounds;
@@ -24,8 +27,10 @@ class EncryptedKey {
   String encryptionAlgorithm;
   String keyMaterial;
   String keyNonce; // encrypted nonce that tracks number of encrypted blocks
+  String mac;
 
   EncryptedKey({
+    required this.keyId,
     required this.derivationAlgorithm,
     required this.salt,
     required this.rounds,
@@ -35,6 +40,7 @@ class EncryptedKey {
     required this.encryptionAlgorithm,
     required this.keyMaterial,
     required this.keyNonce,
+    required this.mac,
   });
 
   factory EncryptedKey.fromRawJson(String str) =>
@@ -44,23 +50,23 @@ class EncryptedKey {
 
   factory EncryptedKey.fromJson(Map<String, dynamic> json) {
     return EncryptedKey(
+      keyId: json['keyId'],
       derivationAlgorithm: json['derivationAlgorithm'],
       salt: json['salt'],
       rounds: json['rounds'],
-      type: json['type'],// ?? 0,
-      version: json['version'],// ?? 0,
+      type: json['type'],
+      version: json['version'],
       memoryPowerOf2: json['memoryPowerOf2'] ?? 0,
       encryptionAlgorithm: json['encryptionAlgorithm'],
       keyMaterial: json['keyMaterial'],
       keyNonce: json['keyNonce'],
-      // blocksEncrypted: json['blocksEncrypted'] ?? 0,
-      // blockRolloverCount: json['blockRolloverCount'] ?? 0,
-      // keyIndex: json['keyIndex'] ?? 0,
+      mac: json['mac'],
     );
   }
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
+      "keyId": keyId,
       "derivationAlgorithm": derivationAlgorithm,
       "salt": salt,
       "rounds": rounds,
@@ -70,18 +76,12 @@ class EncryptedKey {
       "encryptionAlgorithm": encryptionAlgorithm,
       "keyMaterial": keyMaterial,
       "keyNonce": keyNonce,
+      "mac": mac,
     };
-
-    // if (blocksEncrypted != null) {
-    //   jsonMap.addAll(toJsonBlocksEncrypted());
-    // }
-    //
-    // if (blockRolloverCount != null) {
-    //   jsonMap.addAll(toJsonBlockRolloverCount());
-    // }
 
     return jsonMap;
   }
+
 }
 
 
@@ -98,6 +98,7 @@ class VaultItem {
   int numItems;
   String blob; // encrypted GenericItemList JSON string base64 encoded
   List<DigitalIdentity>? identities; // social public keys - encrypted
+  String mac;
   String cdate;
   String mdate;
 
@@ -113,6 +114,7 @@ class VaultItem {
     required this.recoveryKeys,
     required this.numItems,
     required this.blob,
+    required this.mac,
     required this.cdate,
     required this.mdate,
   });
@@ -160,6 +162,7 @@ class VaultItem {
               json["recoveryKeys"].map((x) => RecoveryKey.fromJson(x))),
       numItems: json['numItems'],
       blob: json['blob'],
+      mac: json['mac'],
       cdate: json['cdate'],
       mdate: json['mdate'],
     );
@@ -175,6 +178,7 @@ class VaultItem {
       "encryptedKey": encryptedKey,
       "numItems": numItems,
       "blob": blob,
+      "mac": mac,
       "cdate": cdate,
       "mdate": mdate,
     };
@@ -202,7 +206,7 @@ class VaultItem {
 
 class RecoveryKey {
   String id;  // pubKeyHash (hash of peer's public key)
-  String data; // encrypted root vault key using the indexed shared secret key
+  String data; // encrypted root vault key using the shared secret key
   String cdate;
 
   RecoveryKey({

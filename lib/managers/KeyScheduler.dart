@@ -5,8 +5,6 @@ import '../models/DigitalIdentity.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:enum_to_string/enum_to_string.dart';
-import "package:bip39/bip39.dart" as bip39;
-import 'package:elliptic/elliptic.dart';
 
 import '../models/KeyItem.dart';
 import '../models/MyDigitalIdentity.dart';
@@ -20,6 +18,7 @@ import 'Cryptor.dart';
 import 'LogManager.dart';
 import 'SettingsManager.dart';
 import 'FileManager.dart';
+
 
 class KeyScheduler {
   static final KeyScheduler _shared = KeyScheduler._internal();
@@ -138,8 +137,7 @@ class KeyScheduler {
 
     /// Third - derive new key to re-key
     final newEncryptedKey = await cryptor.deriveNewKeySchedule(password);
-
-    logManager.logger.d("newEncryptedKey: $newEncryptedKey");
+    // logManager.logger.d("newEncryptedKey: $newEncryptedKey");
 
     if (newEncryptedKey == null) {
       return false;
@@ -227,6 +225,7 @@ class KeyScheduler {
     ///
 
     final vaultId = keyManager.vaultId;
+    final rekeyId = keyManager.rekeyId;
 
     final newSalt = newEncryptedKey.salt;
     if (newSalt == null) {
@@ -238,6 +237,7 @@ class KeyScheduler {
 
     KeyMaterial newKeyParams = KeyMaterial(
       id: vaultId,
+      keyId: rekeyId,
       salt: newSalt,
       rounds: newEncryptedKey.rounds,
       key: newEncryptedKey.keyMaterial,
@@ -254,6 +254,10 @@ class KeyScheduler {
     if (!statusSaveReKeyedMaster) {
       return false;
     }
+
+
+    /// Set new KeyId for Vault
+    keyManager.setKeyId(rekeyId);
 
 
     /// transition the live AES Keys for app vault session
@@ -294,11 +298,7 @@ class KeyScheduler {
     /// TODO: Digital ID
     final myId = await keyManager.getMyDigitalIdentity();
 
-    // var backupNameFinal = '$backupName - ${items.list.length} items';
-    // if (currentVault != null && !isLocal) {
-    //   backupName = currentVault.name;
-    // }
-    final deviceId = await deviceManager.getDeviceId();//.then((value) {
+    final deviceId = await deviceManager.getDeviceId();
 
     if (deviceId == null) {
       return null;
@@ -307,16 +307,13 @@ class KeyScheduler {
     final timestamp = DateTime.now().toIso8601String();
     final backupName = "temp-vault";
 
-    // final appVersion = "1.0.0"; //settingsManager.packageInfo.version;
-    final appVersion = settingsManager.versionAndBuildNumber();//settingsManager.packageInfo.version;
+    final appVersion = settingsManager.versionAndBuildNumber();
 
-    // final uuid = cryptor.getUUID();
     final vaultId = keyManager.vaultId;
+    final keyId = keyManager.keyId;
 
     final idString =
         "${vaultId}-${deviceId}-${appVersion}-${timestamp}-${timestamp}-${backupName}";
-    // final idHash = Hasher().sha256Hash(idString);
-    // print("idHash: $idHash");
 
     var testItems = json.encode(items);
 
@@ -336,6 +333,7 @@ class KeyScheduler {
 
 
     final encryptedKey = EncryptedKey(
+      keyId: keyId,
       derivationAlgorithm: kdfAlgo,
       salt: salt,
       rounds: rounds,
@@ -345,23 +343,28 @@ class KeyScheduler {
       encryptionAlgorithm: encryptionAlgo,
       keyMaterial: keyMaterial,
       keyNonce: encryptedKeyNonce,
+      mac: "",
     );
 
+    final keyParamsMac = await cryptor.hmac256(encryptedKey.toRawJson());
+    encryptedKey.mac = keyParamsMac;
 
+    /// identities
     final identities = await keyManager.getIdentities();
-
     _currentIdentites = identities;
+
+    /// Recovery Keys
     final recoveryKeys = await keyManager.getRecoveryKeyItems();
 
     _currentRecoveryKeys = recoveryKeys;
 
     final deviceDataString = settingsManager.deviceManager.deviceData.toString();
-    logManager.logger.d("deviceDataString: $deviceDataString");
+    // logManager.logger.d("deviceDataString: $deviceDataString");
     // logManager.logger.d("deviceData[utsname.version:]: ${settingsManager.deviceManager.deviceData["utsname.version:"]}");
 
     settingsManager.doEncryption(utf8.encode(deviceDataString).length);
     final encryptedDeviceData = await cryptor.encrypt(deviceDataString);
-    logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
+    // logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
 
 
 
@@ -379,18 +382,16 @@ class KeyScheduler {
       blob: encryptedBlob,
       cdate: timestamp,
       mdate: timestamp,
+      mac: "",
     );
+
+    final backupMac = await cryptor.hmac256(backupItem.toRawJson());
+    backupItem.mac = backupMac;
+
+    // logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
     // print("passwordItems: $passwordItems");
     // print("genericItems: $items");
-
-    // print("backupItem: $backupItem");
-    // print("backupItemJson: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
-
-    /// TODO: merkle root
-    // backupItem.calculateMerkleRoot();
-
-    // final backupItemString = backupItem.toRawJson();
 
     return backupItem;
   }
@@ -502,7 +503,7 @@ class KeyScheduler {
             /// decrypt with current key first
             // final decryptedPassword =
             // await cryptor.decrypt(passwordItem.password);
-            print("rekey enc: ${passwordItem.name}\nusername: ${passwordItem.username}");
+            // logManager.logger.d("rekey enc: ${passwordItem.name}\nusername: ${passwordItem.username}");
 
             final name = passwordItem.name;
             final username = passwordItem.username;
@@ -537,7 +538,6 @@ class KeyScheduler {
 
             passwordItem.previousPasswords = newPreviousPasswordList;
 
-
             _reKeyedItems.add(passwordItem);
 
             final gitem = GenericItem(type: "password", data: passwordItem.toRawJson());
@@ -559,12 +559,8 @@ class KeyScheduler {
           // final keyIndex = (noteItem?.keyIndex)!;
 
           if (noteItem.geoLock == null) {
-            // final decryptedNote = await cryptor.decrypt(noteItem.notes);
             final reecryptedNote = await cryptor.reKeyEncryption(false, noteItem.notes);
-
-
             noteItem.notes = reecryptedNote;
-            // _favoriteItems.add(noteItem);
 
             _reKeyedItems.add(noteItem);
 
@@ -583,15 +579,6 @@ class KeyScheduler {
       } else if (item.type == "key") {
         var keyItem = KeyItem.fromRawJson(item.data);
         if (keyItem != null) {
-
-          // final keyIndex = (keyItem?.keyIndex)!;
-
-          // final decryptedName = await cryptor.decrypt(keyItem.name);
-          // keyItem.name = decryptedName;
-          //
-          // final decryptedNote = await cryptor.decrypt(keyItem.notes);
-          // keyItem.notes = decryptedNote;
-          // _favoriteItems.add(noteItem);
           final name = keyItem.name;
           final notes = keyItem.notes;
           final key = keyItem.key;
@@ -613,21 +600,6 @@ class KeyScheduler {
 
               peerKey.name = reecryptedPeerName;
               peerKey.key = reecryptedPeerPublicKey;
-
-              // final previous = peerKey.previousKeys;
-              // List<String> newPreviousKeys = [];
-              // if (previous != null) {
-              //   for (var prevKey in previous) {
-              //     final rekeykey = await cryptor.reKeyEncryption(false, prevKey);
-              //     newPreviousKeys.add(rekeykey);
-              //   }
-              // }
-
-              // peerKey.previousKeys = newPreviousKeys;
-
-              /// Sent/Recieved Messages should just be encrypted with the
-              /// shared secret, no need to rekey these...
-
 
               newPeerPublicKeys.add(peerKey);
           }
@@ -663,8 +635,8 @@ class KeyScheduler {
       // myIdentity = myDigitalId;
       if (myDigitalId != null) {
         _currentMyDigitalIdentity = myDigitalId;
-        var ec = getS256();
-        final algorithm_exchange = X25519();
+        // var ec = getS256();
+        // final algorithm_exchange = X25519();
 
         // print("value.privateHexS: ${value.privKeySignature}");
         // print("value.privateHexE: ${value.privKeyExchange}");
@@ -675,40 +647,43 @@ class KeyScheduler {
         // print("privateHexS: $privateHexS");
         // print("pubExchangeKeySeed: $pubExchangeKeySeed");
 
-        var privS = PrivateKey(ec, BigInt.parse(privateHexS, radix: 16));
-        final privSeedPair = await algorithm_exchange
-            .newKeyPairFromSeed(hex.decode(_mainPrivExchangeKeySeed));
+        // var privS = PrivateKey(ec, BigInt.parse(privateHexS, radix: 16));
+        // final privSeedPair = await algorithm_exchange
+        //     .newKeyPairFromSeed(hex.decode(_mainPrivExchangeKeySeed));
 
-        var pubE = await privSeedPair
-            .extractPublicKey(); // PrivateKey(algorithm_exchange, BigInt.parse(privateHexE,radix: 16));
+        // var pubE = await privSeedPair
+        //     .extractPublicKey(); // PrivateKey(algorithm_exchange, BigInt.parse(privateHexE,radix: 16));
 
         /// TODO: fix this
         final reencryptedEKey = await cryptor.reKeyEncryption(false, myDigitalId.privKeyExchange);
         final reencryptedSKey = await cryptor.reKeyEncryption(false, myDigitalId.privKeySignature);
-        // final reencryptedIntKey = await cryptor.reKeyEncryption(false, myDigitalId.intermediateKey);
 
+        /// TODO: check keyId state
         _reKeyedMyDigitalIdentity = MyDigitalIdentity(
+            keyId: keyManager.keyId,
             version: AppConstants.myDigitalIdentityItemVersion,
             privKeyExchange: reencryptedEKey,
             privKeySignature: reencryptedSKey,
-            // intermediateKey: reencryptedIntKey,
+            mac: "",
             cdate: myDigitalId.cdate,
             mdate: timestamp,
         );
 
+        if (_reKeyedMyDigitalIdentity != null) {
+          final myIdMac = await cryptor.hmac256(
+              _reKeyedMyDigitalIdentity?.toRawJson());
+          _reKeyedMyDigitalIdentity?.mac = myIdMac;
+        }
+
         return true;
       }
-    // });
+
     return false;
   }
 
 
   /// recovery items
   Future<bool> _reKeyIdentities() async {
-      // _publicKeyHashes = [];
-      // _decryptedPublicKeysS = [];
-      // _decryptedPublicKeysE = [];
-      // _decryptedIntermediateKeys = [];
     _reKeyedIdentities = [];
 
     final identities = await keyManager.getIdentities();
@@ -743,16 +718,23 @@ class KeyScheduler {
 
           final timestamp = DateTime.now().toIso8601String();
 
-          final rekeyedIdentity = DigitalIdentity(
+          var rekeyedIdentity = DigitalIdentity(
             id: id.id,
+            keyId: id.keyId,
             index: id.index,
             version: AppConstants.digitalIdentityVersion,
             name: id.name,
             pubKeyExchange: reencryptedY,
             pubKeySignature: reencryptedX,
+            mac: "",
             cdate: id.cdate,
             mdate: timestamp,
           );
+
+          final identityMac = await cryptor.hmac256ReKey(rekeyedIdentity.toRawJson());
+          rekeyedIdentity.mac = identityMac;
+          // logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
+
 
           _reKeyedIdentities.add(rekeyedIdentity);
         }
@@ -851,7 +833,6 @@ class KeyScheduler {
       // _publicKeyHashes.add(pubKeyHash);
 
       final recoveryKey = RecoveryKey(
-        // index: keyIndex,
         id: pubKeyHash,
         data: encryptedKeys,
         cdate: DateTime.now().toIso8601String(),
@@ -859,15 +840,9 @@ class KeyScheduler {
 
       // print("recoveryKey: ${recoveryKey.toRawJson()}");
 
-      // final status =
-      // await keyManager.saveRecoveryKey(pubKeyHash, recoveryKey.toRawJson());
-
-      // print("recoveryKey status: ${status}");
-
-
       return recoveryKey;
     } catch (e) {
-      logManager.logger.w("$e");
+      logManager.logger.w("Exception: $e");
       return null;
     }
   }

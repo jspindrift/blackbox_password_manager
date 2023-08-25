@@ -758,8 +758,10 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   void _runTests() async {
     logManager.logger.d("running experimental tests");
 
-    // final bytes = List.filled(64, 69);
-    // TestCrypto().processDataErrorCorrection(bytes);
+    /// Do some testing here...
+    ///
+
+    logManager.logger.d("tests done");
   }
 
 

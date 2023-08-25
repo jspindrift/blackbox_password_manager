@@ -39,6 +39,9 @@ class KeychainManager {
   List<SecItem> _keyItems = [];
   Map<String, String> _items = {};
 
+  String _keyId = "";
+  String _rekeyId = "";
+
   String _vaultId = "";
   String _encryptedKeyMaterial = '';
   String _salt = '';
@@ -52,6 +55,14 @@ class KeychainManager {
   final cryptor = Cryptor();
   final settingsManager = SettingsManager();
   final logManager = LogManager();
+
+  get keyId {
+    return _keyId;
+  }
+
+  get rekeyId {
+    return _rekeyId;
+  }
 
   get numberOfPreviousPasswords {
     return _numberOfPreviousPasswords;
@@ -315,6 +326,14 @@ class KeychainManager {
       );
 
 
+  setNewReKeyId(String id) {
+    _rekeyId = id;
+  }
+
+  setKeyId(String id) {
+    _keyId = id;
+  }
+
   /// save the encrypted key and salt for the master password
   Future<bool> saveMasterPassword(KeyMaterial key) async {
     logger.d("saveMasterPassword");
@@ -333,6 +352,7 @@ class KeychainManager {
         _encryptedKeyMaterial = key.key;
         _vaultId = key.id;
         _hint = key.hint;
+        _keyId = key.keyId;
 
         logManager.log("KeychainManager", "saveMasterPassword", "success");
         return true;
@@ -360,6 +380,7 @@ class KeychainManager {
         _encryptedKeyMaterial = key.key;
         _vaultId = key.id;
         _hint = key.hint;
+        _keyId = key.keyId;
 
         /// Method for extra caution on invalid saving with Android
 
@@ -439,6 +460,8 @@ class KeychainManager {
             _vaultId = keyParams.id;
             _hint = keyParams.hint;
             _salt = keyParams.salt;
+            _keyId = keyParams.keyId;
+
             cryptor.setSecretSaltBytes(_salt.codeUnits);
             cryptor.setCurrentKeyMaterial(keyParams);
           }
@@ -474,6 +497,7 @@ class KeychainManager {
             _vaultId = keyParams.id;
             _hint = keyParams.hint;
             _salt = keyParams.salt;
+            _keyId = keyParams.keyId;
             cryptor.setSecretSaltBytes(_salt.codeUnits);
             cryptor.setCurrentKeyMaterial(keyParams);
           }
@@ -1199,37 +1223,22 @@ class KeychainManager {
   Future<bool> deleteBiometricKey() async {
     logger.d("deleteBiometricKey");
     try {
-      /// maybe get rid of hasKey check and just delete...
-      final hasKey = await _storage.containsKey(
-        key: 'biometric',
+        /// delete twice for Android simulator bug
+      await _storage.deleteAll(
         iOptions: _getIOSOptionsBiometric(),
         aOptions: _getAndroidOptionsBiometric(),
         mOptions: _getMacOptionsBiometric(),
       );
 
-      if (hasKey) {
-        /// delete twice for Android simulator bug
-        await _storage.deleteAll(
-          iOptions: _getIOSOptionsBiometric(),
-          aOptions: _getAndroidOptionsBiometric(),
-          mOptions: _getMacOptionsBiometric(),
-        );
+      await _storage.deleteAll(
+        iOptions: _getIOSOptionsBiometric(),
+        aOptions: _getAndroidOptionsBiometric(),
+        mOptions: _getMacOptionsBiometric(),
+      );
 
-        await _storage.deleteAll(
-          iOptions: _getIOSOptionsBiometric(),
-          aOptions: _getAndroidOptionsBiometric(),
-          mOptions: _getMacOptionsBiometric(),
-        );
-
-        logManager.log("KeychainManager", "deleteBiometricKey", 'success');
-        _isBiometricLoginEnabled = false;
-        return true;
-      }
-
+      logManager.log("KeychainManager", "deleteBiometricKey", 'success');
       _isBiometricLoginEnabled = false;
-      logManager.logger.w("Keychain deleteBiometricKey failure");
-      logManager.log("KeychainManager", "deleteBiometricKey", 'failure');
-      return false;
+      return true;
     } catch (e) {
       logManager.log("KeychainManager", "deleteBiometricKey", 'failure: $e');
       logManager.logger.w("Keychain deleteBiometricKey failure: $e");
@@ -1585,7 +1594,7 @@ class KeychainManager {
         mOptions: _getMacOptionsRecoveryKey(),
       );
 
-      logManager.logger.d("KeychainManager: success: ${recoveryItems.entries.first}");
+      // logManager.logger.d("KeychainManager: success: ${recoveryItems.entries.first}");
 
       final items = recoveryItems.entries
           .map((entry) => RecoveryKey.fromRawJson(entry.value))
@@ -1871,7 +1880,8 @@ class KeychainManager {
 
 /// encrypted key material for local vault (saved in Keychain)
 class KeyMaterial {
-  final String id;
+  final String id;    // vault id
+  final String keyId;   // key id
   final String salt;
   final int rounds;
   final String key;
@@ -1879,6 +1889,7 @@ class KeyMaterial {
 
   KeyMaterial({
     required this.id,
+    required this.keyId,
     required this.salt,
     required this.rounds,
     required this.key,
@@ -1893,6 +1904,7 @@ class KeyMaterial {
   factory KeyMaterial.fromJson(Map<String, dynamic> json) {
     return KeyMaterial(
       id: json['id'],
+      keyId: json['keyId'],
       salt: json['salt'],
       rounds: json["rounds"],
       key: json['key'],
@@ -1903,11 +1915,14 @@ class KeyMaterial {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
       "id": id,
+      "keyId": keyId,
       "salt": salt,
       "rounds": rounds,
       "key": key,
       "hint": hint,
     };
+
     return jsonMap;
   }
+
 }

@@ -2,6 +2,7 @@ import "dart:math";
 import "dart:convert";
 import "dart:typed_data";
 import "package:bip39/bip39.dart" as bip39;
+import "package:blackbox_password_manager/helpers/ivHelper.dart";
 import "package:logger/logger.dart";
 import '../helpers/WidgetUtils.dart';
 import "package:cryptography/cryptography.dart";
@@ -299,6 +300,7 @@ class TestCrypto {
 
     return xorList;
   }
+
 
   /// PBKDF2
   ///
@@ -1068,85 +1070,5 @@ class TestCrypto {
     await test_AES_CTR_256_IV_OVERFLOW_TEST();
   }
 
-  /// error correction example on encrypted data
-  processDataErrorCorrection(List<int> bytes) async {
-    logger.d("process data[${bytes.length}]: $bytes");
-
-    if (bytes.length <= 32) {
-      logger.d("incorrect byte length");
-      return [];
-    }
-
-    if (bytes.length % 16 != 0) {
-      logger.d("incorrect byte length");
-      return [];
-    }
-
-    final nblocks = bytes.length / 16;
-
-    List<int> secretKey = List<int>.filled(32, 0);
-    final encryptionKey = SecretKey(secretKey);
-    final iv = List<int>.filled(16, 0);
-
-    /// Encrypt
-    final secretBox = await algorithm_nomac.encrypt(
-      bytes,
-      secretKey: encryptionKey,
-      nonce: iv,
-    );
-
-    List<int> xorList = secretBox.cipherText;
-    logger.d("cipherText : ${secretBox.cipherText}");
-
-    /// compute 16 byte XOR block our ciphertext stream
-    while (xorList.length != 16) {
-      final x =
-      Uint8List.fromList(secretBox.cipherText.sublist(0, (xorList.length! / 2).toInt()));
-      final y = Uint8List.fromList(secretBox.cipherText.sublist(
-          (xorList.length! / 2).toInt(), (xorList.length!).toInt()));
-
-      xorList = cryptor.xor(x, y);
-    }
-
-    logger.d("xor result[${xorList.length}]: ${xorList}");
-
-    List<int> xorInverseList = [];
-
-    /// get the inverse of our ciphertext in 16 byte blocks
-    for (var index = 0; index < nblocks; index++) {
-      final xx = Uint8List.fromList(xorList);
-      final y = Uint8List.fromList(secretBox.cipherText.sublist(index * 16, 16 * (index + 1)));
-
-      xorInverseList.addAll(cryptor.xor(xx, y));
-    }
-
-    logger.d("xorInverseList[${xorInverseList.length}]: ${xorInverseList}");
-
-    /// introduce some error in the ciphertext
-    final errorData = hex.decode("11111111") + secretBox.cipherText.sublist(4, secretBox.cipherText.length-4) + hex.decode("11111111");
-    logger.d("errorData : ${errorData.length}: $errorData");
-
-    /// compute our intermediate error correction code
-    final checkCode = cryptor.xor(Uint8List.fromList(xorInverseList), Uint8List.fromList(errorData));
-    logger.d("checkCode : $checkCode");
-
-    List<int> correctionStream = [];
-
-    /// compute the final error correction code (corrective ciphertext stream)
-    for (var index = 0; index < nblocks; index++) {
-      final xx = Uint8List.fromList(xorList);
-      final y = Uint8List.fromList(checkCode.sublist(index * 16, 16 * (index + 1)));
-
-      correctionStream.addAll(cryptor.xor(xx, y));
-    }
-
-    logger.d("correctionStream : $correctionStream");
-
-    /// correct the invalid ciphertext
-    final correctedCiphertext = cryptor.xor(Uint8List.fromList(errorData), Uint8List.fromList(correctionStream));
-    logger.d("correctedCiphertext : $correctedCiphertext");
-
-    logger.d("valid: ${hex.encode(correctedCiphertext) == hex.encode(secretBox.cipherText)}");
-  }
 
 }

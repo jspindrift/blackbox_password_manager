@@ -47,7 +47,7 @@ class DeviceManager {
         deviceData = _readIosDeviceInfo(await deviceInfoPlugin.iosInfo);
       }
 
-      logger.d("device data: $deviceData");
+      // logger.d("device data: $deviceData");
 
       // else if (Platform.isLinux) {
       //   deviceData = _readLinuxDeviceInfo(await deviceInfoPlugin.linuxInfo);
@@ -98,7 +98,7 @@ class DeviceManager {
       'tags': build.tags,
       'type': build.type,
       'isPhysicalDevice': build.isPhysicalDevice,
-      'systemFeatures': build.systemFeatures,
+      // 'systemFeatures': build.systemFeatures,
       // 'displaySizeInches':
       // ((build.displayMetrics.sizeInches * 10).roundToDouble() / 10),
       // 'displayWidthPixels': build.displayMetrics.widthPx,

@@ -53,6 +53,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
   bool _isAuthenticating = false;
   bool _isBiometricLoginEnabled = false;
+  bool _isBiometricsAvailable = false;
 
   bool _hasBackups = false;
   bool _isRecoveryModeEnabled = false;
@@ -150,9 +151,9 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   void _calculateDevices() async {
     await _getAppSettings();
 
-    final check = await biometricManager.doBiometricCheck();
+    final checkBiometrics = await biometricManager.doBiometricCheck();
     setState(() {
-      _isBiometricLoginEnabled = check;
+      _isBiometricsAvailable = checkBiometrics;
     });
 
     if (Platform.isIOS) {
@@ -193,13 +194,21 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           }
       }
     } else {
+      await settingsManager.initializeLaunchSettings();
+      // settingsManager.saveHasLaunched();
+
       if (!settingsManager.launchSettingInitialized) {
         logManager.logger.d("settingsManager.launchSettingInitialized: ${settingsManager.launchSettingInitialized}");
-          Future.delayed(Duration(seconds: 2), () {
+        // await settingsManager.initializeLaunchSettings();
+
+        Future.delayed(Duration(seconds: 2), () {
+          logManager.logger.d("settingsManager.launchSettingInitialized-check: ${settingsManager.launchSettingInitialized}");
+
             if (settingsManager.launchSettingInitialized) {
-              _checkHasLaunchedState();
-            }
-          });
+                _checkHasLaunchedState();
+              }
+
+        });
       } else {
         _checkHasLaunchedState();
       }
@@ -224,11 +233,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   }
 
   void _startup() async {
-    // print("startup 2: $_isFirstLaunch");
 
-    /// testing SD card backup saving location
-    // final xPath = await fileManager.externalLocalPath;
-    // logManager.logger.d("fileManager.externalLocalPath: ${xPath}");
+    settingsManager.saveHasLaunched();
 
     _isJailbroken = await jailbreakChecker.isDeviceJailbroken();
 
@@ -238,11 +244,6 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       });
       return;
     }
-
-    // final check = await biometricManager.doBiometricCheck();
-    // setState(() {
-    //   _isBiometricLoginEnabled = check;
-    // });
 
     /// get log key ready for authenticating logs
     keyManager.readLogKey();
@@ -280,6 +281,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
             });
 
             _getAppState();
+
+            _computeLogoutValues();
           });
         }
       });
@@ -294,18 +297,28 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     });
 
     /// check biometric key
-    final bioStatus = await keyManager.renderBiometricKey();
-    setState(() {
-      _isBiometricLoginEnabled = bioStatus;
-    });
+    final bioKeyStatus = await keyManager.renderBiometricKey();
+    // setState(() {
+    //   _isBiometricLoginEnabled = bioKeyStatus;
+    // });
 
     final checkBioAvailability = await biometricManager.doBiometricCheck();
     setState(() {
-      _isBiometricLoginEnabled = checkBioAvailability;
+      _isBiometricsAvailable = checkBioAvailability;// && bioStatus;
     });
 
-    if (!checkBioAvailability) {
+    setState(() {
+      _isBiometricLoginEnabled = checkBioAvailability && bioKeyStatus;
+    });
+
+    if (!checkBioAvailability && bioKeyStatus) {
       keyManager.deleteBiometricKey();
+    }
+
+    if (_isFirstLaunch) {
+      setState(() {
+        _isBiometricLoginEnabled = false;
+      });
     }
 
     _readRecoveryMode();
@@ -331,13 +344,10 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     // });
 
     /// invoke on first instantiation
-    if (bioStatus && !_isFirstLaunch && !_isSigningUp) {
+    if (_isBiometricLoginEnabled && !_isFirstLaunch && !_isSigningUp) {
       _pressedBiometricButton();
     }
 
-    if (_isFirstLaunch) {
-      _isBiometricLoginEnabled = false;
-    }
 
     /// check local document backup file
     final vaultFileString = await fileManager.readNamedVaultData();
@@ -366,7 +376,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     await settingsManager.initialize();
     // await DeviceManager().initialize();
 
-    logManager.logger.d("deviceData: ${settingsManager.deviceManager.deviceData}");
+    // logManager.logger.d("deviceData: ${settingsManager.deviceManager.deviceData}");
 
     setState(() {
       _isRecoveryModeEnabled = settingsManager.isRecoveryModeEnabled;
@@ -411,7 +421,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           /// check biometrics
           final checkBioAvailability = await biometricManager.doBiometricCheck();
           setState(() {
-            _isBiometricLoginEnabled = checkBioAvailability;
+            _isBiometricsAvailable = checkBioAvailability;
           });
 
           if (!checkBioAvailability) {
@@ -476,26 +486,27 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                 });
 
                 /// read encrypted key material data
-                keyManager.readEncryptedKey().then((value) {
-                  setState(() {
-                    _isSigningUp = !keyManager.hasPasswordItems;
-                  });
-
-                  // lets go dark... :)
-                  if (_isSigningUp) {
-                    setState(() {
-                      _isDarkModeEnabled = true;
-                    });
-                    settingsManager.saveDarkMode(true);
-                    // set to secure settings by default
-                    settingsManager.saveLockOnExit(true);
-                  }
+                await keyManager.readEncryptedKey();
+                setState(() {
+                  _isSigningUp = !keyManager.hasPasswordItems;
                 });
 
-                keyManager.renderBiometricKey().then((value) {
+                // lets go dark... :)
+                if (_isSigningUp) {
                   setState(() {
-                    _isBiometricLoginEnabled = value;
+                    _isDarkModeEnabled = true;
                   });
+                  settingsManager.saveDarkMode(true);
+                  // set to secure settings by default
+                  settingsManager.saveLockOnExit(true);
+                }
+
+                final bioKeyStatus = await keyManager.renderBiometricKey();
+                final checkBioAvailability = await biometricManager.doBiometricCheck();
+
+                setState(() {
+                  _isBiometricsAvailable = checkBioAvailability;
+                  _isBiometricLoginEnabled = checkBioAvailability && bioKeyStatus;
                 });
 
                 final vaultFileString = await fileManager.readNamedVaultData();
@@ -1003,8 +1014,6 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         _isSigningUp = !keyManager.hasPasswordItems;
       });
 
-      // logManager.logger.d("_isSigningUp: ${_isSigningUp}");
-
       // lets go dark... :)
       if (_isSigningUp) {
         setState(() {
@@ -1016,37 +1025,21 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       }
     });
 
-    keyManager.renderBiometricKey().then((value) {
-      setState(() {
-        _isBiometricLoginEnabled = value;
-      });
+    final bioKeyStatus = await keyManager.renderBiometricKey();
+    final checkBioAvailability = await biometricManager.doBiometricCheck();
+
+    setState(() {
+      _isBiometricsAvailable = checkBioAvailability;
+      _isBiometricLoginEnabled = checkBioAvailability && bioKeyStatus;
     });
 
-    final vaultFileString = await fileManager.readNamedVaultData();
-
-    if (vaultFileString.isNotEmpty) {
-      setState(() {
-        _hasBackups = true;
-      });
-    } else {
-      setState(() {
-        _hasBackups = false;
-      });
-    }
-
-    /// check android backup file
-    if (Platform.isAndroid) {
-      var vaultFileString = await fileManager.readVaultDataSDCard();
-      setState(() {
-        _hasBackups = vaultFileString.isNotEmpty;
-      });
-    }
+    await _checkBackups();
 
     logManager.logger.d("_hasBackups: $_hasBackups");
 
     /// check for pin code
-    final pinStatus = await keyManager.readPinCodeKey(); //.then((value) {
-    // print("pinStatus: $pinStatus");
+    final pinStatus = await keyManager.readPinCodeKey();
+
     if (pinStatus && !_isFirstLaunch) {
       _isOnLoginScreen = false;
       Navigator.push(
@@ -1074,17 +1067,33 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
             });
 
             _getAppState();
+
+            await _checkBackups();
           });
         }
       });
     }
   }
 
+  Future<void> _checkBackups() async {
+    final vaultFileString = await fileManager.readNamedVaultData();
+
+    setState(() {
+      _hasBackups = vaultFileString.isNotEmpty;
+    });
+
+
+    /// check android backup file
+    if (Platform.isAndroid) {
+      var vaultFileString = await fileManager.readVaultDataSDCard();
+      setState(() {
+        _hasBackups = vaultFileString.isNotEmpty;
+      });
+    }
+  }
+
   /// create an account and save encrypted key details
   Future<void> _createAccount() async {
-    // FocusScope.of(context).unfocus();
-
-    // logManager.logger.d("isAuthenticating: ${_isAuthenticating}");
 
     final password = _enterPasswordTextController.text;
     final hint = _passwordHintTextController.text;
@@ -1105,6 +1114,9 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       if (newKeyParams == null) {
         return null;
       }
+
+      keyManager.setKeyId(newKeyParams.keyId);
+
       // reset fields
       _enterPasswordTextController.text = '';
       _confirmPasswordTextController.text = '';
@@ -1113,16 +1125,10 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       _hideEnterPasswordField = true;
       _hideConfirmPasswordField = true;
 
-      String encodedSalt = newKeyParams.salt;
-      String encodedEncryptedKey = newKeyParams.key;//base64.encode(newKeyParams.key);
+      // String encodedSalt = newKeyParams.salt;
+      // String encodedEncryptedKey = newKeyParams.key;//base64.encode(newKeyParams.key);
 
-      /// TODO: save secret salt
-      ///
-
-      // final deviceId = await deviceManager.getDeviceId();
-      // print("deviceId: $deviceId");
-
-      final deviceId = "macOSX";
+      final deviceId = "simulator";
 
       /// create secret salt
       if (deviceId != null) {

@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-// import 'dart:html';
 import 'dart:io';
 
-import 'package:argon2/argon2.dart';
 import '../helpers/WidgetUtils.dart';
 import '../models/KeyItem.dart';
 import 'package:convert/convert.dart';
@@ -22,17 +20,11 @@ import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/Cryptor.dart';
-
 import '../models/GenericItem.dart';
-
 import '../models/QRCodeItem.dart';
 import '../widgets/QRScanView.dart';
 import 'home_tab_screen.dart';
 
-
-/// Adding a Peer (Child) Public Key
-///
-///
 
 class AddPeerPublicKeyScreen extends StatefulWidget {
   const AddPeerPublicKeyScreen({
@@ -50,7 +42,6 @@ class AddPeerPublicKeyScreen extends StatefulWidget {
 class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
   final _peerNameTextController = TextEditingController();
   final _notesTextController = TextEditingController();
-  final _tagTextController = TextEditingController();
   final _importedKeyDataTextController = TextEditingController();
   final _scannedKeyDataTextController = TextEditingController();
 
@@ -64,20 +55,14 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
   bool _isDarkModeEnabled = false;
   bool _fieldsAreValid = false;
   bool _isImportingManually = false;
-  // bool _isScanningQRCode = false;
-  bool _shouldShowExtendedKeys = false;
 
   List<String> _keyTags = [];
   List<bool> _selectedTags = [];
-  // List<String> _filteredTags = [];
 
   bool _isImportedKeyHex = false;
   bool _isImportedKeyBase64 = false;
 
   List<int> _publicKey = [];
-  // String _publicKeyMnemonic = "";
-
-  // List<int> _sharedSecretKey = [];
 
   KeyItem? _mainKeyItem;
   List<int> _mainPrivKey = [];
@@ -1296,25 +1281,6 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
       return;
     }
 
-    // if (_publicKey.isEmpty) {
-    //   setState(() {
-    //     _fieldsAreValid = false;
-    //   });
-    //   return;
-    // }
-
-    // if (_isImportingManually && !bip39.validateMnemonic(importedData)) {
-    //   setState(() {
-    //     _fieldsAreValid = false;
-    //   });
-    //   return;
-    // }
-    // if ((_isImportingManually && importedData.isEmpty) || (_isImportingManually && importedData.length != 32)) {
-    //   setState(() {
-    //     _fieldsAreValid = false;
-    //   });
-    //   return;
-    // }
     bool _isHexEncoding = false;
     bool _isB64Encoding = false;
 
@@ -1340,16 +1306,9 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
 
 
         if (checkB64 && (base64.decode(importedData).length == 32)){
-          // if (base64.decode(importedData).length == 32) {
-          //   print("base64: valid!!!");
             _isHexEncoding = false;
             _isB64Encoding = true;
             final isValid = base64.encode(_mainPubKey) != importedData;
-            // print("importedData: ${importedData}");
-            //
-            // print("_mainPubKey: ${_mainPubKey}");
-            // print("base64.decode(importedData): ${base64.decode(importedData)}");
-            //
             // print("isValid: ${isValid}");
 
             setState(() {
@@ -1363,7 +1322,6 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
             }
 
         } else if (checkHex && (importedData.length == 64)) {
-            // print("hex: valid!!!");
             _isHexEncoding = true;
             _isB64Encoding = false;
             final isValid = hex.encode(_mainPubKey) != importedData;
@@ -1390,7 +1348,6 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
       } else {
         /// Scanning-in public key data
         ///
-        // print("scanned data-----");
         if (scannedData == null) {
           return;
         }
@@ -1405,7 +1362,6 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
 
         if (checkB64){
           if (base64.decode(scannedData).length == 32) {
-            // print("base64: valid!!!");
             _isHexEncoding = false;
             _isB64Encoding = true;
 
@@ -1421,7 +1377,6 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
             }
 
           } else {
-            // print("base64: INvalid!!!");
             setState(() {
               _fieldsAreValid = false;
             });
@@ -1429,7 +1384,6 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
           }
         } else if (checkHex) {
           if (scannedData.length == 64) {
-            // print("hex: valid!!!");
             _isHexEncoding = true;
             _isB64Encoding = false;
 
@@ -1442,20 +1396,15 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
               _publicKeyIsValid = isValid;
             });
             if (!isValid) {
-              // print("hex: INNNvalid!!!");
               return;
             }
           } else {
-            // print("hex: INvalid!!!");
             setState(() {
               _fieldsAreValid = false;
             });
             return;
           }
         }
-        // else {
-        //   print("GOING NOWHERE !!!");
-        // }
       }
     } catch (e) {
       logManager.logger.d("Platform Exception: $e");
@@ -1466,7 +1415,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
     }
 
     setState(() {
-      _shouldShowExtendedKeys = true;
+      // _shouldShowExtendedKeys = true;
       _fieldsAreValid = true;
 
       if (_isImportingManually) {
@@ -1665,8 +1614,9 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
 
     _peerPublicKeys.add(newPeerPublicKey);
 
-    final keyItem = KeyItem(
+    var keyItem = KeyItem(
       id: widget.keyItem.id,
+      keyId: widget.keyItem.keyId,
       version: AppConstants.keyItemVersion,
       name: widget.keyItem.name,
       key: widget.keyItem.key,
@@ -1678,9 +1628,13 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
       isBip39: true,
       peerPublicKeys: _peerPublicKeys,
       tags: _keyTags,
+      mac: "",
       cdate: widget.keyItem.cdate,
       mdate: widget.keyItem.mdate,
     );
+
+    final itemMac = await cryptor.hmac256(keyItem.toRawJson());
+    keyItem.mac = itemMac;
 
     final keyItemJson = keyItem.toRawJson();
     // print("save add peer key keyItem.toRawJson: $keyItemJson");

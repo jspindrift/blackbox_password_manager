@@ -824,51 +824,49 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final username = item.username;
     final password = item.password;
 
-    // final itemId = uuid +
-    //     "-" +
-    //     createDate.toIso8601String() +
-    //     "-" +
-    //     createDate.toIso8601String();
-
-    /// Encrypt password and items here
-    /// ...
-    final encryptedName = await cryptor.encrypt(name);
-    final encryptedUsername = await cryptor.encrypt(username);
-
+    // /// Encrypt password and items here
+    // /// ...
+    // final encryptedName = await cryptor.encrypt(name);
+    // final encryptedUsername = await cryptor.encrypt(username);
+    //
     var isBip39Valid = bip39.validateMnemonic(password);
-
-    String encryptedPassword = "";
-    if (isBip39Valid) {
-      final seed = bip39.mnemonicToEntropy(password);
-
-      /// Encrypt seed here
-      encryptedPassword = await cryptor.encrypt(seed);
-    } else {
-      /// Encrypt password here
-      encryptedPassword = await cryptor.encrypt(password);
-    }
-
-    /// Encrypt notes
-    final encryptedNotes = await cryptor.encrypt("Shared item");
+    //
+    // String encryptedPassword = "";
+    // if (isBip39Valid) {
+    //   final seed = bip39.mnemonicToEntropy(password);
+    //
+    //   /// Encrypt seed here
+    //   encryptedPassword = await cryptor.encrypt(seed);
+    // } else {
+    //   /// Encrypt password here
+    //   encryptedPassword = await cryptor.encrypt(password);
+    // }
+    //
+    // /// Encrypt notes
+    // final encryptedNotes = await cryptor.encrypt("");
 
     final passwordItem = PasswordItem(
       id: uuid,
+      keyId: keyManager.keyId,
       version: AppConstants.passwordItemVersion,
-      name: encryptedName,
-      username: encryptedUsername,
-      password: encryptedPassword,
+      name: name, //encryptedName,
+      username: username, //encryptedUsername,
+      password: password, //encryptedPassword,
       previousPasswords: [],
       favorite: false,
       isBip39: isBip39Valid,
       tags: ["shared"],
       geoLock: null,
-      notes: encryptedNotes,
+      notes: "",
+      mac: "",
       cdate: createDate.toIso8601String(),
       mdate: createDate.toIso8601String(),
     );
 
+    await passwordItem.encryptParams(null);
+
     final passwordItemString = passwordItem.toRawJson();
-    // print("passwordItem toRawJson: $passwordItemString");
+    // logManager.logger.d("passwordItem toRawJson: $passwordItemString");
 
     final genericItem = GenericItem(type: "password", data: passwordItemString);
     // print('genericItem toRawJson: ${genericItem.toRawJson()}');
@@ -910,68 +908,54 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       final encryptedName = (passwordItem?.name)!;
       final encryptedUsername = (passwordItem?.username)!;
       final encryptedPassword = (passwordItem?.password)!;
+      // print('passwordItem encryptedName: $encryptedName');
+      // print('passwordItem encryptedUsername: $encryptedUsername');
+      // print('passwordItem encryptedPassword: $encryptedPassword');
 
-      // final itemId = uuid +
-      //     "-" +
-      //     timestamp.toIso8601String() +
-      //     "-" +
-      //     timestamp.toIso8601String();
-      // final keyIndex = (passwordItem?.keyIndex)!;
-      // var keyIndex = 0;
-      //
-      // if (passwordItem?.keyIndex != null) {
-      //   keyIndex = (passwordItem?.keyIndex)!;
-      // }
       /// decrypt fields
       ///
       final name = await cryptor.decrypt(encryptedName);
       final username = await cryptor.decrypt(encryptedUsername);
 
       /// if bip39, password is the seed hex
-      final password = await cryptor.decrypt(encryptedPassword);
+      var password = await cryptor.decrypt(encryptedPassword);
 
       /// TODO: change to use key index on encryption
       /// re-encrypt item fields
       ///
-      final reEncryptedName = await cryptor.encrypt(name);
-
-      final reEncryptedUsername = await cryptor.encrypt(username);
-
-      // final isBip39Valid = bip39.validateMnemonic(password);
       final isBip39 = (passwordItem?.isBip39)!;
+      if (isBip39) {
+        password = cryptor.entropyToMnemonic(password);
+      }
 
-      // String reEncryptedPassword = '';
-      // if (isBip39) {
-      // final seed = bip39.mnemonicToEntropy(password);
-      // final seed = bip39.mnemonicToEntropy(password);
-
-      /// Encrypt seed here
-      final reEncryptedPassword = await cryptor.encrypt(password);
-      // } else {
-      //   /// Encrypt password here
-      //   reEncryptedPassword = await cryptor.encrypt(password);
-      // }
-
-      /// Encrypt empty notes
-      final reEncryptedNotes = await cryptor.encrypt("");
+      // final reEncryptedName = await cryptor.encrypt(name);
+      // final reEncryptedUsername = await cryptor.encrypt(username);
+      //
+      // /// Encrypt seed here
+      // final reEncryptedPassword = await cryptor.encrypt(password);
+      // final reEncryptedNotes = await cryptor.encrypt("");
 
       /// build item
       ///
       final newPasswordItem = PasswordItem(
         id: uuid,
+        keyId: keyManager.keyId,
         version: AppConstants.passwordItemVersion,
-        name: reEncryptedName,
-        username: reEncryptedUsername,
-        password: reEncryptedPassword,
+        name: name, //reEncryptedName,
+        username: username, //reEncryptedUsername,
+        password: password, // reEncryptedPassword,
         previousPasswords: [],
         favorite: false,
         isBip39: isBip39,
         tags: [],
         geoLock: null,
-        notes: reEncryptedNotes,
+        notes: "", //reEncryptedNotes,
+        mac: "",
         cdate: timestamp.toIso8601String(),
         mdate: timestamp.toIso8601String(),
       );
+
+      await newPasswordItem.encryptParams(null);
 
       final passwordItemString = newPasswordItem.toRawJson();
       // print('passwordItem toRawJson: $passwordItemString');

@@ -159,23 +159,16 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
 
     _filteredTags = settingsManager.itemTags;
 
-    _isLocationSettingsEnabled = geolocationManager.isLocationSettingsEnabled;
-
     if (_testGeoLock) {
       if (geolocationManager.geoLocationUpdate == null) {
         geolocationManager.initialize();
       }
     }
 
-    // print("_selectedIndex: $_selectedIndex");
-    // print("tags edit password: ${settingsManager.itemTags}");
+    _isLocationSettingsEnabled = geolocationManager.isLocationSettingsEnabled;
 
-    // _getItem();
     _getPasswordItem();
 
-    // print("_isInitiallyGeoLocked: ${_isInitiallyGeoLocked}, _isOutOfRange: ${_isOutOfRange}");
-
-    // onLocationSettingsChangeSubscription = GeoLocationManager().onLocationSettingsChange.listen((event) {
     onLocationSettingsChangeSubscription =
         geolocationManager.onLocationSettingsChange.listen((event) {
       logManager.logger.d("onLocationSettingsChangeSubscription: $event");
@@ -307,112 +300,115 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
       return;
     }
 
-    /// must be a PasswordItem type
-    _passwordItem = PasswordItem.fromRawJson(genericItem.data);
+    try {
+      /// must be a PasswordItem type
+      _passwordItem = PasswordItem.fromRawJson(genericItem.data);
 
-    if (_passwordItem == null) {
-      _throwError();
-      return;
-    }
-      // final keyIndex = (_passwordItem?.keyIndex)!;
-
-    var name = (_passwordItem?.name)!;
-    var username = (_passwordItem?.username)!;
-    var tags = (_passwordItem?.tags)!;
-
-    var dpassword = "";
-
-    /// TODO: add geo-lock
-    if (_passwordItem?.geoLock != null) {
-      /// only activate location settings here on init
-      /// otherwise init it on geolocation switch
-      /// TODO: un/comment this back in
-      // if (geolocationManager.geoLocationUpdate == null) {
-      //   geolocationManager.initialize();
-      // }
-
-      _geoLockItem = (_passwordItem?.geoLock)!;
-
-      if (_geoLockItem != null) {
-        setState(() {
-          _isInitiallyGeoLocked = true;
-          _isGeoLockedEnabled = true;
-          _isDecryptingGeoLock = true;
-        });
-      } else {
-        setState(() {
-          _isOutOfRange = false;
-          _isDecryptingGeoLock = false;
-        });
-      }
-    }
-
-    for (var tag in tags) {
-      _selectedTags.add(false);
-    }
-
-    _passwordTags = tags;
-
-    var isFavorite = (_passwordItem?.favorite)!;
-
-    _isFavorite = isFavorite;
-    _isBip39Valid = (_passwordItem?.isBip39)!;
-
-    final notes = (_passwordItem?.notes)!;
-
-    final cdate = (_passwordItem?.cdate)!;
-    _createdDate = DateTime.parse(cdate);
-
-    final mdate = (_passwordItem?.mdate)!;
-    _modifiedDate = DateTime.parse(mdate);
-
-    final encryptedPreviousPasswords =
-    (_passwordItem?.previousPasswords)!;
-    _initialEncryptedPreviousPasswords = encryptedPreviousPasswords;
-
-      // final blob = (_passwordItem?.password)!;
-
-    if (!_isInitiallyGeoLocked) {
-      final blob = (_passwordItem?.password)!;
-
-      /// decrypt password
-      final pwd = await cryptor.decrypt(blob);
-      dpassword = pwd;
-      if (_isBip39Valid) {
-        dpassword = bip39.entropyToMnemonic(pwd);
-
-        _passwordTextController.text = dpassword;
-        // _initialPassword = dpassword;
-      } else {
-        _passwordTextController.text = dpassword;
-        // _initialPassword = dpassword;
+      if (_passwordItem == null) {
+        _throwError();
+        return;
       }
 
-      final hasPasswordInList =
-      widget.passwordList.contains(dpassword);
-      // widget.passwordList.(_initialPassword);
-      if (hasPasswordInList) {
-        var dupeCount = 0;
-        for (var pwd in widget.passwordList) {
-          if (pwd == dpassword) {
-            dupeCount += 1;
+      final macCheck = await _passwordItem?.checkMAC() ?? false;
+      if (!macCheck) {
+        _showErrorDialog("Password Item Invalid.  MAC check failed.");
+        return;
+      }
+
+      var name = (_passwordItem?.name)!;
+      var username = (_passwordItem?.username)!;
+      var tags = (_passwordItem?.tags)!;
+      var dpassword = "";
+
+      /// TODO: add geo-lock
+      if (_passwordItem?.geoLock != null) {
+        /// only activate location settings here on init
+        /// otherwise init it on geolocation switch
+        /// TODO: un/comment this back in
+        // if (geolocationManager.geoLocationUpdate == null) {
+        //   geolocationManager.initialize();
+        // }
+
+        _geoLockItem = (_passwordItem?.geoLock)!;
+
+        if (_geoLockItem != null) {
+          setState(() {
+            _isInitiallyGeoLocked = true;
+            _isGeoLockedEnabled = true;
+            _isDecryptingGeoLock = true;
+          });
+        } else {
+          setState(() {
+            _isOutOfRange = false;
+            _isDecryptingGeoLock = false;
+          });
+        }
+      }
+
+      for (var tag in tags) {
+        _selectedTags.add(false);
+      }
+
+      _passwordTags = tags;
+
+      var isFavorite = (_passwordItem?.favorite)!;
+
+      _isFavorite = isFavorite;
+      _isBip39Valid = (_passwordItem?.isBip39)!;
+
+      final notes = (_passwordItem?.notes)!;
+
+      final cdate = (_passwordItem?.cdate)!;
+      _createdDate = DateTime.parse(cdate);
+
+      final mdate = (_passwordItem?.mdate)!;
+      _modifiedDate = DateTime.parse(mdate);
+
+      final encryptedPreviousPasswords =
+      (_passwordItem?.previousPasswords)!;
+      _initialEncryptedPreviousPasswords = encryptedPreviousPasswords;
+
+      if (!_isInitiallyGeoLocked) {
+        final blob = (_passwordItem?.password)!;
+
+        /// decrypt password
+        final pwd = await cryptor.decrypt(blob);
+        dpassword = pwd;
+        if (_isBip39Valid) {
+          dpassword = bip39.entropyToMnemonic(pwd);
+
+          _passwordTextController.text = dpassword;
+        } else {
+          _passwordTextController.text = dpassword;
+        }
+
+        final hasPasswordInList =
+        widget.passwordList.contains(dpassword);
+
+        if (hasPasswordInList) {
+          var dupeCount = 0;
+          for (var pwd in widget.passwordList) {
+            if (pwd == dpassword) {
+              dupeCount += 1;
+            }
+          }
+          if (dupeCount > 1) {
+            _duplicatePassword = true;
           }
         }
-        if (dupeCount > 1) {
-          _duplicatePassword = true;
-        }
-      }
 
-      setState(() {
-        _passwordStrength = estimatePasswordStrength(dpassword);
-      });
+        setState(() {
+          _passwordStrength = estimatePasswordStrength(dpassword);
+        });
 
-      _validateFields();
+        _validateFields();
+      } else {
+        if (geolocationManager.geoLocationUpdate != null) {
+          final pwd = await decryptGeoLock(
+              geolocationManager.geoLocationUpdate!,
+          );
 
-    } else {
-      if (geolocationManager.geoLocationUpdate != null) {
-         final pwd = await decryptGeoLock(geolocationManager.geoLocationUpdate!);//.then((value) {
-         dpassword = pwd;
+          dpassword = pwd;
           if (pwd.isNotEmpty) {
             logManager.logger.d("geo locked decrypted successfully");
 
@@ -427,13 +423,11 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
 
               setState(() {
                 _passwordTextController.text = dpassword;
-                // _initialPassword = dpassword;
                 _hasDecryptedGeoLock = true;
               });
             } else {
               setState(() {
                 _passwordTextController.text = dpassword;
-                // _initialPassword = dpassword;
                 _hasDecryptedGeoLock = true;
               });
             }
@@ -445,86 +439,58 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
           }
 
           _validateFields();
-        // });
-      } else {
-        print("geo update is null");
-      }
-    }
-
-
-      // logManager.logger.d(
-      //     "_isInitiallyGeoLocked: ${_isInitiallyGeoLocked}, _isOutOfRange: ${_isOutOfRange}");
-
-    final dname = await cryptor.decrypt(name);//.then((value) {
-
-      /// decrypt username
-    final dusername = await cryptor.decrypt(username);
-
-      /// decrypt notes
-    final dnotes = await cryptor.decrypt(notes);
-    setState(() {
-      _nameTextController.text = dname;
-      _usernameTextController.text = dusername;
-      _notesTextController.text = dnotes;
-      _initialPassword = dpassword;
-    });
-
-
-    _itemPropertiesString =
-    '$dname.$dusername.${tags.toString()}.$isFavorite.$_initialPassword.$dnotes';
-
-    qrItem = QRCodeItem(
-        name: dname, username: dusername, password: dpassword);
-
-
-        // print("decrypt notes: ItemProps: $_itemPropertiesString");
-        // print("decrypt notes: qrItem: ${qrItem.toRawJson()}");
-      // });
-
-    /// decrypt previous passwords
-    if (encryptedPreviousPasswords.isNotEmpty) {
-      // print("DECYRYPTING PREV PASS: ${encryptedPreviousPasswords.length}");
-      var index = 0;
-      for (var pp in encryptedPreviousPasswords) {
-        // print("DECYRYPTING PREV PASS[${index}]: ${pp.password} : ${pp.cdate}");
-        index += 1;
-        var decryptedPreviousPassword = await cryptor.decrypt(pp.password);
-
-        if (pp.isBip39) {
-          decryptedPreviousPassword = cryptor.entropyToMnemonic(decryptedPreviousPassword);
-          // settingsManager.doEncryption(utf8.encode(seed).length);
-          // decryptedPreviousPassword = await cryptor.decrypt(seed);
+        } else {
+          print("geo update is null");
         }
-        // else {
-        //   // settingsManager.doEncryption(utf8.encode(previousPassword).length);
-        //   decryptedPreviousPassword = await cryptor.decrypt(pp.password);
-        // }
-
-        final decrypedPreviousItem = PreviousPassword(
-          password: decryptedPreviousPassword,
-          isBip39: pp.isBip39,
-          cdate: pp.cdate,
-        );
-        _previousPasswords.add(decrypedPreviousItem);
-
-        /// TODO: change this for indexed decryption
-        /// TODO: encryptWithIndex DEBUG
-        // cryptor.decryptWithIndex(ppKeyIndex, pp.password).then((value) {
-        // cryptor.decrypt(pp.password).then((value) {
-        //   final decrypedPrevious = PreviousPassword(
-        //     password: value,
-        //     isBip39: pp.isBip39,
-        //     cdate: pp.cdate,
-        //   );
-        //   _previousPasswords.add(decrypedPrevious);
-        //   cyclePreviousPasswords();
-        // });
       }
 
-      cyclePreviousPasswords();
-    }
+      final dname = await cryptor.decrypt(name);
+      /// decrypt username
+      final dusername = await cryptor.decrypt(username);
+      /// decrypt notes
+      final dnotes = await cryptor.decrypt(notes);
+
+      setState(() {
+        _nameTextController.text = dname;
+        _usernameTextController.text = dusername;
+        _notesTextController.text = dnotes;
+        _initialPassword = dpassword;
+      });
+
+      _itemPropertiesString =
+      '$dname.$dusername.${tags
+          .toString()}.$isFavorite.$_initialPassword.$dnotes';
+
+      qrItem = QRCodeItem(
+          name: dname, username: dusername, password: dpassword);
+
+      /// decrypt previous passwords
+      if (encryptedPreviousPasswords.isNotEmpty) {
+        var index = 0;
+        for (var pp in encryptedPreviousPasswords) {
+          index += 1;
+          var decryptedPreviousPassword = await cryptor.decrypt(pp.password);
+
+          if (pp.isBip39) {
+            decryptedPreviousPassword =
+                cryptor.entropyToMnemonic(decryptedPreviousPassword);
+          }
+
+          final decrypedPreviousItem = PreviousPassword(
+            password: decryptedPreviousPassword,
+            isBip39: pp.isBip39,
+            cdate: pp.cdate,
+          );
+          _previousPasswords.add(decrypedPreviousItem);
+        }
+
+        cyclePreviousPasswords();
+      }
 
       _validateFields();
+    } catch (e) {
+      logManager.logger.wtf("Exception: $e");
+    }
 
   }
 
@@ -578,8 +544,6 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         var ilat2 = (ilat >= 16 ? ilat % 16 : 16 - ilat);
         var ilong2 = (ilong >= 16 ? ilong % 16 : 16 - ilong);
 
-        // print("ilat2: ${ilat2}");
-        // print("ilong2: ${ilong2}");
         final inc_lat = 0.0001 * ilat2;
         final inc_long = 0.0001 * ilong2;
 
@@ -1503,7 +1467,6 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                         child: GestureDetector(
                           onTap: !_isOutOfRange
                               ? () {
-                                  // print("hello");
                                   if (index == 0) {
                                     _showModalAddTagView();
                                   } else {
@@ -1603,7 +1566,8 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'created: ${DateFormat('yyyy-MM-dd  hh:mm:ss a').format(_createdDate)}',
+                      // 'created: ${DateFormat('yyyy-MM-dd  hh:mm:ss a').format(_modifiedDate)}',
+                    'created: ${DateFormat('MMM d y  hh:mm a').format(_createdDate)}',
                       style: TextStyle(
                         fontSize: 14,
                         color: _isDarkModeEnabled ? Colors.white : null,
@@ -1611,7 +1575,8 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                     ),
                     SizedBox(height: 5),
                     Text(
-                      'modified: ${DateFormat('yyyy-MM-dd  hh:mm:ss a').format(_modifiedDate)}',
+                      // 'modified: ${DateFormat('yyyy-MM-dd  hh:mm:ss a').format(_modifiedDate)}',
+                      'modified: ${DateFormat('MMM d y  hh:mm a').format(_modifiedDate)}',
                       style: TextStyle(
                         fontSize: 14,
                         color: _isDarkModeEnabled ? Colors.white : null,
@@ -2752,6 +2717,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
     /// TODO: new method - add
     final passwordItem = PasswordItem(
       id: widget.id,
+      keyId: keyManager.keyId,
       version: AppConstants.passwordItemVersion,
       name: name,
       username: username,
@@ -2762,6 +2728,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
       tags: _passwordTags,
       geoLock: null,
       notes: notes,
+      mac: "",
       cdate: _createdDate.toIso8601String(),
       mdate: _modifiedDate.toIso8601String(),
     );
@@ -2769,12 +2736,8 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
     /// TODO: new method - add
     await passwordItem.encryptParams2(_isGeoLockedEnabled ? geolocationManager.geoLocationUpdate : null, passwordChanged ? _initialPassword : "");
 
-    // passwordItem.mdate = _modifiedDate.toIso8601String();
-
     if (passwordChanged) {
       final isPreviousBip39Valid = bip39.validateMnemonic(_initialPassword);
-      // final encodedPreviousPassword =
-      //     base64.encode(utf8.encode(_initialPassword));
 
       final previous = PreviousPassword(
         password: _initialPassword,
@@ -2786,13 +2749,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
       _previousPasswords.add(previous);
     }
 
-    /// TODO: new method - update time
-    // _modifiedDate = DateTime.now();
-    // passwordItem.mdate = _modifiedDate.toIso8601String();
-
-
     setState(() {
-      /// TODO: new method
       _initialEncryptedPreviousPasswords = passwordItem.previousPasswords;
       _geoLockItem = passwordItem.geoLock;
       _isBip39Valid = passwordItem.isBip39;

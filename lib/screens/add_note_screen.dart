@@ -68,18 +68,15 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
     logManager.log("AddNoteScreen", "initState", "initState");
 
     if (widget.note == null) {
-      // print("starting new note");
       _isEditing = true;
       _isNewNote = true;
 
       _filteredTags = settingsManager.itemTags;
       for (var tag in settingsManager.itemTags) {
         _selectedTags.add(false);
-        // _filteredTags.add(tag);
       }
-    } else {
-      // print("editing current note: ${widget.note}");
 
+    } else {
       _isEditing = false;
       _isNewNote = false;
       var item = widget.note;
@@ -102,7 +99,6 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
     }
 
     _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
-
     _selectedIndex = settingsManager.currentTabIndex;
 
     _validateFields();
@@ -753,12 +749,14 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
 
     final noteItem = NoteItem(
       id: uuid,
+      keyId: keyManager.keyId,
       version: AppConstants.noteItemVersion,
       name: name,
       notes: notes,
       favorite: _isFavorite,
       tags: _noteTags,
       geoLock: null,
+      mac: "",
       cdate: createDate,
       mdate: _modifiedDate,
     );

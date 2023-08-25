@@ -225,7 +225,7 @@ class SettingsManager {
 
   SettingsManager._internal();
 
-  initializeLaunchSettings() async {
+  Future<void> initializeLaunchSettings() async {
     // final startTime = DateTime.now();
     // logger.d("initializeLaunchSettings-begin: $_initCount2");
     await _readHasLaunched();
@@ -233,7 +233,7 @@ class SettingsManager {
     // final endTime = DateTime.now();
     // final timeDiff = endTime.difference(startTime);
     // logger.d("initializeLaunchSettings time diff[$_initCount2]: ${timeDiff.inMilliseconds} ms");
-    // logger.d("initializeLaunchSettings-done: $_initCount2");
+    // logger.d("initializeLaunchSettings-done2: $_launchSettingInitialized");
     // _initCount2++;
   }
 
@@ -241,7 +241,7 @@ class SettingsManager {
     // final startTime = DateTime.now();
     // logger.d("initialize-begin: $_initCount");
 
-    // await _readHasLaunched();
+    await _readHasLaunched();
 
     await readRecoveryModeEnabled();
 
@@ -426,6 +426,7 @@ class SettingsManager {
           EnumToString.convertToString(SharedPreferenceKey.hasLaunched), true);
 
       _hasLaunched = true;
+      _launchSettingInitialized = true;
     } catch (e) {
       logger.e(e);
     }

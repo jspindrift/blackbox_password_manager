@@ -2013,8 +2013,9 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
     _peerPublicKeys = tempPeers;
 
-    final keyItem = KeyItem(
+    var keyItem = KeyItem(
       id: widget.keyItem.id,
+      keyId: keyManager.keyId,
       version: AppConstants.keyItemVersion,
       name: widget.keyItem.name,
       key: widget.keyItem.key,
@@ -2026,9 +2027,13 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
       isBip39: true,
       peerPublicKeys: _peerPublicKeys,
       tags: widget.keyItem.tags,
+      mac: "",
       cdate: widget.keyItem.cdate,
       mdate: widget.keyItem.mdate,
     );
+
+    final itemMac = await cryptor.hmac256(keyItem.toRawJson());
+    keyItem.mac = itemMac;
 
     final keyItemJson = keyItem.toRawJson();
     // print("save add peer key keyItem.toRawJson: $keyItemJson");
@@ -2104,8 +2109,9 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
     var modifiedDate = DateTime.now().toIso8601String();
 
-    final tempKeyItem = KeyItem(
+    var tempKeyItem = KeyItem(
       id: widget.keyItem.id,
+      keyId: widget.keyItem.keyId,
       version: widget.keyItem.version,
       name: widget.keyItem.name,
       key: widget.keyItem.key,
@@ -2117,9 +2123,13 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
       isBip39: true,
       peerPublicKeys: plist,
       tags: _keyTags,
+      mac: "",
       cdate: widget.keyItem.cdate,
       mdate: modifiedDate,
     );
+
+    final itemMac = await cryptor.hmac256(tempKeyItem.toRawJson());
+    tempKeyItem.mac = itemMac;
 
     final keyItemJson = tempKeyItem.toRawJson();
     // print("save add peer key keyItem.toRawJson: $keyItemJson");

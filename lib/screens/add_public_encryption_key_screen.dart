@@ -1003,8 +1003,9 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     // final encryptedKey = await cryptor.encrypt(hex.encode(_privKey));
     final encryptedKey = await cryptor.encrypt(base64.encode(_privKey));
 
-    final keyItem = KeyItem(
+    var keyItem = KeyItem(
       id: uuid,
+      keyId: keyManager.keyId,
       version: AppConstants.keyItemVersion,
       name: encryptedName,
       key: encryptedKey,
@@ -1016,9 +1017,13 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
       isBip39: false,
       peerPublicKeys: [],
       tags: _keyTags,
+      mac: "",
       cdate: createDate,
       mdate: createDate,
     );
+
+    final itemMac = await cryptor.hmac256(keyItem.toRawJson());
+    keyItem.mac = itemMac;
 
     final keyItemJson = keyItem.toRawJson();
     // print("save keyItemJson: $keyItemJson");

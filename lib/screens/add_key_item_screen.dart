@@ -1269,8 +1269,9 @@ class _AddKeyItemScreenState extends State<AddKeyItemScreen> {
     final encryptedNotes = await cryptor.encrypt(notes);
     final encryptedKey = await cryptor.encrypt(hex.encode(_seedKey));
 
-    final keyItem = KeyItem(
+    var keyItem = KeyItem(
       id: uuid,
+      keyId: keyManager.keyId,
       version: AppConstants.keyItemVersion,
       name: name,
       key: encryptedKey,
@@ -1282,9 +1283,13 @@ class _AddKeyItemScreenState extends State<AddKeyItemScreen> {
       isBip39: false,
       peerPublicKeys: [],
       tags: _keyTags,
+      mac: "",
       cdate: createDate,
       mdate: _modifiedDate,
     );
+
+    final itemMac = await cryptor.hmac256(keyItem.toRawJson());
+    keyItem.mac = itemMac;
 
     final keyItemJson = keyItem.toRawJson();
     // logManager.logger.d("save keyItemJson: $keyItemJson");
