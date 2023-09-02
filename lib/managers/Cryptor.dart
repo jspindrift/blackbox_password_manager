@@ -2044,6 +2044,280 @@ class Cryptor {
     }
   }
 
+
+  /// 2-Key Encryption with Authentication
+  /// (unimplemented)
+  ///
+  Future<String> superEncryption(List<int> Kenc, List<int> Kauth, List<int> iv, String plaintext) async {
+    logger.d("superEncryption");
+    try {
+      if (Kenc != null && Kenc.length == 32 && Kauth != null && Kauth.length == 32) {
+
+        final zeros_32 = List.filled(32, 0);  // used for session encryption key
+        final zeros_64 = List.filled(64, 0);  // used for authentication key stream
+
+        final encodedPlaintext = utf8.encode(plaintext);
+
+        /// root keys
+        final Skenc = SecretKey(Kenc);
+        final Skauth = SecretKey(Kauth);
+
+        /// produce key stream for session encryption key
+        final encryptionKeyStream = await algorithm_nomac.encrypt(
+          zeros_32,
+          secretKey: Skenc,
+          nonce: iv,
+        );
+
+        final sessionEncryptionKey = SecretKey(encryptionKeyStream.cipherText);
+
+        /// produces the authentication iv/key stream
+        final authenticationKeyStream = await algorithm_nomac.encrypt(
+          zeros_64,
+          secretKey: Skauth,
+          nonce: iv,
+        );
+
+        /// compute the merkle leaf nodes of our authentication key stream
+        final authNode1 = sha256(hex.encode(authenticationKeyStream.cipherText.sublist(0,32)));
+        final authNode2 = sha256(hex.encode(authenticationKeyStream.cipherText.sublist(32,64)));
+
+        /// compute our session authentication key (merkle root)
+        final authKey = sha256(authNode1 + authNode2);
+        final sessionAuthenticationKey = SecretKey(hex.decode(authKey));
+
+        var iv_xor = authenticationKeyStream.cipherText;
+
+        /// XOR all the authentication key stream blocks (16 bytes) together
+        while (iv_xor.length != 16) {
+          final x =
+          Uint8List.fromList(authenticationKeyStream.cipherText.sublist(0, (iv_xor.length! / 2).toInt()));
+          final y = Uint8List.fromList(authenticationKeyStream.cipherText.sublist(
+              (iv_xor.length! / 2).toInt(), (iv_xor.length!).toInt()));
+
+          iv_xor = xor(x, y);
+        }
+
+        /// XOR the result (iv_xor) back upon our authentication key stream to
+        /// get the inverse leaves
+        final inverseAuthKeyStream = await _processKey(authenticationKeyStream.cipherText);
+
+        /// Pick a random iv block from the authentication key stream.
+        /// This iv will be used for encryption with the session encryption key.
+        /// Here we just pick the first block for simplicity
+        final iv_enc = authenticationKeyStream.cipherText.sublist(0, 16);
+
+        /// Choose the same respective iv block from the inverse auth leaf set.
+        /// This iv will be used for encryption with the computed mac key.
+        final iv_auth = inverseAuthKeyStream.sublist(0, 16);
+
+
+        /// encrypt-then-mac protocol
+        ///
+        /// encrypt the data (1st pass)
+        final ciphertext1 = await algorithm_nomac.encrypt(
+          encodedPlaintext,
+          secretKey: sessionEncryptionKey,
+          nonce: iv_enc,
+        );
+        // logger.d("ciphertext1: ${ciphertext1}");
+
+        final blob = iv_enc + ciphertext1.cipherText;
+        final hashedBlob = hex.decode(sha256(base64.encode(blob)));
+
+        /// compute the mac
+        final mac = await hmac_algo_256.calculateMac(
+          hashedBlob,
+          secretKey: sessionAuthenticationKey!,
+        );
+
+        /// use the mac as a key for 2nd encryption layer
+        final macKey = SecretKey(mac.bytes);
+
+        /// encrypt again with mac key (2nd pass)
+        final ciphertext2 = await algorithm_nomac.encrypt(
+          ciphertext1.cipherText,
+          secretKey: macKey,
+          nonce: iv_auth,
+        );
+        // logger.d("ciphertext2: ${ciphertext2}");
+
+        /// concat the 2 iv's together
+        final ivs = iv_enc + iv_auth;
+
+        /// XOR the concatenated ivs and the mac key
+        final privateMac = xor(Uint8List.fromList(ivs), Uint8List.fromList(mac.bytes));
+
+        final encryptedMaterial = iv + privateMac + ciphertext2.cipherText;
+
+        return base64.encode(encryptedMaterial);
+      } else {
+        return "";
+      }
+    } catch (e) {
+      logger.w(e);
+      return "";
+    }
+  }
+
+  Future<String> superDecryption(List<int> Kenc, List<int> Kauth, List<int> iv, String ciphertext) async {
+    logger.d("superDecryption");
+    try {
+      if (Kenc != null && Kenc.length == 32 && Kauth != null && Kauth.length == 32) {
+
+        final zeros_32 = List.filled(32, 0);
+        final zeros_64 = List.filled(64, 0);
+
+        final decodedCiphertext = base64.decode(ciphertext);
+        final iv = decodedCiphertext.sublist(0, 16);
+        final privateMac = decodedCiphertext.sublist(16, 48);
+        final ciphertextLayer2 = decodedCiphertext.sublist(48, decodedCiphertext.length);
+
+        /// root keys
+        final Skenc = SecretKey(Kenc);
+        final Skauth = SecretKey(Kauth);
+
+        /// produce encryption key stream for session encryption key
+        final encryptionKeyStream = await algorithm_nomac.encrypt(
+          zeros_32,
+          secretKey: Skenc,
+          nonce: iv,
+        );
+
+        final sessionEncryptionKey = SecretKey(encryptionKeyStream.cipherText);
+
+        /// produces the authentication iv stream (this is our source of magic)
+        final authenticationKeyStream = await algorithm_nomac.encrypt(
+          zeros_64,
+          secretKey: Skauth,
+          nonce: iv,
+        );
+
+        /// compute the merkle leaf nodes of our authentication key stream
+        final authNode1 = sha256(hex.encode(authenticationKeyStream.cipherText.sublist(0,32)));
+        final authNode2 = sha256(hex.encode(authenticationKeyStream.cipherText.sublist(32,64)));
+
+        /// compute our session authentication key (merkle root)
+        final authKey = sha256(authNode1 + authNode2);
+        final sessionAuthenticationKey = SecretKey(hex.decode(authKey));
+
+        var iv_xor = authenticationKeyStream.cipherText;
+
+        /// get our XOR value from all auth iv leaves
+        while (iv_xor.length != 16) {
+          final x =
+          Uint8List.fromList(authenticationKeyStream.cipherText.sublist(0, (iv_xor.length! / 2).toInt()));
+          final y = Uint8List.fromList(authenticationKeyStream.cipherText.sublist(
+              (iv_xor.length! / 2).toInt(), (iv_xor.length!).toInt()));
+
+          iv_xor = xor(x, y);
+        }
+
+        /// XOR the result (iv_xor) back upon our authentication key stream to
+        /// get the inverse leaves
+        final inverseAuthKeyStream = await _processKey(authenticationKeyStream.cipherText);
+
+
+        List<int> iv_enc = [];
+        List<int> iv_auth = [];
+        List<int> ciphertextLayer1 = [];
+        bool isValid = false;
+
+        int num_iv_leaves = (authenticationKeyStream.cipherText.length/16).toInt();
+
+        /// Do work and check each IV block until we find the correct one that
+        /// decrypts and authenticates our ciphertext
+        for (var index = 0; index < num_iv_leaves; index++) {
+          /// Pick a random iv from the authIVStream
+          iv_enc = authenticationKeyStream.cipherText.sublist(16*index, 16*(index+1));
+          // logger.d("iv_enc: ${iv_enc}");
+
+          /// Choose the same respective IV set from the inverse set
+          iv_auth = inverseAuthKeyStream.sublist(16*index, 16*(index+1));
+          // logger.d("iv_auth: ${iv_auth}");
+
+          /// concat iv's and xor with our private mac to get the macKey
+          final xor_mac = xor(Uint8List.fromList(iv_enc + iv_auth), Uint8List.fromList(privateMac));
+          final macKey = SecretKey(xor_mac);
+
+          SecretBox secretBox1 =
+          SecretBox(ciphertextLayer2, nonce: iv_auth, mac: Mac([]));
+
+          /// Decrypt outer layer
+          ciphertextLayer1 = await algorithm_nomac.decrypt(
+            secretBox1,
+            secretKey: macKey,
+          );
+
+          final blob = iv_enc + ciphertextLayer1;
+          final hashedBlob = hex.decode(sha256(base64.encode(blob)));
+
+          /// compute the mac
+          final mac = await hmac_algo_256.calculateMac(
+            hashedBlob,
+            secretKey: sessionAuthenticationKey!,
+          );
+
+          /// check the mac
+          if (hex.encode(mac.bytes) == hex.encode(xor_mac)) {
+            logger.d("success!!");
+            isValid = true;
+            break;
+          }
+        }
+
+        if (!isValid) {
+          return "";
+        }
+
+        SecretBox secretBox2 =
+        SecretBox(ciphertextLayer1, nonce: iv_enc, mac: Mac([]));
+
+        /// Decrypt final layer
+        final plaintext = await algorithm_nomac.decrypt(
+          secretBox2,
+          secretKey: sessionEncryptionKey,
+        );
+        // logger.d("plaintext: ${utf8.decode(plaintext)}");
+
+        return utf8.decode(plaintext);
+      } else {
+        return "";
+      }
+    } catch (e) {
+      logger.w(e);
+      return "";
+    }
+  }
+
+
+  Future<List<int>> _processKey(List<int> bytes) async {
+    List<int> xorList = bytes;
+
+    while (xorList.length != 16) {
+      final x =
+      Uint8List.fromList(bytes.sublist(0, (xorList.length! / 2).toInt()));
+      final y = Uint8List.fromList(bytes.sublist(
+          (xorList.length! / 2).toInt(), (xorList.length!).toInt()));
+
+      xorList = xor(x, y);
+    }
+
+    List<int> xorInverseList = [];
+
+    for (var index = 0; index < 4; index++) {
+      final xx = Uint8List.fromList(xorList);
+      final y = Uint8List.fromList(bytes.sublist(index * 16, 16 * (index + 1)));
+      // logger.d("y[${index}]: ${y}");
+      xorInverseList.addAll(xor(xx, y));
+    }
+
+    // logger.d("xorInverseList[${xorInverseList.length}]: ${xorInverseList}");
+
+    return xorInverseList;
+  }
+
+
   /// decrypt vault data items
   ///
   Future<String> decrypt(String blob) async {

@@ -761,6 +761,14 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     /// Do some testing here...
     ///
 
+    // final message = "hello world.";
+    // final kek = List.filled(32, 0);
+    // final kak = List.filled(32, 1);
+    // final ivg = List.filled(16, 0);
+    //
+    // final ctx = await cryptor.superEncryption(kek, kak, ivg, message);
+    // final ptx = await cryptor.superDecryption(kek, kak, ivg, ctx);
+
     logManager.logger.d("tests done");
   }
 

@@ -1693,7 +1693,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
                               "\n\ncreated: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse(item.cdate))}"
                               "\nmodified: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse(item.mdate))}"
                               "\napp version: ${item.version}"
-                              "\nsalt: ${(item.encryptedKey.salt)}"
+                              // "\nsalt: ${(item.encryptedKey.salt)}"
                               "\nencryptedBlocks: ${(encryptedBlocks > 0 ? encryptedBlocks: "?")}"
                               "\nkey health: ${(100* (AppConstants.maxEncryptionBlocks-encryptedBlocks)/AppConstants.maxEncryptionBlocks).toStringAsFixed(6)} %"
                               "\n\nfingerprint: ${fingerprint}\n\n\n\n",
