@@ -1,25 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
-// import 'dart:html';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:argon2/argon2.dart';
-import '../helpers/WidgetUtils.dart';
-import '../models/KeyItem.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:enum_to_string/enum_to_string.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:bip39/bip39.dart' as bip39;
 
+import '../helpers/WidgetUtils.dart';
+import '../models/KeyItem.dart';
 import '../helpers/AppConstants.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
@@ -33,9 +28,6 @@ import '../widgets/QRScanView.dart';
 import 'home_tab_screen.dart';
 import '../screens/active_encryption_screen.dart';
 
-/// Editing a Peer (Child) Public Key
-///
-///
 
 class EditPeerPublicKeyScreen extends StatefulWidget {
   const EditPeerPublicKeyScreen({
@@ -78,10 +70,6 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
   List<String> _keyTags = [];
   List<bool> _selectedTags = [];
-  List<String> _filteredTags = [];
-
-  // List<int> _privKey = [];
-  String _publicKeyMnemonic = "";
 
   List<int> _peerPublicKeyData = [];
   String _peerAddr = "";
@@ -144,7 +132,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
     // print("starting new key item");
 
     // _generateKeyPair();
-    _filteredTags = settingsManager.itemTags;
+    // _filteredTags = settingsManager.itemTags;
     for (var tag in settingsManager.itemTags) {
       _selectedTags.add(false);
       // _filteredTags.add(tag);
@@ -556,7 +544,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
     _peerAddr = cryptor.sha256(hex.encode(_peerPublicKeyData)).substring(0,40);
 
-    _publicKeyMnemonic = bip39.entropyToMnemonic(hex.encode(_peerPublicKeyData));
+    // _publicKeyMnemonic = bip39.entropyToMnemonic(hex.encode(_peerPublicKeyData));
 
 
     final bobPublicKey = SimplePublicKey(bobPub, type: KeyPairType.x25519);

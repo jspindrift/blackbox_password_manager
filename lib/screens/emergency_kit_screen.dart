@@ -27,21 +27,21 @@ class _EmergencyKitScreenState extends State<EmergencyKitScreen> {
 
   int _selectedIndex = 3;
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final keyManager = KeychainManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _keyManager = KeychainManager();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("EmergencyKitScreen", "initState", "initState");
+    _logManager.log("EmergencyKitScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    _selectedIndex = settingsManager.currentTabIndex;
+    _selectedIndex = _settingsManager.currentTabIndex;
 
-    final salt = keyManager.salt;
+    final salt = _keyManager.salt;
     final decodedSalt = base64.decode(salt);
     final salty = Uint8List.fromList(decodedSalt);
 
@@ -70,7 +70,7 @@ class _EmergencyKitScreenState extends State<EmergencyKitScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => QRCodeView(
-                    data: keyManager.salt,
+                    data: _keyManager.salt,
                     isDarkModeEnabled: _isDarkModeEnabled,
                     isEncrypted: false,
                   ),
@@ -395,6 +395,6 @@ class _EmergencyKitScreenState extends State<EmergencyKitScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 }

@@ -42,22 +42,22 @@ class _InactivityTimeScreenState extends State<InactivityTimeScreen> {
     60 * 60
   ];
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final inactivityTimer = InactivityTimer();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _inactivityTimer = InactivityTimer();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("InactivityTimeScreen", "initState", "initState");
+    _logManager.log("InactivityTimeScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    _selectedIndex = settingsManager.currentTabIndex;
+    _selectedIndex = _settingsManager.currentTabIndex;
 
     _selectedTimeIndex =
-        _timeIndexSeconds.indexOf(settingsManager.inactivityTime);
+        _timeIndexSeconds.indexOf(_settingsManager.inactivityTime);
   }
 
   @override
@@ -185,15 +185,15 @@ class _InactivityTimeScreenState extends State<InactivityTimeScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
   void onTimeSelected(int index) async {
     /// settings save inactivity time
     ///
-    await settingsManager.saveInactivityTime(_timeIndexSeconds[index]);
+    await _settingsManager.saveInactivityTime(_timeIndexSeconds[index]);
 
-    inactivityTimer.startInactivityTimer();
+    _inactivityTimer.startInactivityTimer();
 
     setState(() {
       _selectedTimeIndex = index;

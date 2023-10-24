@@ -38,20 +38,20 @@ class _KeyListScreenState extends State<KeyListScreen> {
 
   int _selectedIndex = 1;
 
-  final keyManager = KeychainManager();
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final cryptor = Cryptor();
+  final _keyManager = KeychainManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _cryptor = Cryptor();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("KeyListScreen", "initState", "initState");
+    _logManager.log("KeyListScreen", "initState", "initState");
 
     setState(() {
-      _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
-      _selectedIndex = settingsManager.currentTabIndex;
+      _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
+      _selectedIndex = _settingsManager.currentTabIndex;
     });
 
     _getAllKeyItems();
@@ -61,7 +61,7 @@ class _KeyListScreenState extends State<KeyListScreen> {
     _keys = [];
     _pubKeys = [];
 
-    final items = await keyManager.getAllItems();
+    final items = await _keyManager.getAllItems();
 
     // iterate through items
     for (var item in items.list) {
@@ -83,10 +83,10 @@ class _KeyListScreenState extends State<KeyListScreen> {
           // print("keyPurpose: ${keyPurpose}");
 
 
-          var decryptedName = await cryptor.decrypt(keyItem.name);
+          var decryptedName = await _cryptor.decrypt(keyItem.name);
           keyItem.name = decryptedName;
 
-          var decryptedPrivateKey = await cryptor.decrypt(keyItem.key);
+          var decryptedPrivateKey = await _cryptor.decrypt(keyItem.key);
           // keyItem.key = decryptedKey;
           if (keyType == "asym") {
             keyItem.key = await _generateKeyPair(decryptedPrivateKey);
@@ -94,7 +94,7 @@ class _KeyListScreenState extends State<KeyListScreen> {
             keyItem.key = "private symmetric key";
           }
 
-          var decryptedNote = await cryptor.decrypt(keyItem.notes);
+          var decryptedNote = await _cryptor.decrypt(keyItem.notes);
           keyItem.notes = decryptedNote;
           _keys.add(keyItem);
           // var tempTags = noteItem.tags;
@@ -148,13 +148,13 @@ class _KeyListScreenState extends State<KeyListScreen> {
     /// convert to public key
     final simplePublicKey = await privSeedPair.extractPublicKey();
 
-    // final expanded = await cryptor.expandKey(_seedKey);
+    // final expanded = await _cryptor.expandKey(_seedKey);
     final pubKey = simplePublicKey.bytes;
     // print("pubKey: ${pubKey}");
 
 
-    final toAddr = cryptor.sha256(hex.encode(pubKey)).substring(0, 40);
-    // final fromAddr = cryptor.sha256(base64.encode(_mainPublicKey)).substring(0,40);
+    final toAddr = _cryptor.sha256(hex.encode(pubKey)).substring(0, 40);
+    // final fromAddr = _cryptor.sha256(base64.encode(_mainPublicKey)).substring(0,40);
 
     return toAddr;
   }
@@ -205,7 +205,7 @@ class _KeyListScreenState extends State<KeyListScreen> {
           color: _isDarkModeEnabled ? Colors.greenAccent : null,
         ),
         itemBuilder: (context, index) {
-          // var decryptedNote = cryptor.decrypt(_notes[index].notes);
+          // var decryptedNote = _cryptor.decrypt(_notes[index].notes);
           var categoryIcon = Stack(
             children: [
               IconButton(
@@ -396,7 +396,7 @@ class _KeyListScreenState extends State<KeyListScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
   _showKeyTypeSelectionModal() {
@@ -438,7 +438,7 @@ class _KeyListScreenState extends State<KeyListScreen> {
                                 state(() {
                                   // _tagTextController.text = "";
                                   // _tagTextFieldValid = false;
-                                  // _filteredTags = settingsManager.itemTags;
+                                  // _filteredTags = _settingsManager.itemTags;
                                 });
 
                                 Navigator.of(context).pop();

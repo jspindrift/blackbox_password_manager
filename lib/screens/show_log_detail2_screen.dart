@@ -50,19 +50,19 @@ class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
 
   String _appendedLogs = "";
 
-  final fileManager = FileManager();
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final cryptor = Cryptor();
-  final digester = Digester();
+  final _fileManager = FileManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _cryptor = Cryptor();
+  final _digester = Digester();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("ShowLogDetail2Screen", "initState", "initState");
+    _logManager.log("ShowLogDetail2Screen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
     // EasyLoading.showProgress(0.1,maskType: EasyLoadingMaskType.black);
     EasyLoading.showProgress(0.3,
@@ -77,7 +77,7 @@ class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
   }
 
   Future<void> _readLogs() async {
-    fileManager.readLogDataAppend().then((value) async {
+    _fileManager.readLogDataAppend().then((value) async {
       _numberKB = (value.length / 1024).toStringAsFixed(2);
       _numberMB = (value.length / pow(1024, 2)).toStringAsFixed(2);
 
@@ -97,7 +97,7 @@ class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
       // print("value.length: ${_numberMB} MB");
 
       final parts = value.split("\n");
-      final logHash = cryptor.sha256(value);
+      final logHash = _cryptor.sha256(value);
       // print('logHash: ${logHash}');
       // print("newlines: ${parts.length}");
       // print("last line: ${parts.last}");
@@ -189,15 +189,15 @@ class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
             // print("macline line[$index]: ${macline}");
 
             // print("appendedStringValidate: $appendedStringValidate");
-            final logHash = cryptor.sha256(appendedStringValidate);
+            final logHash = _cryptor.sha256(appendedStringValidate);
             // print('logHash: ${logHash}');
             // print('hashline==logHash: ${logHash == hashline}');
 
-            // final logKey = base64.encode(cryptor.logSecretKeyBytes);
+            // final logKey = base64.encode(_cryptor.logSecretKeyBytes);
             // var cryptor;
-            final logKeyHex = hex.encode(cryptor.logSecretKeyBytes);
+            final logKeyHex = hex.encode(_cryptor.logSecretKeyBytes);
             // final logMac = await digester.hmac(logHash, logKey);
-            final logMac = await digester.hmac(logHash, logKeyHex);
+            final logMac = await _digester.hmac(logHash, logKeyHex);
             final logMacHex = hex.encode(logMac);
             // final logMacHex2 = hex.encode(logMac2);
 
@@ -211,7 +211,7 @@ class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
               // invalidByteIndex = index;
               // print("! invalidByteIndex: $invalidByteIndex");
 
-              logManager.logger.d(
+              _logManager.logger.d(
                   "invalid hash/digest[$index]: $hashCheck, $logHash, $logMacHex");
             }
             // else {
@@ -254,14 +254,14 @@ class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
 
       if (_logsAreVerifiable) {
         if (_hasInvalidLogs) {
-          logManager.logger.d("logs invalid");
+          _logManager.logger.d("logs invalid");
         } else {
-          logManager.logger.d("logs valid!!!");
+          _logManager.logger.d("logs valid!!!");
         }
       }
 
-      logManager.logger.d("_numberOfSessions(startups): ${_numberOfSessions}");
-      logManager.logger.d(
+      _logManager.logger.d("_numberOfSessions(startups): ${_numberOfSessions}");
+      _logManager.logger.d(
           "lineNumber: ${lineNumber}: ${(lineNumber * 32 / (1024)).toStringAsFixed(2)} KB, ${lineNumber}: ${(lineNumber * 32 / (pow(1024, 2))).toStringAsFixed(2)} MB");
 
       setState(() {
@@ -271,7 +271,7 @@ class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
 
         // _logTextController.
         if (_hasInvalidLogs) {
-          // logManager.logger.d("scroll this: ${invalidByteIndex/8}");
+          // _logManager.logger.d("scroll this: ${invalidByteIndex/8}");
 
           _logScrollController.jumpTo(invalidByteIndex.toDouble() / 8);
           // _logScrollController.jumpTo(invalidByteIndex.toDouble());

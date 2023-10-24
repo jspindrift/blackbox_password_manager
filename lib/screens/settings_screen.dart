@@ -58,12 +58,12 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   int _selectedTimeIndex = 3;
   String _selectedTimeString = "5 minutes";
 
-  final keyManager = KeychainManager();
-  final biometricManager = BiometricManager();
-  final settingsManager = SettingsManager();
-  final logManager = LogManager();
-  final cryptor = Cryptor();
-  final inactivityTimer = InactivityTimer();
+  final _keyManager = KeychainManager();
+  final _biometricManager = BiometricManager();
+  final _settingsManager = SettingsManager();
+  final _logManager = LogManager();
+  final _cryptor = Cryptor();
+  final _inactivityTimer = InactivityTimer();
 
   @override
   void initState() {
@@ -72,42 +72,42 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     /// add observer for app lifecycle state transitions
     WidgetsBinding.instance.addObserver(this);
 
-    logManager.log("SettingsScreen", "initState", "initState");
-    // logManager.logger.d("SettingsScreen - initState");
+    _logManager.log("SettingsScreen", "initState", "initState");
+    // _logManager.logger.d("SettingsScreen - initState");
 
-    _isLockOnExitEnabled = settingsManager.isLockOnExitEnabled;
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isLockOnExitEnabled = _settingsManager.isLockOnExitEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
     setState(() {
       _selectedTimeIndex =
-          _timeIndexSeconds.indexOf(settingsManager.inactivityTime);
+          _timeIndexSeconds.indexOf(_settingsManager.inactivityTime);
       _selectedTimeString = _timeList[_selectedTimeIndex];
     });
 
-    keyManager.readEncryptedKey();
+    _keyManager.readEncryptedKey();
 
-    keyManager.readPinCodeKey().then((value) {
+    _keyManager.readPinCodeKey().then((value) {
       setState(() {
         _isPinCodeEnabled = value;
       });
     });
 
     // /// local authentication check
-    // biometricManager.isDeviceSecured().then((bool isSupported) {
-    //   biometricManager.checkBiometrics().then((value) {
+    // _biometricManager.isDeviceSecured().then((bool isSupported) {
+    //   _biometricManager.checkBiometrics().then((value) {
     //     setState(() {
     //       _isBiometricSupported = isSupported && value;
     //     });
     //   });
     // });
 
-    biometricManager.doBiometricCheck().then((value) {
+    _biometricManager.doBiometricCheck().then((value) {
       setState(() {
         _isBiometricSupported = value;
       });
     });
 
-    keyManager.renderBiometricKey().then((value) {
+    _keyManager.renderBiometricKey().then((value) {
       setState(() {
         _isBiometricKeyAvailable = value;
       });
@@ -122,18 +122,18 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
     switch (state) {
       case AppLifecycleState.inactive:
-        // logManager.log("SettingsScreen", "didChangeAppLifecycleState",
+        // _logManager.log("SettingsScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: inactive");
-        logManager.logger.d("AppLifecycleState: inactive - SettingsScreen");
+        _logManager.logger.d("AppLifecycleState: inactive - SettingsScreen");
 
         break;
       case AppLifecycleState.resumed:
-        // logManager.log("SettingsScreen", "didChangeAppLifecycleState",
+        // _logManager.log("SettingsScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: resumed");
-        logManager.logger.d("AppLifecycleState: resumed - SettingsScreen");
+        _logManager.logger.d("AppLifecycleState: resumed - SettingsScreen");
 
         /// check biometrics
-        final checkBioAvailability = await biometricManager.doBiometricCheck();
+        final checkBioAvailability = await _biometricManager.doBiometricCheck();
         if (mounted) {
           setState(() {
             _isBiometricSupported = checkBioAvailability;
@@ -141,7 +141,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         }
 
         if (!checkBioAvailability) {
-          final deleteBioStatus = await keyManager.deleteBiometricKey();
+          final deleteBioStatus = await _keyManager.deleteBiometricKey();
           if (deleteBioStatus) {
             if (mounted) {
               setState(() {
@@ -153,15 +153,19 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
         break;
       case AppLifecycleState.paused:
-        // logManager.log("SettingsScreen", "didChangeAppLifecycleState",
+        // _logManager.log("SettingsScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: paused");
-        logManager.logger.d("AppLifecycleState: paused - SettingsScreen");
+        _logManager.logger.d("AppLifecycleState: paused - SettingsScreen");
 
         break;
       case AppLifecycleState.detached:
-        logManager.logger.d("AppLifecycleState: detached - SettingsScreen");
-        // logManager.log("SettingsScreen", "didChangeAppLifecycleState",
+        _logManager.logger.d("AppLifecycleState: detached - SettingsScreen");
+        // _logManager.log("SettingsScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: detached");
+        break;
+      case AppLifecycleState.hidden:
+        _logManager.logger.d("AppLifecycleState: hidden - SettingsScreen");
+
         break;
     }
   }
@@ -176,17 +180,17 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   /// update and read values after popping back from backup screen
   /// this is in case the user restored from a backup
   void updateKeysAndStates() async {
-    await keyManager.readEncryptedKey();
+    await _keyManager.readEncryptedKey();
 
     if (mounted) {
       setState(() {
-        _isLockOnExitEnabled = settingsManager.isLockOnExitEnabled;
-        _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+        _isLockOnExitEnabled = _settingsManager.isLockOnExitEnabled;
+        _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
       });
     }
 
-    final bioRenderStatus = await keyManager.renderBiometricKey();
-    final isBiometricSupported = await biometricManager.doBiometricCheck();
+    final bioRenderStatus = await _keyManager.renderBiometricKey();
+    final isBiometricSupported = await _biometricManager.doBiometricCheck();
 
     if (mounted) {
       setState(() {
@@ -196,16 +200,16 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     }
 
     if (!isBiometricSupported) {
-      await keyManager.deleteBiometricKey();
+      await _keyManager.deleteBiometricKey();
     }
 
-    final pinStatus = await keyManager.readPinCodeKey();
+    final pinStatus = await _keyManager.readPinCodeKey();
     if (mounted) {
       setState(() {
         _isPinCodeEnabled = pinStatus;
 
         _selectedTimeIndex =
-            _timeIndexSeconds.indexOf(settingsManager.inactivityTime);
+            _timeIndexSeconds.indexOf(_settingsManager.inactivityTime);
         _selectedTimeString = _timeList[_selectedTimeIndex];
       });
     }
@@ -298,13 +302,13 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 ),
               ),
               Visibility(
-                visible: settingsManager.shouldRekey,
+                visible: _settingsManager.shouldRekey,
                 child: Divider(
                   color: _isDarkModeEnabled ? Colors.grey[900] : Colors.white,
                 ),
               ),
               Visibility(
-                visible: settingsManager.shouldRekey,
+                visible: _settingsManager.shouldRekey,
                 child: Padding(
                   padding: EdgeInsets.all(0.0),
                   child: Card(
@@ -340,7 +344,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                           ),
                           onPressed: (){
                             /// Navigate to re-key screen
-                            logManager.logger.d("show re-key screen");
+                            _logManager.logger.d("show re-key screen");
                             /// TODO: inactivity screen
                             Navigator.push(
                               context,
@@ -360,7 +364,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                         ),
                         onTap: (){
                           /// Navigate to re-key screen
-                          logManager.logger.d("show re-key screen");
+                          _logManager.logger.d("show re-key screen");
 
                           Navigator.push(
                             context,
@@ -378,7 +382,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 ),
               ),
               Visibility(
-                visible: settingsManager.shouldRekey,
+                visible: _settingsManager.shouldRekey,
                 child: Divider(
                   color: _isDarkModeEnabled ? Colors.grey[900] : Colors.white,
                 ),
@@ -395,7 +399,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       child: ListTile(
                         enabled: true,
                         title: Text(
-                          'Use ${biometricManager.biometricType}',
+                          'Use ${_biometricManager.biometricType}',
                           style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -450,7 +454,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                         ),
                         subtitle: _isBiometricSupported && !_isPinCodeEnabled
                             ? Text(
-                                'This will replace ${biometricManager.biometricType}',
+                                'This will replace ${_biometricManager.biometricType}',
                                 style: TextStyle(
                                     color: _isDarkModeEnabled
                                         ? Colors.white
@@ -697,10 +701,10 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       ).then((value) {
                         setState(() {
                           _isDarkModeEnabled =
-                              settingsManager.isDarkModeEnabled;
+                              _settingsManager.isDarkModeEnabled;
                         });
 
-                        keyManager.readPinCodeKey().then((value) {
+                        _keyManager.readPinCodeKey().then((value) {
                           setState(() {
                             _isPinCodeEnabled = value;
                           });
@@ -764,20 +768,20 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   /// authenticate the user with biometrics and create the biometric
   /// keychain item to unwrap our encryption keys when authenticated
   void _pressedBiometricSwitch(bool shouldCreate) async {
-    logManager.log(
+    _logManager.log(
         "SettingsScreen", "_pressedBiometricSwitch", "creating biometric key");
     try {
       if (shouldCreate) {
-        final status = await biometricManager.authenticateWithBiometrics();
+        final status = await _biometricManager.authenticateWithBiometrics();
         if (status) {
-          final saveStatus = await keyManager.saveBiometricKey();
+          final saveStatus = await _keyManager.saveBiometricKey();
           setState(() {
             _isBiometricKeyAvailable = saveStatus;
           });
 
           if (saveStatus) {
             // delete pin code
-            final status2 = await keyManager.deletePinCode();
+            final status2 = await _keyManager.deletePinCode();
 
             if (status2) {
               setState(() {
@@ -785,7 +789,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               });
             } else {
               /// Android bug for deletion (try again)
-              final status3 = await keyManager.deletePinCode();
+              final status3 = await _keyManager.deletePinCode();
 
               if (status3) {
                 setState(() {
@@ -796,7 +800,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           }
         }
       } else {
-        final deleteStatus = await keyManager.deleteBiometricKey();
+        final deleteStatus = await _keyManager.deleteBiometricKey();
         if (deleteStatus) {
           setState(() {
             _isBiometricKeyAvailable = false;
@@ -804,7 +808,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         }
       }
     } catch (e) {
-      logManager.logger.d(e);
+      _logManager.logger.d(e);
       setState(() {
         _isBiometricKeyAvailable = !shouldCreate;
       });
@@ -826,7 +830,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       ).then((value) {
         if (value != null) {
           if (value == 'setPin') {
-            logManager.logger.wtf("setPinCode");
+            _logManager.logger.wtf("setPinCode");
             setState(() {
               _isPinCodeEnabled = true;
               _isBiometricKeyAvailable = false;
@@ -839,7 +843,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         }
       });
     } else {
-      final status = await keyManager.deletePinCode();
+      final status = await _keyManager.deletePinCode();
       if (status) {
         setState(() {
           _isPinCodeEnabled = false;
@@ -850,9 +854,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
   /// enable/disable lock on exit mode
   void _pressedLockOnExitSwitch(bool value) {
-    logManager.log(
+    _logManager.log(
         "SettingsScreen", "_pressedLockOnExitSwitch", "Lock On Exit: $value");
-    settingsManager.saveLockOnExit(value);
+    _settingsManager.saveLockOnExit(value);
     setState(() {
       _isLockOnExitEnabled = value;
     });
@@ -877,9 +881,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   MaterialStateProperty.all<Color>(Colors.redAccent),
             ),
             onPressed: () {
-              inactivityTimer.stopInactivityTimer();
-              settingsManager.setIsOnLockScreen(true);
-              cryptor.clearAllKeys();
+              _inactivityTimer.stopInactivityTimer();
+              _settingsManager.setIsOnLockScreen(true);
+              _cryptor.clearAllKeys();
               Navigator.of(ctx).popUntil((route) => route.isFirst);
             },
             child: Text("Log Out"),

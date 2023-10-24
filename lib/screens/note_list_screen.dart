@@ -34,20 +34,20 @@ class _NoteListScreenState extends State<NoteListScreen> {
 
   List<NoteItem> _sortedNotesByDate = [];
 
-  final keyManager = KeychainManager();
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final cryptor = Cryptor();
+  final _keyManager = KeychainManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _cryptor = Cryptor();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("NoteListScreen", "initState", "initState");
+    _logManager.log("NoteListScreen", "initState", "initState");
 
     setState(() {
-      _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
-      _selectedIndex = settingsManager.currentTabIndex;
+      _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
+      _selectedIndex = _settingsManager.currentTabIndex;
     });
 
     _getAllNoteItems();
@@ -56,7 +56,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
   void _getAllNoteItems() async {
     _notes = [];
     _sortedNotesByDate = [];
-    final items = await keyManager.getAllItems();
+    final items = await _keyManager.getAllItems();
 
     // iterate through items
     for (var item in items.list) {
@@ -132,7 +132,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
           color: _isDarkModeEnabled ? Colors.greenAccent : null,
         ),
         itemBuilder: (context, index) {
-          // var decryptedNote = cryptor.decrypt(_notes[index].notes);
+          // var decryptedNote = _cryptor.decrypt(_notes[index].notes);
           var categoryIcon = Stack(
             children: [
               IconButton(
@@ -305,6 +305,6 @@ class _NoteListScreenState extends State<NoteListScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 }

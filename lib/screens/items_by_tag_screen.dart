@@ -2,7 +2,6 @@ import '../screens/edit_public_encryption_key_screen.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import "package:bip39/bip39.dart" as bip39;
-import '../helpers/WidgetUtils.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
@@ -37,21 +36,21 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
   List<dynamic> _itemsWithTag = [];
   List<String> _decryptedPasswordList = [];
 
-  final keyManager = KeychainManager();
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final cryptor = Cryptor();
+  final _keyManager = KeychainManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _cryptor = Cryptor();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("ItemsByTagScreen", "initState", "initState");
-    // logManager.logger.d("ItemsByTagScreen - initState");
+    _logManager.log("ItemsByTagScreen", "initState", "initState");
+    // _logManager.logger.d("ItemsByTagScreen - initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    _selectedIndex = settingsManager.currentTabIndex;
+    _selectedIndex = _settingsManager.currentTabIndex;
 
     _getAllTags();
   }
@@ -63,7 +62,7 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
     _itemsWithTag = [];
     _decryptedPasswordList = [];
 
-    final items = await keyManager.getAllItems();
+    final items = await _keyManager.getAllItems();
 
     // iterate through items
     for (var item in items.list) {
@@ -89,9 +88,9 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
           //   keyIndex = (passwordItem?.keyIndex)!;
           // }
           /// decrypt item fields
-          final decryptedName = await cryptor.decrypt(passwordItem.name);
+          final decryptedName = await _cryptor.decrypt(passwordItem.name);
           final decryptedUsername =
-              await cryptor.decrypt(passwordItem.username);
+              await _cryptor.decrypt(passwordItem.username);
 
           /// set decrypted fields
           passwordItem.name = decryptedName;
@@ -100,7 +99,7 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
           final geoLockItem = passwordItem.geoLock;
           if (geoLockItem == null) {
             final decryptedPassword =
-                await cryptor.decrypt(passwordItem.password);
+                await _cryptor.decrypt(passwordItem.password);
             if (passwordItem.isBip39) {
               final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
               _decryptedPasswordList.add(mnemonic);
@@ -108,7 +107,7 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
               _decryptedPasswordList.add(decryptedPassword);
             }
           }
-          // final decryptedPassword = await cryptor.decrypt(passwordItem.password);
+          // final decryptedPassword = await _cryptor.decrypt(passwordItem.password);
           // if (passwordItem.isBip39) {
           //   final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
           //   _decryptedPasswordList.add(mnemonic);
@@ -141,11 +140,11 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
                 /// decrypt item fields
                 // final itemId = noteItem.id + "-" + noteItem.cdate + "-" + noteItem.mdate;
 
-                // final decryptedName = await cryptor.decrypt(noteItem.name);
+                // final decryptedName = await _cryptor.decrypt(noteItem.name);
                 final geoLockItem = noteItem.geoLock;
                 if (geoLockItem == null) {
-                  final decryptedName = await cryptor.decrypt(noteItem.name);
-                  final decryptedNote = await cryptor.decrypt(noteItem.notes);
+                  final decryptedName = await _cryptor.decrypt(noteItem.name);
+                  final decryptedNote = await _cryptor.decrypt(noteItem.notes);
 
                   /// set decrypted fields
                   noteItem.name = decryptedName;
@@ -176,8 +175,8 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
                 /// decrypt item fields
                 // final itemId = noteItem.id + "-" + noteItem.cdate + "-" + noteItem.mdate;
 
-                final decryptedName = await cryptor.decrypt(keyItem.name);
-                final decryptedNote = await cryptor.decrypt(keyItem.notes);
+                final decryptedName = await _cryptor.decrypt(keyItem.name);
+                final decryptedNote = await _cryptor.decrypt(keyItem.notes);
 
                 /// set decrypted fields
                 keyItem.name = decryptedName;
@@ -210,7 +209,7 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
     // }
     /// if this tag isn't associated with any password items, pop back
     if (_itemsWithTag.isEmpty && _didPopBackFrom) {
-      logManager.logger.d("popping ms poppins");
+      _logManager.logger.d("popping ms poppins");
       Navigator.of(context).pop();
     }
 
@@ -598,7 +597,7 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
 

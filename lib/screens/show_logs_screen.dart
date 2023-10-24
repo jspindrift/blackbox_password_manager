@@ -26,23 +26,23 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
 
   bool _isDarkModeEnabled = false;
 
-  final fileManager = FileManager();
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
+  final _fileManager = FileManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
 
   @override
   void initState() {
     super.initState();
-    logManager.log("ShowLogsScreen", "initState", "initState");
+    _logManager.log("ShowLogsScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
     _readLogs();
   }
 
   void _readLogs() async {
-    final logData = await fileManager.readLogData();
-    logManager.logger.wtf("_readLogs: $logData");
+    final logData = await _fileManager.readLogData();
+    _logManager.logger.wtf("_readLogs: $logData");
     if (logData != null) {
       if (logData.isNotEmpty) {
         setState(() {
@@ -55,7 +55,7 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
 
           sessionTimes = [];
           _blocks.forEach((element) {
-            logManager.logger.wtf("${element.toJson()}");
+            _logManager.logger.wtf("${element.toJson()}");
             final a = DateTime.parse(element.logList.list.first.time);
             final b = DateTime.parse(element.logList.list.last.time);
 
@@ -64,7 +64,7 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
           });
         });
 
-        await logManager.verifyLogFile().then((value) {
+        await _logManager.verifyLogFile().then((value) {
 
         });
 
@@ -151,7 +151,7 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
       backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
       appBar: AppBar(
         // title: Text(
-        //     'Logs: \$$_lifeTimeInSeconds\nsize: ${(_lifeTimeInSeconds / (logManager.latestLogSizeInBytes / 1024)).toStringAsFixed(2)} \$/KB'),
+        //     'Logs: \$$_lifeTimeInSeconds\nsize: ${(_lifeTimeInSeconds / (_logManager.latestLogSizeInBytes / 1024)).toStringAsFixed(2)} \$/KB'),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         leading: BackButton(

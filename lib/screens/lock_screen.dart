@@ -35,43 +35,43 @@ class _LockScreenState extends State<LockScreen> {
 
   int _wrongPasswordCount = 0;
 
-  final cryptor = Cryptor();
-  final keyManager = KeychainManager();
-  final biometricManager = BiometricManager();
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final inactivityTimer = InactivityTimer();
+  final _cryptor = Cryptor();
+  final _keyManager = KeychainManager();
+  final _biometricManager = BiometricManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _inactivityTimer = InactivityTimer();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("LockScreen", "initState", "initState");
+    _logManager.log("LockScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    inactivityTimer.stopInactivityTimer();
+    _inactivityTimer.stopInactivityTimer();
 
-    settingsManager.setIsOnLockScreen(true);
+    _settingsManager.setIsOnLockScreen(true);
 
-    settingsManager.setIsRecoveredSession(false);
+    _settingsManager.setIsRecoveredSession(false);
 
     /// local authentication check
-    biometricManager.isDeviceSecured().then((bool isSupported) {
+    _biometricManager.isDeviceSecured().then((bool isSupported) {
       if (isSupported) {
-        biometricManager.checkBiometrics().then((value) {
+        _biometricManager.checkBiometrics().then((value) {
           if (value) {
-            biometricManager.getAvailableBiometrics();
+            _biometricManager.getAvailableBiometrics();
           }
         });
       }
     });
 
     /// read encrypted key material data
-    keyManager.readEncryptedKey().then((value) {});
+    _keyManager.readEncryptedKey().then((value) {});
 
     /// check biometric key
-    keyManager.renderBiometricKey().then((value) {
+    _keyManager.renderBiometricKey().then((value) {
       setState(() {
         _isBiometricLoginEnabled = value;
       });
@@ -84,7 +84,7 @@ class _LockScreenState extends State<LockScreen> {
 
   _checkPinCodeScreenStatus() async {
     /// check pin code, if set show pin code screen
-    final status = await keyManager.readPinCodeKey();//.then((value) {
+    final status = await _keyManager.readPinCodeKey();//.then((value) {
     if (status) {
       Navigator.push(
         context,
@@ -244,7 +244,7 @@ class _LockScreenState extends State<LockScreen> {
                       padding: EdgeInsets.all(16),
                       child: IconButton(
                         icon: Image.asset(
-                          biometricManager.biometricIcon,
+                          _biometricManager.biometricIcon,
                           width: 100,
                           height: 100,
                         ),
@@ -261,7 +261,7 @@ class _LockScreenState extends State<LockScreen> {
                       //         : null,
                       //   ),
                       //   child: Text(
-                      //     biometricManager.biometricType,
+                      //     _biometricManager.biometricType,
                       //     style: TextStyle(
                       //       fontSize: 16,
                       //       color: _isDarkModeEnabled ? Colors.black : null,
@@ -318,11 +318,11 @@ class _LockScreenState extends State<LockScreen> {
     final password = _passwordTextController.text;
 
     try {
-      await cryptor.deriveKeyCheck(password, keyManager.salt).then((value) {
+      await _cryptor.deriveKeyCheck(password, _keyManager.salt).then((value) {
         // reset fields
         _passwordTextController.text = '';
 
-        logManager.log("LockScreen", "_logIn", "deriveKeyCheck: $value");
+        _logManager.log("LockScreen", "_logIn", "deriveKeyCheck: $value");
         if (value) {
           Navigator.of(context).pop();
 
@@ -331,10 +331,10 @@ class _LockScreenState extends State<LockScreen> {
           _wrongPasswordCount += 1;
 
           /// save the logs on invalid states
-          logManager.log("LockScreen", "_logIn", "Error: Invalid Password");
-          logManager.saveLogs();
-          if (_wrongPasswordCount % 3 == 0 && keyManager.hint.isNotEmpty) {
-            _showErrorDialog('Invalid password\n\nhint: ${keyManager.hint}');
+          _logManager.log("LockScreen", "_logIn", "Error: Invalid Password");
+          _logManager.saveLogs();
+          if (_wrongPasswordCount % 3 == 0 && _keyManager.hint.isNotEmpty) {
+            _showErrorDialog('Invalid password\n\nhint: ${_keyManager.hint}');
           } else {
             _showErrorDialog('Invalid password');
           }
@@ -345,20 +345,20 @@ class _LockScreenState extends State<LockScreen> {
         });
       });
     } catch (e) {
-      logManager.logger.d(e);
+      _logManager.logger.d(e);
 
       /// save the logs on invalid states
-      logManager.log("LockScreen", "_logIn", "Error: $e");
-      logManager.saveLogs();
+      _logManager.log("LockScreen", "_logIn", "Error: $e");
+      _logManager.saveLogs();
     }
   }
 
   /// authenticate the user with biometrics to unlock
   void _pressedBiometricButton() async {
-    // await biometricManager.getAvailableBiometrics();
-    final isBiometricsSupported = await biometricManager.doBiometricCheck();
+    // await _biometricManager.getAvailableBiometrics();
+    final isBiometricsSupported = await _biometricManager.doBiometricCheck();
 
-    // print("no available biometrics: ${biometricManager.availableBiometrics}");
+    // print("no available biometrics: ${_biometricManager.availableBiometrics}");
 
     if (!isBiometricsSupported) {
       // print("no available biometrics");
@@ -367,19 +367,19 @@ class _LockScreenState extends State<LockScreen> {
         _isBiometricLoginEnabled = false;
       });
 
-      // await keyManager.deleteBiometricKey();
+      // await _keyManager.deleteBiometricKey();
       EasyLoading.dismiss();
       return;
     }
 
-    final status = await biometricManager.authenticateWithBiometrics();
+    final status = await _biometricManager.authenticateWithBiometrics();
     EasyLoading.show(status: "Authenticating...");
 
     if (status) {
-      final setStatus = await keyManager.setBiometricKey();
+      final setStatus = await _keyManager.setBiometricKey();
       if (setStatus) {
-        final logKeyMaterial = await keyManager.readLogKey();
-        await cryptor.decodeAndSetLogKey(logKeyMaterial);
+        final logKeyMaterial = await _keyManager.readLogKey();
+        await _cryptor.decodeAndSetLogKey(logKeyMaterial);
 
         HeartbeatTimer().startHeartbeatTimer();
 
@@ -389,8 +389,8 @@ class _LockScreenState extends State<LockScreen> {
       }
     } else {
       /// save the logs on invalid states
-      logManager.log("LockScreen", "_pressedBiometricButton", "Error");
-      logManager.saveLogs();
+      _logManager.log("LockScreen", "_pressedBiometricButton", "Error");
+      _logManager.saveLogs();
       _showErrorDialog('Biometric error');
     }
 

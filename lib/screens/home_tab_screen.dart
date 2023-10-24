@@ -37,38 +37,38 @@ class _HomeTabScreenState extends State<HomeTabScreen>
   late StreamSubscription selectRouteSubscription;
   late StreamSubscription inactivityLogoutSubscription;
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final cryptor = Cryptor();
-  final geolocationManager = GeoLocationManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _cryptor = Cryptor();
+  // final _geolocationManager = GeoLocationManager();
 
-  final heartbeatTimer = HeartbeatTimer();
-  final inactivityTimer = InactivityTimer();
+  final _heartbeatTimer = HeartbeatTimer();
+  final _inactivityTimer = InactivityTimer();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("HomeTabScreen", "initState", "initState");
-    // logManager.logger.d("HomeTabScreen - initState");
+    _logManager.log("HomeTabScreen", "initState", "initState");
+    // _logManager.logger.d("HomeTabScreen - initState");
 
     // DeviceManager().initialize();
 
-    // logManager.logger.d("deviceData: ${DeviceManager().deviceData}");
-    // logManager.logger.d("deviceData: ${settingsManager.deviceManager.deviceData}");
+    // _logManager.logger.d("deviceData: ${DeviceManager().deviceData}");
+    // _logManager.logger.d("deviceData: ${_settingsManager.deviceManager.deviceData}");
 
-    settingsManager.setIsOnLockScreen(false);
+    _settingsManager.setIsOnLockScreen(false);
 
-    heartbeatTimer.initialize();
+    _heartbeatTimer.initialize();
 
-    inactivityTimer.startInactivityTimer();
+    _inactivityTimer.startInactivityTimer();
 
     /// TODO: un/comment this for geo location feature
-    // if (geolocationManager.geoLocationUpdate == null) {
-    //   geolocationManager.initialize();
+    // if (_geolocationManager.geoLocationUpdate == null) {
+    //   _geolocationManager.initialize();
     // }
 
-    if (settingsManager.isRecoveredSession) {
+    if (_settingsManager.isRecoveredSession) {
 
       Future.delayed(Duration.zero, () {
         _showRecoveryInfoDialog();
@@ -80,8 +80,8 @@ class _HomeTabScreenState extends State<HomeTabScreen>
 
     /// set the last selected tab
     setState(() {
-      _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
-      _selectedIndex = settingsManager.currentTabIndex;
+      _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
+      _selectedIndex = _settingsManager.currentTabIndex;
     });
 
     _widgetOptions = <Widget>[
@@ -92,7 +92,7 @@ class _HomeTabScreenState extends State<HomeTabScreen>
     ];
 
     darkModeChangedSubscription =
-        settingsManager.onDarkModeEnabledChanged.listen((darkModeEnabled) {
+        _settingsManager.onDarkModeEnabledChanged.listen((darkModeEnabled) {
       // print("darkModeChangedSubscription: $darkModeEnabled");
       /// refresh UI
       if (mounted) {
@@ -103,46 +103,46 @@ class _HomeTabScreenState extends State<HomeTabScreen>
     });
 
     selectRouteSubscription =
-        settingsManager.onSelectedRouteChanged.listen((routeIndex) {
+        _settingsManager.onSelectedRouteChanged.listen((routeIndex) {
       // print("onSelectedRouteChanged: $routeIndex");
       /// refresh UI
       if (mounted) {
         setState(() {
           _selectedIndex = routeIndex;
-          settingsManager.setCurrentTabIndex(routeIndex);
+          _settingsManager.setCurrentTabIndex(routeIndex);
         });
       }
     });
 
     inactivityLogoutSubscription =
-        settingsManager.onInactivityLogoutRecieved.listen((value) async {
+        _settingsManager.onInactivityLogoutRecieved.listen((value) async {
       // print("HomeTabScreen: onInactivityLogoutRecieved: $value");
 
-      // final isScanning = settingsManager.isScanningQRCode;
+      // final isScanning = _settingsManager.isScanningQRCode;
       if (!_isOnLockScreen) {
         // pop the qr code scan view...doesnt work
-        // print("is scanning: ${settingsManager.isScanningQRCode}");
+        // print("is scanning: ${_settingsManager.isScanningQRCode}");
         //
-        // if (settingsManager.isScanningQRCode) {
+        // if (_settingsManager.isScanningQRCode) {
         //   print("pop screen");
         //   Navigator.of(context).pop();
-        //   settingsManager.setIsScanningQRCode(false);
+        //   _settingsManager.setIsScanningQRCode(false);
         // }
 
         // Navigator.of(context).pop();
         /// stop heartbeats
         HeartbeatTimer().stopHeartbeatTimer();
 
-        inactivityTimer.stopInactivityTimer();
+        _inactivityTimer.stopInactivityTimer();
 
-        settingsManager.setIsOnLockScreen(true);
+        _settingsManager.setIsOnLockScreen(true);
 
         /// save logs
-        logManager.setIsSavingLogs(true);
-        await logManager.saveLogs();
+        _logManager.setIsSavingLogs(true);
+        await _logManager.saveLogs();
         _isOnLockScreen = true;
 
-        cryptor.clearAllKeys();
+        _cryptor.clearAllKeys();
 
         Navigator.push(
           context,
@@ -151,9 +151,9 @@ class _HomeTabScreenState extends State<HomeTabScreen>
             fullscreenDialog: true,
           ),
         ).then((value) {
-          settingsManager.setIsOnLockScreen(false);
+          _settingsManager.setIsOnLockScreen(false);
 
-          inactivityTimer.startInactivityTimer();
+          _inactivityTimer.startInactivityTimer();
 
           setState(() {
             _isOnLockScreen = false;
@@ -201,9 +201,9 @@ class _HomeTabScreenState extends State<HomeTabScreen>
     switch (state) {
       case AppLifecycleState.inactive:
         // print("INACTIVE-------------------------------");
-        // logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
+        // _logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: inactive");
-        logManager.logger.d("AppLifecycleState: inactive - HomeTabScreen");
+        _logManager.logger.d("AppLifecycleState: inactive - HomeTabScreen");
         // Navigator.of(context).pop();
 
         /// Save logs here...
@@ -211,21 +211,21 @@ class _HomeTabScreenState extends State<HomeTabScreen>
         /// clears the log file data when app is force closed while in foreground.
         /// This seems to only happen when app is in prod/release mode and not
         /// in build/debug mode, which is very odd...
-        logManager.setIsSavingLogs(true);
+        _logManager.setIsSavingLogs(true);
 
-        await logManager.saveLogs();
+        await _logManager.saveLogs();
 
         break;
       case AppLifecycleState.resumed:
-        // logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
+        // _logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: resumed");
-        logManager.logger.d("AppLifecycleState: resumed - HomeTabScreen");
+        _logManager.logger.d("AppLifecycleState: resumed - HomeTabScreen");
 
         /// we want to only clear the clipboard after they have copied from the app and
         /// are coming back into the app, not every time they come back in.
         ///
         /// read clipboard and if theres data clear it
-        if (settingsManager.didCopyToClipboard) {
+        if (_settingsManager.didCopyToClipboard) {
           // print("resumed: didCopyToClipboard");
           Clipboard.getData("text/plain").then((value) {
             final data = value?.text;
@@ -233,33 +233,33 @@ class _HomeTabScreenState extends State<HomeTabScreen>
               // print("resumed: clear data");
               Clipboard.setData(ClipboardData(text: ""));
             }
-            settingsManager.setDidCopyToClipboard(false);
+            _settingsManager.setDidCopyToClipboard(false);
           });
         }
 
         break;
       case AppLifecycleState.paused:
-        // logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
+        // _logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: paused");
-        logManager.logger.d("AppLifecycleState: paused - HomeTabScreen");
+        _logManager.logger.d("AppLifecycleState: paused - HomeTabScreen");
 
-        if (settingsManager.isLockOnExitEnabled &&
+        if (_settingsManager.isLockOnExitEnabled &&
             !_isOnLockScreen &&
-            !settingsManager.isScanningQRCode) {
-          settingsManager.setIsOnLockScreen(true);
+            !_settingsManager.isScanningQRCode) {
+          _settingsManager.setIsOnLockScreen(true);
 
           /// stop heartbeats
           HeartbeatTimer().stopHeartbeatTimer();
 
-          inactivityTimer.stopInactivityTimer();
+          _inactivityTimer.stopInactivityTimer();
 
           setState(() {
             _isOnLockScreen = true;
           });
 
-          cryptor.clearAllKeys();
+          _cryptor.clearAllKeys();
 
-          logManager.logger.wtf("AppLifecycleState: paused - HomeTabScreen - lock");
+          _logManager.logger.wtf("AppLifecycleState: paused - HomeTabScreen - lock");
 
           /// Push LockScreen
           Navigator.push(
@@ -269,9 +269,9 @@ class _HomeTabScreenState extends State<HomeTabScreen>
               fullscreenDialog: true,
             ),
           ).then((value) {
-            settingsManager.setIsOnLockScreen(false);
+            _settingsManager.setIsOnLockScreen(false);
 
-            inactivityTimer.startInactivityTimer();
+            _inactivityTimer.startInactivityTimer();
 
             setState(() {
               _isOnLockScreen = false;
@@ -280,10 +280,14 @@ class _HomeTabScreenState extends State<HomeTabScreen>
         }
         break;
       case AppLifecycleState.detached:
-        cryptor.clearAllKeys();
-        logManager.logger.d("AppLifecycleState: detached");
-        // logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
+        _cryptor.clearAllKeys();
+        _logManager.logger.d("AppLifecycleState: detached");
+        // _logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: detached");
+        break;
+      case AppLifecycleState.hidden:
+        _logManager.logger.d("AppLifecycleState: hidden - HomeTabScreen");
+
         break;
     }
   }
@@ -308,7 +312,7 @@ class _HomeTabScreenState extends State<HomeTabScreen>
       //   //       ),
       //   //     ).then((value) {
       //   //       setState(() {
-      //   //         _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+      //   //         _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
       //   //       });
       //   //       // _updatePasswordItemList();
       //   //     });
@@ -393,7 +397,7 @@ class _HomeTabScreenState extends State<HomeTabScreen>
       _selectedIndex = index;
     });
 
-    settingsManager.setCurrentTabIndex(index);
+    _settingsManager.setCurrentTabIndex(index);
   }
 
 }

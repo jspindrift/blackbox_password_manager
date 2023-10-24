@@ -30,18 +30,18 @@ class _PreviousPasswordsScreenState extends State<PreviousPasswordsScreen> {
 
   int _selectedIndex = 0;
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("PreviousPasswordsScreen", "initState", "initState");
+    _logManager.log("PreviousPasswordsScreen", "initState", "initState");
 
     setState(() {
-      _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
-      _selectedIndex = settingsManager.currentTabIndex;
+      _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
+      _selectedIndex = _settingsManager.currentTabIndex;
     });
 
     final dummyPrevious = PreviousPassword(
@@ -271,6 +271,6 @@ class _PreviousPasswordsScreenState extends State<PreviousPasswordsScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 }

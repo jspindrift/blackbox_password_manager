@@ -70,20 +70,20 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
 
   bool _hasForwaredScreenAlready = false;
 
-  final keyManager = KeychainManager();
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final cryptor = Cryptor();
+  final _keyManager = KeychainManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _cryptor = Cryptor();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("PeerPublicKeyListScreen", "initState", "initState");
+    _logManager.log("PeerPublicKeyListScreen", "initState", "initState");
 
     setState(() {
-      _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
-      _selectedIndex = settingsManager.currentTabIndex;
+      _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
+      _selectedIndex = _settingsManager.currentTabIndex;
     });
 
 
@@ -96,7 +96,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
     // _peerPublicKeysShowing = [];
 
     /// get the password item and decrypt the data
-    keyManager.getItem(widget.id).then((value) async {
+    _keyManager.getItem(widget.id).then((value) async {
       final genericItem = GenericItem.fromRawJson(value);
 
       if (genericItem.type == "key") {
@@ -125,7 +125,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
 
 
           /// decrypt root seed and expand
-          final decryptedOwnerPrivateKey = await cryptor.decrypt(keydata);
+          final decryptedOwnerPrivateKey = await _cryptor.decrypt(keydata);
           // print("_getItem decryptedOwnerPrivateKey: ${decryptedOwnerPrivateKey.length}: ${decryptedOwnerPrivateKey}");
 
 
@@ -201,7 +201,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
               });
 
               for (var peerKey in peerPublicKeys) {
-                // final da = await cryptor.decrypt(peerKey.key);
+                // final da = await _cryptor.decrypt(peerKey.key);
                 setState(() {
                   _peerPublicKeys.add(peerKey);
                 });
@@ -215,14 +215,14 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
                 /// decrypting public key (not private)
                 // print("peerKey.key: ${peerKey.key.length}: ${peerKey.key}");
 
-                final decryptedPeerPublicKeyData = await cryptor.decrypt(peerKey.key);
+                final decryptedPeerPublicKeyData = await _cryptor.decrypt(peerKey.key);
                 // print("decryptedPeerPublicKeyData: ${decryptedPeerPublicKeyData.length}: ${decryptedPeerPublicKeyData}");
 
                 final decodedPeerPublicKeyData = base64.decode(decryptedPeerPublicKeyData);
                 // print("decodedPeerPublicKeyData: ${decodedPeerPublicKeyData.length}: ${decodedPeerPublicKeyData}");
                 // print("decodedPeerPublicKeyData: ${decodedPeerPublicKeyData.length}: ${hex.encode(decodedPeerPublicKeyData)}");
 
-                final decryptedPeerPublicKeyName = await cryptor.decrypt(peerKey.name);
+                final decryptedPeerPublicKeyName = await _cryptor.decrypt(peerKey.name);
 
                 /// create a temp key
                 PeerPublicKey tempPeerKey = PeerPublicKey(
@@ -301,10 +301,10 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
       // print('Shared secret: $sharedSecretBytes');
       // print('Shared secret hex: ${hex.encode(sharedSecretBytes)}');
 
-      final sharedSecretKeyHash = await cryptor.sha256(
+      final sharedSecretKeyHash = await _cryptor.sha256(
           hex.encode(sharedSecretBytes));
     } catch (e) {
-      logManager.logger.w("$e");
+      _logManager.logger.w("$e");
     }
     // print("shared secret key hash: ${sharedSecretKeyHash}");
   }
@@ -360,7 +360,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
           color: _isDarkModeEnabled ? Colors.greenAccent : null,
         ),
         itemBuilder: (context, index) {
-          // var decryptedNote = cryptor.decrypt(_notes[index].notes);
+          // var decryptedNote = _cryptor.decrypt(_notes[index].notes);
           var categoryIcon = Stack(
             children: [
               IconButton(
@@ -396,7 +396,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
           final keyData = peerKeyItem.key;
           final keyName = peerKeyItem.name;
 
-          // final decryptedSeedData = await cryptor.decrypt(keyData);
+          // final decryptedSeedData = await _cryptor.decrypt(keyData);
           // print("decryptedSeedData: ${decryptedSeedData}");
           //
           // final decodedRootKey = hex.decode(decryptedSeedData);
@@ -413,7 +413,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
             nameString += '...';
           }
 
-          var pubAddress = "address: ${cryptor.sha256(peerKeyItem.key).substring(0,40)}";
+          var pubAddress = "address: ${_cryptor.sha256(peerKeyItem.key).substring(0,40)}";
 
 
           return
@@ -549,7 +549,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
 }

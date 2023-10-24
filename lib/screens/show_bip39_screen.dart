@@ -22,20 +22,20 @@ class _ShowBIP39ScreenState extends State<ShowBIP39Screen> {
 
   int _selectedIndex = 0;
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("ShowBIP39Screen", "initState", "initState");
+    _logManager.log("ShowBIP39Screen", "initState", "initState");
 
     _wordList = widget.mnemonic.split(' ');
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    _selectedIndex = settingsManager.currentTabIndex;
+    _selectedIndex = _settingsManager.currentTabIndex;
   }
 
   @override
@@ -145,6 +145,6 @@ class _ShowBIP39ScreenState extends State<ShowBIP39Screen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 }

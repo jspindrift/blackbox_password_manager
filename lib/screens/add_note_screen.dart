@@ -56,23 +56,23 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
 
   String _modifiedDate = DateTime.now().toIso8601String();
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final keyManager = KeychainManager();
-  final cryptor = Cryptor();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _keyManager = KeychainManager();
+  final _cryptor = Cryptor();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("AddNoteScreen", "initState", "initState");
+    _logManager.log("AddNoteScreen", "initState", "initState");
 
     if (widget.note == null) {
       _isEditing = true;
       _isNewNote = true;
 
-      _filteredTags = settingsManager.itemTags;
-      for (var tag in settingsManager.itemTags) {
+      _filteredTags = _settingsManager.itemTags;
+      for (var tag in _settingsManager.itemTags) {
         _selectedTags.add(false);
       }
 
@@ -92,21 +92,21 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
         _selectedTags.add(false);
       }
 
-      _filteredTags = settingsManager.itemTags;
+      _filteredTags = _settingsManager.itemTags;
 
       _nameTextController.text = (item?.name)!;
       _notesTextController.text = (item?.notes)!;
     }
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
-    _selectedIndex = settingsManager.currentTabIndex;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
+    _selectedIndex = _settingsManager.currentTabIndex;
 
     _validateFields();
   }
 
   Future<void> _refreshNoteItem() async {
     if (_noteItem == null) {
-      logManager.logger.e("_noteItem is empty");
+      _logManager.logger.e("_noteItem is empty");
       return;
     }
 
@@ -120,7 +120,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
       _selectedTags.add(false);
     }
 
-    _filteredTags = settingsManager.itemTags;
+    _filteredTags = _settingsManager.itemTags;
 
     _nameTextController.text = (_noteItem?.name)!;
     _notesTextController.text = (_noteItem?.notes)!;
@@ -692,7 +692,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
   void _validateFields() {
@@ -721,7 +721,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   _pressedSaveNoteItem() async {
 
     var createDate = DateTime.now().toIso8601String();
-    var uuid = cryptor.getUUID();
+    var uuid = _cryptor.getUUID();
 
     _modifiedDate = createDate;
 
@@ -738,18 +738,18 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
 
     /// TODO: remove this
     // final encodedAllPlaintextLength = utf8.encode(name).length + utf8.encode(notes).length;
-    // settingsManager.doEncryption(encodedAllPlaintextLength);
-    // cryptor.setTempKeyIndex(keyIndex);
+    // _settingsManager.doEncryption(encodedAllPlaintextLength);
+    // _cryptor.setTempKeyIndex(keyIndex);
 
     // final itemId = uuid + "-" + createDate + "-" + _modifiedDate;
 
-    // final encryptedName = await cryptor.encrypt(name);
+    // final encryptedName = await _cryptor.encrypt(name);
     //
-    // final encryptedNotes = await cryptor.encrypt(notes);
+    // final encryptedNotes = await _cryptor.encrypt(notes);
 
     final noteItem = NoteItem(
       id: uuid,
-      keyId: keyManager.keyId,
+      keyId: _keyManager.keyId,
       version: AppConstants.noteItemVersion,
       name: name,
       notes: notes,
@@ -767,7 +767,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
     _noteItem = noteItem;
 
     final noteItemJson = noteItem.toRawJson();
-    // logManager.logger.d("save noteItem: $noteItemJson");
+    // _logManager.logger.d("save noteItem: $noteItemJson");
 
     final genericItem = GenericItem(type: "note", data: noteItemJson);
     // logger.d('genericItem toRawJson: ${genericItem.toRawJson()}');
@@ -775,7 +775,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
     final genericItemString = genericItem.toRawJson();
 
     /// save generic item in keychain
-    final status = await keyManager.saveItem(uuid, genericItemString);
+    final status = await _keyManager.saveItem(uuid, genericItemString);
 
     if (status) {
       EasyLoading.showToast('Saved Item', duration: Duration(seconds: 1));
@@ -816,7 +816,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   }
 
   void _confirmedDeleteItem() async {
-    final status = await keyManager.deleteItem((widget.note?.id)!);
+    final status = await _keyManager.deleteItem((widget.note?.id)!);
 
     if (status) {
       Navigator.of(context).pop();
@@ -863,7 +863,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                             state(() {
                               _tagTextController.text = "";
                               _tagTextFieldValid = false;
-                              _filteredTags = settingsManager.itemTags;
+                              _filteredTags = _settingsManager.itemTags;
                             });
 
                             Navigator.of(context).pop();
@@ -933,7 +933,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                                     state(() {
                                       _tagTextController.text = "";
                                       _tagTextFieldValid = false;
-                                      _filteredTags = settingsManager.itemTags;
+                                      _filteredTags = _settingsManager.itemTags;
                                     });
                                   },
                                 ),
@@ -992,10 +992,10 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                                       _selectedTags.add(false);
                                     });
 
-                                    if (!settingsManager.itemTags
+                                    if (!_settingsManager.itemTags
                                         .contains(userTag)) {
                                       var updatedTagList =
-                                          settingsManager.itemTags.copy();
+                                          _settingsManager.itemTags.copy();
                                       updatedTagList.add(userTag);
 
                                       updatedTagList
@@ -1014,7 +1014,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                                     _isEditing = true;
                                     _tagTextController.text = "";
                                     _tagTextFieldValid = false;
-                                    _filteredTags = settingsManager.itemTags;
+                                    _filteredTags = _settingsManager.itemTags;
                                   });
 
                                   _validateFields();
@@ -1044,7 +1044,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                             return ListTile(
                               title: Text(
                                 _filteredTags[index],
-                                // settingsManager.itemTags[index],
+                                // _settingsManager.itemTags[index],
                                 // "test",
                                 style: TextStyle(
                                   color: isCurrentTag
@@ -1094,11 +1094,11 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
 
     if (text.isEmpty) {
       state(() {
-        _filteredTags = settingsManager.itemTags;
+        _filteredTags = _settingsManager.itemTags;
       });
     } else {
       _filteredTags = [];
-      for (var t in settingsManager.itemTags) {
+      for (var t in _settingsManager.itemTags) {
         if (t.contains(text)) {
           _filteredTags.add(t);
         }

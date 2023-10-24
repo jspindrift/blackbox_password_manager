@@ -29,34 +29,34 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
   int _passwordFileSize = 0;
   int _selectedIndex = 3;
 
-  final settingsManager = SettingsManager();
-  final deviceManager = DeviceManager();
-  final logManager = LogManager();
-  final keyManager = KeychainManager();
+  final _settingsManager = SettingsManager();
+  final _deviceManager = DeviceManager();
+  final _logManager = LogManager();
+  final _keyManager = KeychainManager();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("SettingsAboutScreen", "initState", "initState");
+    _logManager.log("SettingsAboutScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
 
 
-    deviceManager.initialize().then((value) async {
-      // print("device data: ${deviceManager.deviceData}");
-      // print("device data: ${deviceManager.deviceData.toString()}");
-      // print("model: ${await deviceManager.getDeviceModel()}");
-      // print("data: ${deviceManager.deviceData}");
+    _deviceManager.initialize().then((value) async {
+      // print("device data: ${_deviceManager.deviceData}");
+      // print("device data: ${_deviceManager.deviceData.toString()}");
+      // print("model: ${await _deviceManager.getDeviceModel()}");
+      // print("data: ${_deviceManager.deviceData}");
 
       if (Platform.isIOS) {
         setState(() {
-          _deviceId = deviceManager.deviceData['identifierForVendor'];
-          _deviceName = deviceManager.deviceData['name'];
+          _deviceId = _deviceManager.deviceData['identifierForVendor'];
+          _deviceName = _deviceManager.deviceData['name'];
         });
       } else if (Platform.isAndroid) {
-        deviceManager.getDeviceId().then((value) {
+        _deviceManager.getDeviceId().then((value) {
           if (value != null) {
             setState(() {
               _deviceId = value;
@@ -64,12 +64,12 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
           }
         });
         setState(() {
-          _deviceName = deviceManager.deviceData['device'];
+          _deviceName = _deviceManager.deviceData['device'];
         });
       }
     });
 
-    _passwordFileSize = keyManager.passwordItemsSize;
+    _passwordFileSize = _keyManager.passwordItemsSize;
   }
 
   @override
@@ -102,7 +102,7 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
                   ),
                 ),
                 subtitle: Text(
-                  settingsManager.versionAndBuildNumber(),
+                  _settingsManager.versionAndBuildNumber(),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.normal,
@@ -162,7 +162,7 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
                   ),
                 ),
                 subtitle: Text(
-                  "${keyManager.vaultId.toUpperCase()}",
+                  "${_keyManager.vaultId.toUpperCase()}",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.normal,
@@ -183,7 +183,7 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
                     ),
                   ),
                   subtitle: Text(
-                    "${keyManager.keyId.toUpperCase()}\n",
+                    "${_keyManager.keyId.toUpperCase()}\n",
                     style: TextStyle(
                       fontSize: 16,
                       color: _isDarkModeEnabled ? Colors.white : null,
@@ -196,7 +196,7 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
               ),
               ListTile(
                 title: Text(
-                  "Vault Items:\n${keyManager.numberOfPasswordItems} items, ${keyManager.numberOfPreviousPasswords} old passwords",
+                  "Vault Items:\n${_keyManager.numberOfPasswordItems} items, ${_keyManager.numberOfPreviousPasswords} old passwords",
                   style: TextStyle(
                       color: _isDarkModeEnabled ? Colors.white : null),
                 ),
@@ -216,9 +216,9 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
                       color: _isDarkModeEnabled ? Colors.white : null),
                 ),
                 subtitle: Text(
-                    _showEncryptionDetails ? "\n${settingsManager.numBytesEncrypted}"
-                        " bytes = ${(settingsManager.numBytesEncrypted / 1024).toStringAsFixed(2)} KB\n${settingsManager.numBlocksEncrypted}"
-                        " blocks encrypted\n${settingsManager.numRolloverEncryptionCounts} roll-overs" : "tap icon to show details\n\n${settingsManager.numBlocksEncrypted} blocks encrypted",
+                    _showEncryptionDetails ? "\n${_settingsManager.numBytesEncrypted}"
+                        " bytes = ${(_settingsManager.numBytesEncrypted / 1024).toStringAsFixed(2)} KB\n${_settingsManager.numBlocksEncrypted}"
+                        " blocks encrypted\n${_settingsManager.numRolloverEncryptionCounts} roll-overs" : "tap icon to show details\n\n${_settingsManager.numBlocksEncrypted} blocks encrypted",
 
                   style: TextStyle(
                       color: _isDarkModeEnabled ? Colors.white : null),
@@ -246,7 +246,7 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
                       color: _isDarkModeEnabled ? Colors.white : null),
                 ),
                 subtitle: Text(
-                  "% ${(100* (AppConstants.maxEncryptionBlocks-settingsManager.numBlocksEncrypted)/AppConstants.maxEncryptionBlocks).toStringAsFixed(6)}",
+                  "% ${(100* (AppConstants.maxEncryptionBlocks-_settingsManager.numBlocksEncrypted)/AppConstants.maxEncryptionBlocks).toStringAsFixed(6)}",
                   style: TextStyle(
                       color: _isDarkModeEnabled ? Colors.white : null,
                   ),
@@ -265,7 +265,7 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
                     ),
                   ),
                   subtitle: Text(
-                    "${keyManager.keyId.toUpperCase()}\n",
+                    "${_keyManager.keyId.toUpperCase()}\n",
                     style: TextStyle(
                       color: _isDarkModeEnabled ? Colors.white : null,
                     ),
@@ -285,7 +285,7 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
                   ),
                 ),
                 subtitle: Text(
-                    "${settingsManager.deviceManager.deviceData.toString()}\n",
+                    "${_settingsManager.deviceManager.deviceData.toString()}\n",
                   style: TextStyle(
                     color: _isDarkModeEnabled ? Colors.white : null,
                   ),
@@ -372,6 +372,6 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 }

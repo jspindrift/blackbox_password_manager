@@ -39,22 +39,22 @@ class _ReKeyAuthScreenState extends State<ReKeyAuthScreen> {
 
   int _wrongPasswordCount = 0;
 
-  var cryptor = Cryptor();
-  var keyManager = KeychainManager();
-  var logManager = LogManager();
-  var settingsManager = SettingsManager();
-  final inactivityTimer = InactivityTimer();
-  var keyScheduler = KeyScheduler();
+  var _cryptor = Cryptor();
+  var _keyManager = KeychainManager();
+  var _logManager = LogManager();
+  var _settingsManager = SettingsManager();
+  // final inactivityTimer = InactivityTimer();
+  var _keyScheduler = KeyScheduler();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("ChangePasswordScreen", "initState", "initState");
+    _logManager.log("ChangePasswordScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    final isRecovered = settingsManager.isRecoveredSession;
+    final isRecovered = _settingsManager.isRecoveredSession;
 
     _isConfirmingCurrentPassword = !isRecovered;
   }
@@ -257,12 +257,12 @@ class _ReKeyAuthScreenState extends State<ReKeyAuthScreen> {
 
     final password = _currentPasswordTextController.text;
 
-    logManager.log(
+    _logManager.log(
         "ChangePasswordScreen", "_confirmCurrentMasterPassword", "confirming");
 
     try {
-      final status = await cryptor.deriveKeyCheck(password, keyManager.salt);//.then((value) {
-        logManager.log("ChangePasswordScreen", "_confirmCurrentMasterPassword",
+      final status = await _cryptor.deriveKeyCheck(password, _keyManager.salt);//.then((value) {
+        _logManager.log("ChangePasswordScreen", "_confirmCurrentMasterPassword",
             "deriveKeyCheck: $status");
 
         // reset fields
@@ -282,23 +282,23 @@ class _ReKeyAuthScreenState extends State<ReKeyAuthScreen> {
           setState(() {
             _isAuthenticating = false;
           });
-          if (_wrongPasswordCount % 3 == 0 && keyManager.hint.isNotEmpty) {
-            _showErrorDialog('Invalid password.\n\nhint: ${keyManager.hint}');
+          if (_wrongPasswordCount % 3 == 0 && _keyManager.hint.isNotEmpty) {
+            _showErrorDialog('Invalid password.\n\nhint: ${_keyManager.hint}');
           } else {
             _showErrorDialog('Invalid password.');
           }
         }
       // });
     } catch (e) {
-      logManager.logger.w(e);
-      logManager.log(
+      _logManager.logger.w(e);
+      _logManager.log(
           "ChangePasswordScreen", "_confirmCurrentMasterPassword", "Error: $e");
       _showErrorDialog('An error occurred');
     }
   }
 
   Future<bool> reKey(String password) async {
-    final status = await keyScheduler.startReKeyService(password);
+    final status = await _keyScheduler.startReKeyService(password);
 
     setState(() {
       _reKeyInProgress = false;
@@ -306,7 +306,7 @@ class _ReKeyAuthScreenState extends State<ReKeyAuthScreen> {
 
     if (status) {
 
-      logManager.logger.d("reKey COMPLETE!!!! success, check it out.");
+      _logManager.logger.d("reKey COMPLETE!!!! success, check it out.");
 
       // Navigator.of(context).popUntil((route) => route.isFirst);
       _showCompletionDialog("Complete");

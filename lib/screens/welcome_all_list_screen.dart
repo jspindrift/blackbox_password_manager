@@ -51,21 +51,21 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
 
   List<String> _decryptedPasswordList = [];
 
-  final keyManager = KeychainManager();
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final cryptor = Cryptor();
+  final _keyManager = KeychainManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _cryptor = Cryptor();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("WelcomeAllListScreen", "initState", "initState");
-    logManager.logger.d("WelcomeAllListScreen - initState");
+    _logManager.log("WelcomeAllListScreen", "initState", "initState");
+    _logManager.logger.d("WelcomeAllListScreen - initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    _selectedIndex = settingsManager.currentTabIndex;
+    _selectedIndex = _settingsManager.currentTabIndex;
 
     _getItems();
   }
@@ -77,7 +77,7 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
     _decryptedPasswordList = [];
 
     try {
-      final items = await keyManager.getAllItems();
+      final items = await _keyManager.getAllItems();
 
       // iterate through items
       for (var item in items.list) {
@@ -90,7 +90,7 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
               }
             }
 
-            // logManager.logger.d("passwordItem: ${passwordItem.toRawJson()}");
+            // _logManager.logger.d("passwordItem: ${passwordItem.toRawJson()}");
             passwordItem.decryptObject();
 
             if (passwordItem.favorite) {
@@ -118,8 +118,8 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
             // final keyIndex = (noteItem?.keyIndex)!;
 
             if (noteItem.geoLock == null) {
-              final decryptedName = await cryptor.decrypt(noteItem.name);
-              final decryptedNote = await cryptor.decrypt(noteItem.notes);
+              final decryptedName = await _cryptor.decrypt(noteItem.name);
+              final decryptedNote = await _cryptor.decrypt(noteItem.notes);
 
               noteItem.name = decryptedName;
               noteItem.notes = decryptedNote;
@@ -142,10 +142,10 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
               }
             }
 
-            final decryptedName = await cryptor.decrypt(keyItem.name);
+            final decryptedName = await _cryptor.decrypt(keyItem.name);
             keyItem.name = decryptedName;
 
-            final decryptedNote = await cryptor.decrypt(keyItem.notes);
+            final decryptedNote = await _cryptor.decrypt(keyItem.notes);
             keyItem.notes = decryptedNote;
 
             if (keyItem.favorite) {
@@ -182,10 +182,10 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
 
       _allTags.sort((e1, e2) => e1.compareTo(e2));
 
-      settingsManager.saveItemTags(_allTags);
+      _settingsManager.saveItemTags(_allTags);
 
     } catch (e) {
-      logManager.logger.wtf("Exception: $e");
+      _logManager.logger.wtf("Exception: $e");
     }
   }
 
@@ -599,7 +599,7 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
   /// show the generate password screen
@@ -819,7 +819,7 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
                                 state(() {
                                   // _tagTextController.text = "";
                                   // _tagTextFieldValid = false;
-                                  // _filteredTags = settingsManager.itemTags;
+                                  // _filteredTags = _settingsManager.itemTags;
                                 });
 
                                 Navigator.of(context).pop();

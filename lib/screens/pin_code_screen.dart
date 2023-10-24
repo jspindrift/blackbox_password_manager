@@ -43,21 +43,21 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
   int _pinCodeAttemptsLeft = 3;
   // int _pinCodeLength = 4;
 
-  final cryptor = Cryptor();
-  final keyManager = KeychainManager();
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
+  final _cryptor = Cryptor();
+  final _keyManager = KeychainManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("PinCodeScreen", "initState", "initState");
+    _logManager.log("PinCodeScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
     if (widget.flow == PinCodeFlow.lock) {
-      keyManager.getPinCodeItem().then((value) {
+      _keyManager.getPinCodeItem().then((value) {
         setState(() {
           _pinCodeAttemptsLeft = 3 - value!.attempts;
         });
@@ -110,7 +110,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
 
         backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
         obscurePin: _shouldObscurePin,
-        codeLength: settingsManager.pinCodeLength,
+        codeLength: _settingsManager.pinCodeLength,
         title: _isConfirmingPinCode ? "Confirm Pin Code" : "Enter PIN Code",
         subtitle: _isCreatingPinCode
             ? "Saving Pin Code..."
@@ -168,17 +168,17 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
   /// create the pin code item and save in keychain
   void _createPinCode(String code) async {
     try {
-      final pinJsonString = await cryptor.derivePinKey(code);
-      logManager.logger.wtf("_createPinCode: derivePinKey: $pinJsonString");
+      final pinJsonString = await _cryptor.derivePinKey(code);
+      _logManager.logger.wtf("_createPinCode: derivePinKey: $pinJsonString");
 
       if (pinJsonString.isNotEmpty) {
-        final status = await keyManager.savePinCode(pinJsonString);
-        logManager.logger.wtf("_createPinCode: save status: $status");
+        final status = await _keyManager.savePinCode(pinJsonString);
+        _logManager.logger.wtf("_createPinCode: save status: $status");
 
         if (status) {
           /// delete biometric key
           // final deleteStatus =
-          await keyManager.deleteBiometricKey();
+          await _keyManager.deleteBiometricKey();
           // print("delete status 1: $deleteStatus");
 
           /// deleteStatus can be false but we still want to confirm the
@@ -187,7 +187,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
             _isConfirmingPinCode = false;
           });
 
-          if (!settingsManager.isOnLockScreen) {
+          if (!_settingsManager.isOnLockScreen) {
             Navigator.of(context).pop('setPin');
           } else {
             setState(() {
@@ -197,7 +197,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
           }
         } else {
           _showErrorDialog('Could Not Save Pin');
-          logManager.logger.w('Exception: _createPinCode: failure');
+          _logManager.logger.w('Exception: _createPinCode: failure');
         }
       } else {
         /// this occurs while backgrounding the app while creating/deriving the key
@@ -208,22 +208,22 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
         });
       }
     } catch (e) {
-      logManager.logger.w('Exception: _createPinCode: $e');
+      _logManager.logger.w('Exception: _createPinCode: $e');
     }
   }
 
   /// check/validate the pin code from the lock screen
   void _checkPinCode(String code) async {
-    // logManager.logger.d("_checkPinCode: $code");
+    // _logManager.logger.d("_checkPinCode: $code");
     try {
-      final item = await keyManager.getPinCodeItem();
+      final item = await _keyManager.getPinCodeItem();
 
       if (item != null) {
         var attempts = item.attempts;
 
-        final status = await cryptor.derivePinKeyCheck(item, code);
+        final status = await _cryptor.derivePinKeyCheck(item, code);
         if (status) {
-          logManager.log("PinCodeScreen", "_checkPinCode", "Valid Pin Code");
+          _logManager.log("PinCodeScreen", "_checkPinCode", "Valid Pin Code");
 
           /// if we have more than 1 previous failed attempt, we need to save
           /// a new pin code item with attempts reset to 0
@@ -241,7 +241,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
 
             final newItemString = newItem.toRawJson();
 
-            final statusSave = await keyManager.savePinCode(newItemString);
+            final statusSave = await _keyManager.savePinCode(newItemString);
 
             if (statusSave) {
               Navigator.of(context).pop('login');
@@ -250,8 +250,8 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
             } else {
               _showErrorDialog("Couldn't Save Pin Code");
 
-              logManager.logger.w("Couldn't save pincode");
-              logManager.log(
+              _logManager.logger.w("Couldn't save pincode");
+              _logManager.log(
                   "PinCodeScreen", "_checkPinCode", "Couldn't save pincode");
             }
           } else {
@@ -260,32 +260,32 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
         } else {
           /// increment attempts and re-save pin code item
           ///
-          logManager.log("PinCodeScreen", "_checkPinCode",
+          _logManager.log("PinCodeScreen", "_checkPinCode",
               "Invalid Pin Code: ${attempts + 1}");
           attempts += 1;
 
           /// check pin code attempts
           if (attempts >= 3) {
-            final statusDelete = await keyManager.deletePinCode();
+            final statusDelete = await _keyManager.deletePinCode();
             if (statusDelete) {
               Navigator.of(context).popUntil((route) => route.isFirst);
             } else {
-              logManager.logger.w("Couldn't delete pincode");
-              logManager.log(
+              _logManager.logger.w("Couldn't delete pincode");
+              _logManager.log(
                   "PinCodeScreen", "_checkPinCode", "Couldn't delete pincode");
 
-              final statusDelete2 = await keyManager.deletePinCode();
+              final statusDelete2 = await _keyManager.deletePinCode();
               if (statusDelete2) {
                 Navigator.of(context).popUntil((route) => route.isFirst);
               } else {
-                logManager.logger.w("Couldn't delete pincode x2");
-                logManager.log("PinCodeScreen", "_checkPinCode",
+                _logManager.logger.w("Couldn't delete pincode x2");
+                _logManager.log("PinCodeScreen", "_checkPinCode",
                     "Couldn't delete pincode x2");
               }
             }
           } else {
             _showErrorDialog('Invalid Pin Code');
-            logManager.saveLogs();
+            _logManager.saveLogs();
 
             setState(() {
               _pinCodeAttemptsLeft -= 1;
@@ -303,18 +303,18 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
 
             final newItemString = newItem.toRawJson();
 
-            final statusSave = await keyManager.savePinCode(newItemString);
+            final statusSave = await _keyManager.savePinCode(newItemString);
 
             if (!statusSave) {
-              logManager.logger.w("Couldn't save pincode");
-              logManager.log(
+              _logManager.logger.w("Couldn't save pincode");
+              _logManager.log(
                   "PinCodeScreen", "_checkPinCode", "Couldn't save pincode");
             }
           }
         }
       } else {
-        logManager.log("PinCodeScreen", "_checkPinCode", "pincode not found");
-        logManager.logger.w("pincode not found");
+        _logManager.log("PinCodeScreen", "_checkPinCode", "pincode not found");
+        _logManager.logger.w("pincode not found");
         Navigator.of(context).popUntil((route) => route.isFirst);
         _showErrorDialog('Pin Code Not Found');
       }
@@ -323,7 +323,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
         _isCheckingPinCode = false;
       });
     } catch (e) {
-      logManager.logger.w('Exception: _checkPinCode: $e');
+      _logManager.logger.w('Exception: _checkPinCode: $e');
     }
   }
 
@@ -336,7 +336,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
         actions: <Widget>[
           ElevatedButton(
             onPressed: () async {
-              await settingsManager.savePinCodeLength(4);
+              await _settingsManager.savePinCodeLength(4);
               setState(() {});
               Navigator.of(ctx).pop();
               Navigator.of(ctx).pop();
@@ -345,7 +345,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await settingsManager.savePinCodeLength(4);
+              await _settingsManager.savePinCodeLength(4);
               setState(() {});
               Navigator.of(ctx).pop();
             },
@@ -353,7 +353,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await settingsManager.savePinCodeLength(6);
+              await _settingsManager.savePinCodeLength(6);
               setState(() {});
               Navigator.of(ctx).pop();
             },

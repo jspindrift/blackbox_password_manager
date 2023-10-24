@@ -21,14 +21,14 @@ class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
   bool _isDarkModeEnabled = false;
 
   final fileManager = FileManager();
-  final logManager = LogManager();
+  final _logManager = LogManager();
   final settingsManager = SettingsManager();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("ShowLogDetailScreen", "initState", "initState");
+    _logManager.log("ShowLogDetailScreen", "initState", "initState");
 
     _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
   }

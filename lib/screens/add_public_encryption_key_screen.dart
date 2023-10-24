@@ -75,33 +75,33 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
   // List<int> Kenc = [];
   // List<int> Kauth = [];
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final keyManager = KeychainManager();
-  final cryptor = Cryptor();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _keyManager = KeychainManager();
+  final _cryptor = Cryptor();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("AddPublicEncryptionKeyScreen", "initState", "initState");
+    _logManager.log("AddPublicEncryptionKeyScreen", "initState", "initState");
 
-    // print("tags note: ${settingsManager.itemTags}");
+    // print("tags note: ${_settingsManager.itemTags}");
     // if (widget.note == null) {
     // print("starting new key item");
     _isEditing = true;
 
     _generateKeyPair();
 
-    _filteredTags = settingsManager.itemTags;
-    for (var tag in settingsManager.itemTags) {
+    _filteredTags = _settingsManager.itemTags;
+    for (var tag in _settingsManager.itemTags) {
       _selectedTags.add(false);
       // _filteredTags.add(tag);
     }
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    _selectedIndex = settingsManager.currentTabIndex;
+    _selectedIndex = _settingsManager.currentTabIndex;
 
     _validateFields();
 
@@ -116,13 +116,13 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
 
     final algorithm_exchange = X25519();
 
-    // _seedKey = cryptor.getRandomBytes(32);
+    // _seedKey = _cryptor.getRandomBytes(32);
     // print("rand seed: $_seedKey");
 
-    // final encryptedPrivateKey = await cryptor.createEncryptedPeerKeyExchangeKey();
+    // final encryptedPrivateKey = await _cryptor.createEncryptedPeerKeyExchangeKey();
     // print("encryptedPrivateKey: ${encryptedPrivateKey}");
     //
-    // final privateExchangeKeySeed = await cryptor.decrypt(encryptedPrivateKey);
+    // final privateExchangeKeySeed = await _cryptor.decrypt(encryptedPrivateKey);
     // print("privateExchangeKeySeed: ${privateExchangeKeySeed}");
     //
     // // final privKeyHex = hex.decode(privateExchangeKeySeed);
@@ -134,7 +134,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     /// OR
     ///
 
-    // final privateExchangeKeySeed2 = cryptor.getRandomBytes(32);
+    // final privateExchangeKeySeed2 = _cryptor.getRandomBytes(32);
 
     // print("pubExchangeKeySeed: $pubExchangeKeySeed");
 
@@ -167,7 +167,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     _publicKey = simplePublicKey.bytes;
     // print("_publicKey: ${_publicKey}");
 
-    // final expanded = await cryptor.expandKey(_seedKey);
+    // final expanded = await _cryptor.expandKey(_seedKey);
 
     setState(() {
       _publicKey = simplePublicKey.bytes;
@@ -933,7 +933,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
   void _validateFields() {
@@ -979,33 +979,33 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
       return;
     }
     var createDate = DateTime.now().toIso8601String();
-    var uuid = cryptor.getUUID();
+    var uuid = _cryptor.getUUID();
 
     final name = _nameTextController.text;
     final notes = _notesTextController.text;
 
     final encodedLength = utf8.encode(name).length + utf8.encode(notes).length + utf8.encode(base64.encode(_privKey)).length;
 
-    settingsManager.doEncryption(encodedLength);
+    _settingsManager.doEncryption(encodedLength);
 
     if (AppConstants.debugKeyData) {
-      logManager.logger.d("_privKey: $_privKey");
+      _logManager.logger.d("_privKey: $_privKey");
     }
 
 
     /// encrypt note items
     ///
-    final encryptedName = await cryptor.encrypt(name);
+    final encryptedName = await _cryptor.encrypt(name);
 
-    final encryptedNotes = await cryptor.encrypt(notes);
+    final encryptedNotes = await _cryptor.encrypt(notes);
 
     /// TODO: switch encoding !
-    // final encryptedKey = await cryptor.encrypt(hex.encode(_privKey));
-    final encryptedKey = await cryptor.encrypt(base64.encode(_privKey));
+    // final encryptedKey = await _cryptor.encrypt(hex.encode(_privKey));
+    final encryptedKey = await _cryptor.encrypt(base64.encode(_privKey));
 
     var keyItem = KeyItem(
       id: uuid,
-      keyId: keyManager.keyId,
+      keyId: _keyManager.keyId,
       version: AppConstants.keyItemVersion,
       name: encryptedName,
       key: encryptedKey,
@@ -1022,7 +1022,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
       mdate: createDate,
     );
 
-    final itemMac = await cryptor.hmac256(keyItem.toRawJson());
+    final itemMac = await _cryptor.hmac256(keyItem.toRawJson());
     keyItem.mac = itemMac;
 
     final keyItemJson = keyItem.toRawJson();
@@ -1032,11 +1032,11 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     // print('genericItem toRawJson: ${genericItem.toRawJson()}');
 
     final genericItemString = genericItem.toRawJson();
-    // logManager.logger.d("save key item genericItemString: $genericItemString");
+    // _logManager.logger.d("save key item genericItemString: $genericItemString");
 
     /// save key item in keychain
     ///
-    final status = await keyManager.saveItem(uuid, genericItemString);
+    final status = await _keyManager.saveItem(uuid, genericItemString);
 
     // final status = true;
 
@@ -1090,7 +1090,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
                                 state(() {
                                   _tagTextController.text = "";
                                   _tagTextFieldValid = false;
-                                  _filteredTags = settingsManager.itemTags;
+                                  _filteredTags = _settingsManager.itemTags;
                                 });
 
                                 Navigator.of(context).pop();
@@ -1160,7 +1160,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
                                         state(() {
                                           _tagTextController.text = "";
                                           _tagTextFieldValid = false;
-                                          _filteredTags = settingsManager.itemTags;
+                                          _filteredTags = _settingsManager.itemTags;
                                         });
                                       },
                                     ),
@@ -1219,16 +1219,16 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
                                     _selectedTags.add(false);
                                   });
 
-                                  if (!settingsManager.itemTags
+                                  if (!_settingsManager.itemTags
                                       .contains(userTag)) {
                                     var updatedTagList =
-                                    settingsManager.itemTags.copy();
+                                    _settingsManager.itemTags.copy();
                                     updatedTagList.add(userTag);
 
                                     updatedTagList
                                         .sort((e1, e2) => e1.compareTo(e2));
 
-                                    settingsManager
+                                    _settingsManager
                                         .saveItemTags(updatedTagList);
 
                                     state(() {
@@ -1241,7 +1241,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
                                   _isEditing = true;
                                   _tagTextController.text = "";
                                   _tagTextFieldValid = false;
-                                  _filteredTags = settingsManager.itemTags;
+                                  _filteredTags = _settingsManager.itemTags;
                                 });
 
                                 _validateFields();
@@ -1271,7 +1271,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
                                 return ListTile(
                                   title: Text(
                                     _filteredTags[index],
-                                    // settingsManager.itemTags[index],
+                                    // _settingsManager.itemTags[index],
                                     // "test",
                                     style: TextStyle(
                                       color: isCurrentTag
@@ -1322,11 +1322,11 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
 
     if (text.isEmpty) {
       state(() {
-        _filteredTags = settingsManager.itemTags;
+        _filteredTags = _settingsManager.itemTags;
       });
     } else {
       _filteredTags = [];
-      for (var t in settingsManager.itemTags) {
+      for (var t in _settingsManager.itemTags) {
         if (t.contains(text)) {
           _filteredTags.add(t);
         }

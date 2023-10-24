@@ -10,7 +10,6 @@ import 'package:elliptic/elliptic.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
-import '../helpers/ivHelper.dart';
 import '../helpers/AppConstants.dart';
 import '../managers/Cryptor.dart';
 import '../managers/LogManager.dart';
@@ -70,22 +69,22 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
   int _selectedIndex = 3;
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final keyManager = KeychainManager();
-  final cryptor = Cryptor();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _keyManager = KeychainManager();
+  final _cryptor = Cryptor();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("RecoveryModeScreen", "initState", "initState");
+    _logManager.log("RecoveryModeScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    _recoverModeEnabled = settingsManager.isRecoveryModeEnabled;
+    _recoverModeEnabled = _settingsManager.isRecoveryModeEnabled;
 
-    keyManager.getMyDigitalIdentity().then((value) async {
+    _keyManager.getMyDigitalIdentity().then((value) async {
       // print("value: ${value!.toRawJson()}");
 
       myIdentity = value;
@@ -94,8 +93,8 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         final algorithm_exchange = X25519();
 
         /// TODO: fix this
-        final privateHexS = await cryptor.decrypt(value.privKeySignature);
-        _pubExchangeKeySeed = await cryptor.decrypt(value.privKeyExchange);
+        final privateHexS = await _cryptor.decrypt(value.privKeySignature);
+        _pubExchangeKeySeed = await _cryptor.decrypt(value.privKeyExchange);
 
         var privS = PrivateKey(ec, BigInt.parse(privateHexS, radix: 16));
         final privSeedPair = await algorithm_exchange
@@ -106,7 +105,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         setState(() {
           _pubSigningKey = privS.publicKey.toHex();
           _pubExchangeKeyPublic = hex.encode(pubE.bytes);
-          _pubExchangeKeyAddress = cryptor.sha256(_pubExchangeKeyPublic).substring(0,32);
+          _pubExchangeKeyAddress = _cryptor.sha256(_pubExchangeKeyPublic).substring(0,32);
 
           _myCode = DigitalIdentityCode(
             pubKeyExchange: _pubExchangeKeyPublic,
@@ -126,16 +125,16 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     _decryptedPublicKeysE = [];
     _decryptdePublicIdentities = [];
 
-    final ids = await keyManager.getIdentities();
+    final ids = await _keyManager.getIdentities();
 
     if (ids != null) {
       ids.sort((a, b) {
         return b.cdate.compareTo(a.cdate);
       });
       for (var id in ids) {
-        final xpub = await cryptor.decrypt(id.pubKeySignature);
-        final ypub = await cryptor.decrypt(id.pubKeyExchange);
-        final dname = await cryptor.decrypt(id.name);
+        final xpub = await _cryptor.decrypt(id.pubKeySignature);
+        final ypub = await _cryptor.decrypt(id.pubKeyExchange);
+        final dname = await _cryptor.decrypt(id.name);
 
         var digitalIdentity = DigitalIdentity(
             id: id.id,
@@ -150,18 +149,18 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
             mdate: id.mdate,
         );
 
-        final identityMac = await cryptor.hmac256(digitalIdentity.toRawJson());
+        final identityMac = await _cryptor.hmac256(digitalIdentity.toRawJson());
         digitalIdentity.mac = identityMac;
 
         _decryptdePublicIdentities.add(digitalIdentity);
 
         /// hash of public exchange key
-        final phash = cryptor.sha256(ypub);
+        final phash = _cryptor.sha256(ypub);
         // print("phash identity: $phash");
         _publicKeyHashes.add(phash);
 
         if (AppConstants.debugKeyData) {
-          logManager.logger.d("decrypt identity:\nx: $xpub\ny: $ypub");
+          _logManager.logger.d("decrypt identity:\nx: $xpub\ny: $ypub");
         }
 
         setState(() {
@@ -176,7 +175,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
     _matchingRecoveryKeyIndexes = [];
     _recoveryKeyIds = [];
-    final recoveryKeys = await keyManager.getRecoveryKeyItems();
+    final recoveryKeys = await _keyManager.getRecoveryKeyItems();
     // print("recovery items: ${recoveryKeys?.length}: ${recoveryKeys!.first.toJson()}");
 
     if (recoveryKeys != null) {
@@ -218,7 +217,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
             ),
             color: _isDarkModeEnabled ? Colors.greenAccent : null,
             onPressed: () async {
-              settingsManager.setIsScanningQRCode(true);
+              _settingsManager.setIsScanningQRCode(true);
               await _scanQR(context);
             },
           ),
@@ -276,7 +275,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                           _recoverModeEnabled = value;
                         });
 
-                        settingsManager.saveRecoveryModeEnabled(value);
+                        _settingsManager.saveRecoveryModeEnabled(value);
                       },
                     ),
                   ),
@@ -355,8 +354,8 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                     subtitle: Padding(
                       padding: EdgeInsets.fromLTRB(0, 4, 4, 8),
                       child: Text(
-                        // "pubKeyExchange: ${_decryptedPublicKeysE[index - 1]}\n\naddress: ${cryptor.sha256(_decryptedPublicKeysE[index - 1])}",
-                        // "address: ${cryptor.sha256(_decryptedPublicKeysE[index - 1]).substring(0,32)}",
+                        // "pubKeyExchange: ${_decryptedPublicKeysE[index - 1]}\n\naddress: ${_cryptor.sha256(_decryptedPublicKeysE[index - 1])}",
+                        // "address: ${_cryptor.sha256(_decryptedPublicKeysE[index - 1]).substring(0,32)}",
                         "Address: ${_publicKeyHashes[index-1].substring(0, 32)}",
                         style: TextStyle(
                           color: _isDarkModeEnabled ? Colors.white : null,
@@ -411,7 +410,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                             if (_matchingRecoveryKeyIndexes
                                 .contains(index - 1)) {
                               _showDeleteRecoveryKeyDialog(
-                                  cryptor
+                                  _cryptor
                                       .sha256(_decryptedPublicKeysE[index - 1]),
                                   index - 1);
                             } else {
@@ -534,7 +533,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
 
@@ -554,7 +553,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     final privSeedPair = await algorithm.newKeyPairFromSeed(seedBytes);
 
     final mypublicKeyExchange = await privSeedPair.extractPublicKey();
-    final ahash = cryptor.sha256(hex.encode(mypublicKeyExchange.bytes));
+    final ahash = _cryptor.sha256(hex.encode(mypublicKeyExchange.bytes));
 
     // We can now calculate a shared secret.
     final sharedSecret = await algorithm.sharedSecretKey(
@@ -564,9 +563,9 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     final sharedSecretBytes = await sharedSecret.extractBytes();
     // final secretKey = SecretKey(sharedSecretBytes);
 
-    // final ikey_recovery = await cryptor.keyedHmac256("${identity.index}", sharedSecret);
-    // logManager.logger.d('Shared secret: ${sharedSecretBytes.length}: ${sharedSecretBytes}');
-    // logManager.logger.d('Shared ikey_recovery: ${identity.index}: ${ikey_recovery}');
+    // final ikey_recovery = await _cryptor.keyedHmac256("${identity.index}", sharedSecret);
+    // _logManager.logger.d('Shared secret: ${sharedSecretBytes.length}: ${sharedSecretBytes}');
+    // _logManager.logger.d('Shared ikey_recovery: ${identity.index}: ${ikey_recovery}');
 
 
     // final secretIndexKey = SecretKey(hex.decode(ikey_recovery));
@@ -889,7 +888,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                   child: Center(
                     child: Text(
                       "publicKeyExchange: ${_pubExchangeKeyPublic}\n\ndate: ${(myIdentity?.cdate)!}",
-                      // "name: ${item.name}\nid: ${item.id}\ndeviceId: ${item.deviceId}\ncreated: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse(item.cdate))}\nmodified: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse(item.mdate))}\nCurrent Vault: ${(item.encryptedKey.keyMaterial == keyManager.encryptedKeyMaterial)}",
+                      // "name: ${item.name}\nid: ${item.id}\ndeviceId: ${item.deviceId}\ncreated: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse(item.cdate))}\nmodified: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse(item.mdate))}\nCurrent Vault: ${(item.encryptedKey.keyMaterial == _keyManager.encryptedKeyMaterial)}",
                       style: TextStyle(
                         color: _isDarkModeEnabled ? Colors.white : Colors.black,
                       ),
@@ -1108,7 +1107,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
             "#ff6666", "Cancel", true, ScanMode.QR);
 
-        settingsManager.setIsScanningQRCode(false);
+        _settingsManager.setIsScanningQRCode(false);
 
         /// user pressed cancel
         if (barcodeScanRes == "-1") {
@@ -1129,7 +1128,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         }
       } on PlatformException {
         barcodeScanRes = "Failed to get platform version.";
-        logManager.logger.w("Platform exception");
+        _logManager.logger.w("Platform exception");
       }
     } else if (Platform.isAndroid) {
 
@@ -1141,7 +1140,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
             .then((value) {
 
               print("value obtained: $value");
-          settingsManager.setIsScanningQRCode(false);
+          _settingsManager.setIsScanningQRCode(false);
 
           try {
             DigitalIdentityCode item =
@@ -1164,27 +1163,27 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
   Future<void> _saveScannedIdentity(
       DigitalIdentityCode item, String name) async {
     final createDate = DateTime.now();
-    final uuid = cryptor.getUUID();
+    final uuid = _cryptor.getUUID();
 
     final pubS = item.pubKeySignature;
     final pubE = item.pubKeyExchange;
     // final intKey = item.intermediateKey;
 
-    logManager.log(
+    _logManager.log(
         "RecoveryModeScreen", "_saveScannedIdentity", "identity:{E: $pubE}");
 
     /// Encrypt password here
-    final encryptedPubS = await cryptor.encrypt(pubS);
-    final encryptedPubE = await cryptor.encrypt(pubE);
-    final encryptedName = await cryptor.encrypt(name);
+    final encryptedPubS = await _cryptor.encrypt(pubS);
+    final encryptedPubE = await _cryptor.encrypt(pubE);
+    final encryptedName = await _cryptor.encrypt(name);
 
-    // final encryptedIntKey = await cryptor.encrypt(intKey);
+    // final encryptedIntKey = await _cryptor.encrypt(intKey);
 
     /// TODO: save encrypted block number with encryption
     /// TODO: change to encryptParams method for object
     var identity = DigitalIdentity(
       id: uuid,
-      keyId: keyManager.keyId,
+      keyId: _keyManager.keyId,
       index: 1,
       version: AppConstants.digitalIdentityVersion,
       name: encryptedName,
@@ -1195,13 +1194,13 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
       mdate: createDate.toIso8601String(),
     );
 
-    final identityMac = await cryptor.hmac256(identity.toRawJson());
+    final identityMac = await _cryptor.hmac256(identity.toRawJson());
     identity.mac = identityMac;
 
     final identityObjectString = identity.toRawJson();
     // print("identityObjectString: $identityObjectString");
 
-    final statusId = await keyManager.saveIdentity(uuid, identityObjectString);
+    final statusId = await _keyManager.saveIdentity(uuid, identityObjectString);
 
     if (statusId) {
       await fetchRecoveryIdentities();
@@ -1231,21 +1230,21 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     final sharedSecretBytes = await sharedSecret.extractBytes();
     
     // final indexedNonce = ivHelper().convertToBytes(keyIndex, 16);
-    // final indexedSharedSecret = await cryptor.keyedHmac256_2(hex.encode(indexedNonce), sharedSecret);
-    // logManager.logger.d('indexedNonce: ${indexedNonce.length}: ${indexedNonce}');
-    // logManager.logger.d('Shared ikey_recovery: ${keyIndex}: ${ikey_recovery}');
+    // final indexedSharedSecret = await _cryptor.keyedHmac256_2(hex.encode(indexedNonce), sharedSecret);
+    // _logManager.logger.d('indexedNonce: ${indexedNonce.length}: ${indexedNonce}');
+    // _logManager.logger.d('Shared ikey_recovery: ${keyIndex}: ${ikey_recovery}');
 
     final sharedSecretKey = SecretKey(sharedSecretBytes);
     // final secretIndexKey = SecretKey(hex.decode(sharedSecretBytes));
 
-    final rootKey = cryptor.aesRootSecretKeyBytes;
+    final rootKey = _cryptor.aesRootSecretKeyBytes;
 
-    final encryptedRootKey = await cryptor.encryptRecoveryKey(sharedSecretKey, rootKey);
-    // final encryptedRootKeyIndexed = await cryptor.encryptRecoveryKey(sharedSecretKey, rootKey);
-    logManager.logger.d('encryptedRootKey:[${encryptedRootKey.length}]: ${encryptedRootKey}');
-    // logManager.logger.d('encryptedRootKeyIndexed:[${keyIndex}]:${encryptedRootKeyIndexed.length}: ${encryptedRootKeyIndexed}');
+    final encryptedRootKey = await _cryptor.encryptRecoveryKey(sharedSecretKey, rootKey);
+    // final encryptedRootKeyIndexed = await _cryptor.encryptRecoveryKey(sharedSecretKey, rootKey);
+    _logManager.logger.d('encryptedRootKey:[${encryptedRootKey.length}]: ${encryptedRootKey}');
+    // _logManager.logger.d('encryptedRootKeyIndexed:[${keyIndex}]:${encryptedRootKeyIndexed.length}: ${encryptedRootKeyIndexed}');
     
-    final pubKeyHash = cryptor.sha256(pubKeyExchange);
+    final pubKeyHash = _cryptor.sha256(pubKeyExchange);
     _publicKeyHashes.add(pubKeyHash);
 
     final recoveryKey = RecoveryKey(
@@ -1254,9 +1253,9 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
       cdate: DateTime.now().toIso8601String(),
     );
     
-    logManager.logger.d("recoveryKey: ${recoveryKey.toRawJson()}");
+    _logManager.logger.d("recoveryKey: ${recoveryKey.toRawJson()}");
 
-    await keyManager.saveRecoveryKey(pubKeyHash, recoveryKey.toRawJson());
+    await _keyManager.saveRecoveryKey(pubKeyHash, recoveryKey.toRawJson());
 
     await fetchRecoveryIdentities();
   }
@@ -1381,7 +1380,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
             onPressed: () async {
               // print("delete recovery key");
 
-              final status = await keyManager.deleteRecoveryKeyItem(id);
+              final status = await _keyManager.deleteRecoveryKeyItem(id);
               // _createRecoveryKey(pubKeyExchange);
               print("deleteRecoveryKeyItem-dialog-status: $status");
               if (status) {
@@ -1428,17 +1427,17 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
               // print("delete identity");
               Navigator.of(ctx).pop();
 
-              final statusRecovery = await keyManager.deleteRecoveryKeyItem(pubHash);
+              final statusRecovery = await _keyManager.deleteRecoveryKeyItem(pubHash);
 
-              final statusID = await keyManager.deleteIdentity(id);
+              final statusID = await _keyManager.deleteIdentity(id);
 
               if (!statusID){
-                logManager.logger.w("Could not delete identity with id: $id");
+                _logManager.logger.w("Could not delete identity with id: $id");
 
               }
 
               if (!statusRecovery){
-                logManager.logger.w("Could not delete recovery key with pubHash: $pubHash");
+                _logManager.logger.w("Could not delete recovery key with pubHash: $pubHash");
               }
 
               await fetchRecoveryIdentities();

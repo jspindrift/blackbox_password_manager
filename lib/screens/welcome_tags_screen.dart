@@ -39,20 +39,20 @@ class _WelcomeTagsScreenState extends State<WelcomeTagsScreen> {
 
   final _allCategories = ["Password", "Secure Note", "Key"];
 
-  final keyManager = KeychainManager();
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final cryptor = Cryptor();
+  final _keyManager = KeychainManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _cryptor = Cryptor();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("WelcomeTagsScreen", "initState", "initState");
-    // logManager.logger.d("WelcomeTagsScreen - initState");
+    _logManager.log("WelcomeTagsScreen", "initState", "initState");
+    // _logManager.logger.d("WelcomeTagsScreen - initState");
 
     setState(() {
-      _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+      _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
     });
 
     _getAllTags();
@@ -64,7 +64,7 @@ class _WelcomeTagsScreenState extends State<WelcomeTagsScreen> {
     _sortedTagCounts = {};
     _decryptedPasswordList = [];
 
-    final items = await keyManager.getAllItems();
+    final items = await _keyManager.getAllItems();
 
     // iterate through items
     for (var item in items.list) {
@@ -95,7 +95,7 @@ class _WelcomeTagsScreenState extends State<WelcomeTagsScreen> {
 
           if (passwordItem.geoLock == null) {
             final decryptedPassword =
-                await cryptor.decrypt(passwordItem.password);
+                await _cryptor.decrypt(passwordItem.password);
             // print("bip39: ${passwordItem.isBip39}");
             if (passwordItem.isBip39) {
               final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
@@ -175,7 +175,7 @@ class _WelcomeTagsScreenState extends State<WelcomeTagsScreen> {
 
     _sortedAlphabeticTags.sort((e1, e2) => e1.compareTo(e2));
 
-    settingsManager.saveItemTags(_sortedAlphabeticTags);
+    _settingsManager.saveItemTags(_sortedAlphabeticTags);
 
     /// update UI
     if (mounted) {
@@ -472,7 +472,7 @@ class _WelcomeTagsScreenState extends State<WelcomeTagsScreen> {
                                 state(() {
                                   // _tagTextController.text = "";
                                   // _tagTextFieldValid = false;
-                                  // _filteredTags = settingsManager.itemTags;
+                                  // _filteredTags = _settingsManager.itemTags;
                                 });
 
                                 Navigator.of(context).pop();

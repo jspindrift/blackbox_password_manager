@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:argon2/argon2.dart';
-import '../managers/GeolocationManager.dart';
-import '../models/GeoLockItem.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -11,6 +9,9 @@ import 'package:intl/intl.dart';
 import 'package:password_strength/password_strength.dart';
 import 'package:random_password_generator/random_password_generator.dart';
 import 'package:bip39/bip39.dart' as bip39;
+
+import '../managers/GeolocationManager.dart';
+import '../models/GeoLockItem.dart';
 import '../helpers/AppConstants.dart';
 import '../helpers/WidgetUtils.dart';
 import '../managers/Cryptor.dart';
@@ -141,37 +142,37 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
   late StreamSubscription onLocationSettingsChangeSubscription;
   late StreamSubscription onGeoLocationUpdateSubscription;
 
-  final cryptor = Cryptor();
-  final keyManager = KeychainManager();
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final geolocationManager = GeoLocationManager();
+  final _cryptor = Cryptor();
+  final _keyManager = KeychainManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _geolocationManager = GeoLocationManager();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("EditPasswordScreen", "initState", "initState");
+    _logManager.log("EditPasswordScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    _selectedIndex = settingsManager.currentTabIndex;
+    _selectedIndex = _settingsManager.currentTabIndex;
 
-    _filteredTags = settingsManager.itemTags;
+    _filteredTags = _settingsManager.itemTags;
 
     if (_testGeoLock) {
-      if (geolocationManager.geoLocationUpdate == null) {
-        geolocationManager.initialize();
+      if (_geolocationManager.geoLocationUpdate == null) {
+        _geolocationManager.initialize();
       }
     }
 
-    _isLocationSettingsEnabled = geolocationManager.isLocationSettingsEnabled;
+    _isLocationSettingsEnabled = _geolocationManager.isLocationSettingsEnabled;
 
     _getPasswordItem();
 
     onLocationSettingsChangeSubscription =
-        geolocationManager.onLocationSettingsChange.listen((event) {
-      logManager.logger.d("onLocationSettingsChangeSubscription: $event");
+        _geolocationManager.onLocationSettingsChange.listen((event) {
+      _logManager.logger.d("onLocationSettingsChangeSubscription: $event");
       setState(() {
         _isLocationSettingsEnabled = event;
       });
@@ -182,17 +183,17 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         .listen((geoLocationUpdate) async {
       final userLocationString =
           "position: ${geoLocationUpdate.userLocation.latitude}, ${geoLocationUpdate.userLocation.longitude}";
-      logManager.logger.d(
+      _logManager.logger.d(
           "EditPassword: onGeoLocationUpdate: userLocationString: $userLocationString");
       if (!_isInitiallyGeoLocked) {
-        logManager.logger.d("not initially geo locked, returning");
+        _logManager.logger.d("not initially geo locked, returning");
         return;
       } else {
         // _isGeoLockedEnabled = true;
         _validateFields();
 
         if (_hasDecryptedGeoLock && !_isEditing) {
-          logManager.logger.d("geo locked, already decrypted");
+          _logManager.logger.d("geo locked, already decrypted");
 
           /// TODO: still do decryption to see if we fall out of range
           /// cant save edited passwords when we fall out of range unless we turn
@@ -200,10 +201,10 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
           final decryptedPassword = await decryptGeoLock(geoLocationUpdate);
 
           if (decryptedPassword.isNotEmpty) {
-            logManager.logger.d("debug: geoLock: We are still within range: $decryptedPassword");
+            _logManager.logger.d("debug: geoLock: We are still within range: $decryptedPassword");
 
             _isBip39Valid = (_passwordItem?.isBip39)!;
-            logManager.logger.d("debug: geoLock: We are still within range: $_isBip39Valid");
+            _logManager.logger.d("debug: geoLock: We are still within range: $_isBip39Valid");
 
             if (_isBip39Valid) {
               final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
@@ -219,7 +220,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
               _isOutOfRange = false;
             });
           } else {
-            logManager.logger.d("debug: geoLock: We are out of range");
+            _logManager.logger.d("debug: geoLock: We are out of range");
             setState(() {
               _passwordTextController.text = "";
               _isOutOfRange = true;
@@ -228,12 +229,12 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
 
           return;
         } else if (!_isEditing) {
-          logManager.logger.d("geo locked, not decrypted, trying decryption");
+          _logManager.logger.d("geo locked, not decrypted, trying decryption");
 
           final decryptedPassword = await decryptGeoLock(geoLocationUpdate);
 
           if (decryptedPassword.isNotEmpty) {
-            logManager.logger.d("geo locked decrypted successfully");
+            _logManager.logger.d("geo locked decrypted successfully");
 
             setState(() {
               _isOutOfRange = false;
@@ -255,7 +256,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
               });
             }
           } else {
-            logManager.logger.d("geo locked decrypted unsuccessfully");
+            _logManager.logger.d("geo locked decrypted unsuccessfully");
             setState(() {
               _passwordTextController.text = "";
               _isOutOfRange = true;
@@ -292,7 +293,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
 
   Future<void> _getPasswordItem() async {
 
-    final genItemString = await keyManager.getItem(widget.id);
+    final genItemString = await _keyManager.getItem(widget.id);
     final genericItem = GenericItem.fromRawJson(genItemString);
 
     if (genericItem.type != "password") {
@@ -325,8 +326,8 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         /// only activate location settings here on init
         /// otherwise init it on geolocation switch
         /// TODO: un/comment this back in
-        // if (geolocationManager.geoLocationUpdate == null) {
-        //   geolocationManager.initialize();
+        // if (_geolocationManager.geoLocationUpdate == null) {
+        //   _geolocationManager.initialize();
         // }
 
         _geoLockItem = (_passwordItem?.geoLock)!;
@@ -372,7 +373,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         final blob = (_passwordItem?.password)!;
 
         /// decrypt password
-        final pwd = await cryptor.decrypt(blob);
+        final pwd = await _cryptor.decrypt(blob);
         dpassword = pwd;
         if (_isBip39Valid) {
           dpassword = bip39.entropyToMnemonic(pwd);
@@ -403,14 +404,14 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
 
         _validateFields();
       } else {
-        if (geolocationManager.geoLocationUpdate != null) {
+        if (_geolocationManager.geoLocationUpdate != null) {
           final pwd = await decryptGeoLock(
-              geolocationManager.geoLocationUpdate!,
+              _geolocationManager.geoLocationUpdate!,
           );
 
           dpassword = pwd;
           if (pwd.isNotEmpty) {
-            logManager.logger.d("geo locked decrypted successfully");
+            _logManager.logger.d("geo locked decrypted successfully");
 
             setState(() {
               _isOutOfRange = false;
@@ -434,7 +435,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
           } else {
             setState(() {
               _isOutOfRange = true;
-              logManager.logger.d("is out of range");
+              _logManager.logger.d("is out of range");
             });
           }
 
@@ -444,11 +445,11 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         }
       }
 
-      final dname = await cryptor.decrypt(name);
+      final dname = await _cryptor.decrypt(name);
       /// decrypt username
-      final dusername = await cryptor.decrypt(username);
+      final dusername = await _cryptor.decrypt(username);
       /// decrypt notes
-      final dnotes = await cryptor.decrypt(notes);
+      final dnotes = await _cryptor.decrypt(notes);
 
       setState(() {
         _nameTextController.text = dname;
@@ -469,11 +470,11 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         var index = 0;
         for (var pp in encryptedPreviousPasswords) {
           index += 1;
-          var decryptedPreviousPassword = await cryptor.decrypt(pp.password);
+          var decryptedPreviousPassword = await _cryptor.decrypt(pp.password);
 
           if (pp.isBip39) {
             decryptedPreviousPassword =
-                cryptor.entropyToMnemonic(decryptedPreviousPassword);
+                _cryptor.entropyToMnemonic(decryptedPreviousPassword);
           }
 
           final decrypedPreviousItem = PreviousPassword(
@@ -489,7 +490,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
 
       _validateFields();
     } catch (e) {
-      logManager.logger.wtf("Exception: $e");
+      _logManager.logger.wtf("Exception: $e");
     }
 
   }
@@ -502,7 +503,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         final owner_lat_tokens = _geoLockItem?.lat_tokens;
         final owner_long_tokens = _geoLockItem?.long_tokens;
 
-        // logManager.logger.d("owner_lat_tokens: ${owner_lat_tokens}\n"
+        // _logManager.logger.d("owner_lat_tokens: ${owner_lat_tokens}\n"
         //     "owner_long_tokens:\n ${owner_long_tokens}");
         List<int> decoded_lat_tokens = [];
         List<int> decoded_long_tokens = [];
@@ -517,12 +518,12 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         decoded_long_tokens = decoded2;
         // }
 
-        // logManager.logger.d("decoded: ${decoded.length}: ${decoded}\n"
+        // _logManager.logger.d("decoded: ${decoded.length}: ${decoded}\n"
         //     "decoded2:\n ${decoded2.length}: ${decoded2}");
 
         final encryptedPassword = (_passwordItem?.password)!;
 
-        final decryptedGeoItem = await cryptor.geoDecrypt(
+        final decryptedGeoItem = await _cryptor.geoDecrypt(
           geoLocationUpdate.userLocation.latitude,
           geoLocationUpdate.userLocation.longitude,
           decoded_lat_tokens,
@@ -530,7 +531,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
           encryptedPassword,
         );
 
-        // logManager.logger.d("decryptedGeoItem: ${decryptedGeoItem}\n");
+        // _logManager.logger.d("decryptedGeoItem: ${decryptedGeoItem}\n");
 
         if (decryptedGeoItem == null) {
           return "";
@@ -547,8 +548,8 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         final inc_lat = 0.0001 * ilat2;
         final inc_long = 0.0001 * ilong2;
 
-        var lat = geolocationManager.geoLocationUpdate?.userLocation.latitude;
-        var long = geolocationManager.geoLocationUpdate?.userLocation.longitude;
+        var lat = _geolocationManager.geoLocationUpdate?.userLocation.latitude;
+        var long = _geolocationManager.geoLocationUpdate?.userLocation.longitude;
 
         var latneg = false;
         var lat_abs = 0.0;
@@ -585,7 +586,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
 
       return "";
     } catch (e) {
-      logManager.logger.w("decryptGeoLock failed: $e");
+      _logManager.logger.w("decryptGeoLock failed: $e");
       return "";
     }
   }
@@ -599,7 +600,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
     setState(() {
       _previousPasswords.forEach((element) {
         var decodedPassword = element.password;
-        // logManager.logger.d("pwd: ${element.password}");
+        // _logManager.logger.d("pwd: ${element.password}");
 
         final previousDecoded = PreviousPassword(
           password: decodedPassword,
@@ -619,7 +620,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
     onGeoLocationUpdateSubscription.cancel();
 
     /// TODO: un/comment this back in
-    // geolocationManager.shutdown();
+    // _geolocationManager.shutdown();
   }
 
   @override
@@ -1137,7 +1138,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                               await Clipboard.setData(ClipboardData(
                                   text: _passwordTextController.text));
 
-                              settingsManager.setDidCopyToClipboard(true);
+                              _settingsManager.setDidCopyToClipboard(true);
 
                               EasyLoading.showToast('Copied',
                                   duration: Duration(milliseconds: 500));
@@ -1170,7 +1171,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                               await Clipboard.setData(ClipboardData(
                                   text: _passwordTextController.text));
 
-                              settingsManager.setDidCopyToClipboard(true);
+                              _settingsManager.setDidCopyToClipboard(true);
 
                               EasyLoading.showToast('Copied',
                                   duration: Duration(milliseconds: 500));
@@ -1725,7 +1726,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
   /// validate that we have values in all the necessary fields
@@ -2400,7 +2401,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                             state(() {
                               _tagTextController.text = "";
                               _tagTextFieldValid = false;
-                              _filteredTags = settingsManager.itemTags;
+                              _filteredTags = _settingsManager.itemTags;
                             });
 
                             Navigator.of(context).pop();
@@ -2471,7 +2472,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                                     state(() {
                                       _tagTextController.text = "";
                                       _tagTextFieldValid = false;
-                                      _filteredTags = settingsManager.itemTags;
+                                      _filteredTags = _settingsManager.itemTags;
                                     });
                                   },
                                 ),
@@ -2529,10 +2530,10 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                                       _selectedTags.add(false);
                                     });
 
-                                    if (!settingsManager.itemTags
+                                    if (!_settingsManager.itemTags
                                         .contains(userTag)) {
                                       var updatedTagList =
-                                          settingsManager.itemTags.copy();
+                                          _settingsManager.itemTags.copy();
                                       updatedTagList.add(userTag);
 
                                       updatedTagList
@@ -2551,7 +2552,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                                     _isEditing = true;
                                     _tagTextController.text = "";
                                     _tagTextFieldValid = false;
-                                    _filteredTags = settingsManager.itemTags;
+                                    _filteredTags = _settingsManager.itemTags;
                                   });
 
                                   _validateFields();
@@ -2582,7 +2583,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                             return ListTile(
                               title: Text(
                                 _filteredTags[index],
-                                // settingsManager.itemTags[index],
+                                // _settingsManager.itemTags[index],
                                 // "test",
                                 style: TextStyle(
                                   color: isCurrentTag
@@ -2632,11 +2633,11 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
 
     if (text.isEmpty) {
       state(() {
-        _filteredTags = settingsManager.itemTags;
+        _filteredTags = _settingsManager.itemTags;
       });
     } else {
       _filteredTags = [];
-      for (var t in settingsManager.itemTags) {
+      for (var t in _settingsManager.itemTags) {
         if (t.contains(text)) {
           _filteredTags.add(t);
         }
@@ -2694,7 +2695,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
     /// TODO: new method - keep this
     final passwordChanged = (_initialPassword != password);
     if (_isOutOfRange && passwordChanged) {
-      logManager.logger.d("Item is out of range, from current geo location to save");
+      _logManager.logger.d("Item is out of range, from current geo location to save");
       _showErrorDialog(
           "Cant save.  Location is not within GeoLock coordinates");
       setState(() {
@@ -2707,7 +2708,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
     ///
     final updatedPropertiesString =
         '$name.$username.${_passwordTags.toString()}.$_isFavorite.$password.$notes';
-    // logManager.logger.d('updatedPropertiesString: $updatedPropertiesString');
+    // _logManager.logger.d('updatedPropertiesString: $updatedPropertiesString');
 
     // check if items in the password item have changed
     /// set no matter what
@@ -2717,7 +2718,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
     /// TODO: new method - add
     final passwordItem = PasswordItem(
       id: widget.id,
-      keyId: keyManager.keyId,
+      keyId: _keyManager.keyId,
       version: AppConstants.passwordItemVersion,
       name: name,
       username: username,
@@ -2734,7 +2735,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
     );
 
     /// TODO: new method - add
-    await passwordItem.encryptParams2(_isGeoLockedEnabled ? geolocationManager.geoLocationUpdate : null, passwordChanged ? _initialPassword : "");
+    await passwordItem.encryptParams2(_isGeoLockedEnabled ? _geolocationManager.geoLocationUpdate : null, passwordChanged ? _initialPassword : "");
 
     if (passwordChanged) {
       final isPreviousBip39Valid = bip39.validateMnemonic(_initialPassword);
@@ -2764,7 +2765,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
     }
 
     final passwordItemString = passwordItem.toRawJson();
-    // logManager.logger.d('passwordItem toRawJson: $passwordItemString');
+    // _logManager.logger.d('passwordItem toRawJson: $passwordItemString');
 
     final genericItem = GenericItem(type: "password", data: passwordItemString);
     // print('genericItem toRawJson: ${genericItem.toRawJson()}');
@@ -2772,7 +2773,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
     final genericItemString = genericItem.toRawJson();
 
     /// save item in keychain
-    final status = await keyManager.saveItem(widget.id, genericItemString);
+    final status = await _keyManager.saveItem(widget.id, genericItemString);
 
     _validateFieldsAreChanged();
 
@@ -2787,7 +2788,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
       // Navigator.of(context).pop('savedItem');
     } else {
       _showErrorDialog('Could not save the item.');
-      logManager.log(
+      _logManager.log(
           "EditPasswordScreen", "_pressedSaveItem", 'Error saving edited item');
     }
   }
@@ -2930,7 +2931,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
   }
 
   void _confirmedDeleteItem() async {
-    final status = await keyManager.deleteItem(widget.id);
+    final status = await _keyManager.deleteItem(widget.id);
 
     if (status) {
       Navigator.of(context).pop();

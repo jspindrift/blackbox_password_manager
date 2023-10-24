@@ -92,18 +92,18 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
   String _modifiedDate = DateTime.now().toIso8601String();
   String _createdDate = DateTime.now().toIso8601String();
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final keyManager = KeychainManager();
-  final cryptor = Cryptor();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _keyManager = KeychainManager();
+  final _cryptor = Cryptor();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("EditPublicEncryptionKeyScreen", "initState", "initState");
+    _logManager.log("EditPublicEncryptionKeyScreen", "initState", "initState");
 
-    // print("tags note: ${settingsManager.itemTags}");
+    // print("tags note: ${_settingsManager.itemTags}");
     // if (widget.note == null) {
     // print("starting new key item");
     // _isEditing = true;
@@ -111,22 +111,22 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
     /// read key info from keychain
     _getItem();
 
-    _filteredTags = settingsManager.itemTags;
-    for (var tag in settingsManager.itemTags) {
+    _filteredTags = _settingsManager.itemTags;
+    for (var tag in _settingsManager.itemTags) {
       _selectedTags.add(false);
       // _filteredTags.add(tag);
     }
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    _selectedIndex = settingsManager.currentTabIndex;
+    _selectedIndex = _settingsManager.currentTabIndex;
 
     _validateFields();
   }
 
   void _getItem() async {
     /// get the password item and decrypt the data
-    keyManager.getItem(widget.id).then((value) async {
+    _keyManager.getItem(widget.id).then((value) async {
       final genericItem = GenericItem.fromRawJson(value);
 
       if (genericItem.type == "key") {
@@ -152,7 +152,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
           // }
 
           /// decrypt root seed and expand
-          final decryptedSeedData = await cryptor.decrypt(keydata);
+          final decryptedSeedData = await _cryptor.decrypt(keydata);
           // print("decryptedSeedData: ${decryptedSeedData}");
 
           /// TODO: switch encoding !
@@ -191,7 +191,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
               _isSymmetricKey = true;
             });
 
-            final expanded = await cryptor.expandKey(decodedRootKey);
+            final expanded = await _cryptor.expandKey(decodedRootKey);
 
             setState(() {
               _seedKey = decodedRootKey;
@@ -232,14 +232,14 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
 
           // final blob = (_passwordItem?.password)!;
 
-          cryptor.decrypt(name).then((value) {
+          _cryptor.decrypt(name).then((value) {
             name = value;
 
             _validateFields();
           });
 
           /// decrypt notes
-          cryptor.decrypt(notes).then((value) {
+          _cryptor.decrypt(notes).then((value) {
             if (value.isNotEmpty) {
               setState(() {
                 // _hasNotes = true;
@@ -273,13 +273,13 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
 
     final algorithm_exchange = X25519();
 
-    // _seedKey = cryptor.getRandomBytes(32);
+    // _seedKey = _cryptor.getRandomBytes(32);
     // print("rand seed: $_seedKey");
 
-    // final encryptedPrivateKey = await cryptor.createDigitalIdentityExchange();
+    // final encryptedPrivateKey = await _cryptor.createDigitalIdentityExchange();
     // print("encryptedPrivateKey: ${encryptedPrivateKey}");
     //
-    // final privateExchangeKeySeed = await cryptor.decrypt(encryptedPrivateKey);
+    // final privateExchangeKeySeed = await _cryptor.decrypt(encryptedPrivateKey);
     // print("privateExchangeKeySeed: ${privateExchangeKeySeed}");
 
     /// TODO: switch encoding !
@@ -291,7 +291,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
     /// OR
     ///
 
-    // final privateExchangeKeySeed2 = cryptor.getRandomBytes(32);
+    // final privateExchangeKeySeed2 = _cryptor.getRandomBytes(32);
 
     // print("pubExchangeKeySeed: $pubExchangeKeySeed");
 
@@ -309,7 +309,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
     // _pubKey = simplePublicKey.bytes;
     // print("_publicKey: ${simplePublicKey.bytes}");
 
-    // final expanded = await cryptor.expandKey(_seedKey);
+    // final expanded = await _cryptor.expandKey(_seedKey);
 
 
     setState(() {
@@ -704,7 +704,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                             text: entropy,
                           ));
 
-                          settingsManager.setDidCopyToClipboard(true);
+                          _settingsManager.setDidCopyToClipboard(true);
 
                           EasyLoading.showToast('Copied Public Key',
                               duration: Duration(milliseconds: 500));
@@ -745,7 +745,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                             text: entropy,
                           ));
 
-                          settingsManager.setDidCopyToClipboard(true);
+                          _settingsManager.setDidCopyToClipboard(true);
 
                           EasyLoading.showToast('Copied Public Key',
                               duration: Duration(milliseconds: 500),
@@ -775,7 +775,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                           // await Clipboard.setData(ClipboardData(
                           //     text: _keyDataTextController.text));
                           //
-                          // settingsManager.setDidCopyToClipboard(true);
+                          // _settingsManager.setDidCopyToClipboard(true);
                           //
                           // EasyLoading.showToast('Copied',
                           //     duration: Duration(milliseconds: 500));
@@ -1338,7 +1338,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
   void _validateFields() {
@@ -1428,17 +1428,17 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
 
     final encodedLength = utf8.encode(name).length + utf8.encode(notes).length + utf8.encode(base64.encode(_privKey)).length;
 
-    settingsManager.doEncryption(encodedLength);
+    _settingsManager.doEncryption(encodedLength);
 
     /// encrypt
-    final encryptedName = await cryptor.encrypt(name);
-    final encryptedNotes = await cryptor.encrypt(notes);
+    final encryptedName = await _cryptor.encrypt(name);
+    final encryptedNotes = await _cryptor.encrypt(notes);
 
-    final encryptedKey = await cryptor.encrypt(base64.encode(_privKey));
+    final encryptedKey = await _cryptor.encrypt(base64.encode(_privKey));
 
     var keyItem = KeyItem(
       id: uuid,
-      keyId: keyManager.keyId,
+      keyId: _keyManager.keyId,
       version: AppConstants.keyItemVersion,
       name: encryptedName,
       key: encryptedKey,
@@ -1455,7 +1455,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
       mdate: _modifiedDate,
     );
 
-    final itemMac = await cryptor.hmac256(keyItem.toRawJson());
+    final itemMac = await _cryptor.hmac256(keyItem.toRawJson());
     keyItem.mac = itemMac;
 
     final keyItemJson = keyItem.toRawJson();
@@ -1471,7 +1471,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
 
     /// save key item in keychain
     ///
-    final status = await keyManager.saveItem(uuid, genericItemString);
+    final status = await _keyManager.saveItem(uuid, genericItemString);
 
     if (status) {
       EasyLoading.showToast('Saved Item', duration: Duration(seconds: 1));
@@ -1509,7 +1509,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
   }
 
   void _confirmedDeleteItem() async {
-    final status = await keyManager.deleteItem((widget.id)!);
+    final status = await _keyManager.deleteItem((widget.id)!);
 
     if (status) {
       Navigator.of(context).pop();
@@ -1556,7 +1556,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                                 state(() {
                                   _tagTextController.text = "";
                                   _tagTextFieldValid = false;
-                                  _filteredTags = settingsManager.itemTags;
+                                  _filteredTags = _settingsManager.itemTags;
                                 });
 
                                 Navigator.of(context).pop();
@@ -1626,7 +1626,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                                         state(() {
                                           _tagTextController.text = "";
                                           _tagTextFieldValid = false;
-                                          _filteredTags = settingsManager.itemTags;
+                                          _filteredTags = _settingsManager.itemTags;
                                         });
                                       },
                                     ),
@@ -1685,16 +1685,16 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                                     _selectedTags.add(false);
                                   });
 
-                                  if (!settingsManager.itemTags
+                                  if (!_settingsManager.itemTags
                                       .contains(userTag)) {
                                     var updatedTagList =
-                                    settingsManager.itemTags.copy();
+                                    _settingsManager.itemTags.copy();
                                     updatedTagList.add(userTag);
 
                                     updatedTagList
                                         .sort((e1, e2) => e1.compareTo(e2));
 
-                                    settingsManager
+                                    _settingsManager
                                         .saveItemTags(updatedTagList);
 
                                     state(() {
@@ -1707,7 +1707,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                                   _isEditing = true;
                                   _tagTextController.text = "";
                                   _tagTextFieldValid = false;
-                                  _filteredTags = settingsManager.itemTags;
+                                  _filteredTags = _settingsManager.itemTags;
                                 });
 
                                 _validateFields();
@@ -1737,7 +1737,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                                 return ListTile(
                                   title: Text(
                                     _filteredTags[index],
-                                    // settingsManager.itemTags[index],
+                                    // _settingsManager.itemTags[index],
                                     // "test",
                                     style: TextStyle(
                                       color: isCurrentTag
@@ -1787,11 +1787,11 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
 
     if (text.isEmpty) {
       state(() {
-        _filteredTags = settingsManager.itemTags;
+        _filteredTags = _settingsManager.itemTags;
       });
     } else {
       _filteredTags = [];
-      for (var t in settingsManager.itemTags) {
+      for (var t in _settingsManager.itemTags) {
         if (t.contains(text)) {
           _filteredTags.add(t);
         }

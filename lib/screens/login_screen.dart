@@ -440,6 +440,10 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         logManager.log("LoginScreen", "didChangeAppLifecycleState",
             "AppLifecycleState: detached");
         break;
+      case AppLifecycleState.hidden:
+        logManager.logger.d("AppLifecycleState: hidden - LoginScreen");
+
+        break;
     }
   }
 

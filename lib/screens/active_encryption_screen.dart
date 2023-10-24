@@ -88,25 +88,25 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
   QRCodeEncryptedMessageItem? _qrMessageItem;
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final keyManager = KeychainManager();
-  final cryptor = Cryptor();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _keyManager = KeychainManager();
+  final _cryptor = Cryptor();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("ActiveEncryptionScreen", "initState", "initState");
+    _logManager.log("ActiveEncryptionScreen", "initState", "initState");
 
-    // logManager.logger.d("widget.id: ${widget.id}");
+    // _logManager.logger.d("widget.id: ${widget.id}");
 
     /// read key info from keychain
     _getItem();
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    _selectedIndex = settingsManager.currentTabIndex;
+    _selectedIndex = _settingsManager.currentTabIndex;
 
     _validateFields();
   }
@@ -116,7 +116,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     if (widget.keyItem == null) {
       _isRootSymmetric = true;
       /// get the password item and decrypt the data
-      keyManager.getItem(widget.id).then((value) async {
+      _keyManager.getItem(widget.id).then((value) async {
         final genericItem = GenericItem.fromRawJson(value);
 
         if (genericItem.type == "key") {
@@ -134,8 +134,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
             // print("keydata: ${keydata.length}: $keydata");
 
             /// TODO: set seedKey and encryption/auth keys
-            // final decrypedSeedData = await cryptor.decrypt(keydata);
-            final decrypedSeedData = await cryptor.decryptReturnData(keydata);
+            // final decrypedSeedData = await _cryptor.decrypt(keydata);
+            final decrypedSeedData = await _cryptor.decryptReturnData(keydata);
             var decodedSeedData = decrypedSeedData;
             if (_keyItem?.keyType == "sym") {
               decodedSeedData = base64.decode(utf8.decode(decrypedSeedData));
@@ -144,13 +144,13 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
             _seedKey = decodedSeedData;
 
-            final expanded = await cryptor.expandKey(_seedKey);
+            final expanded = await _cryptor.expandKey(_seedKey);
             if (AppConstants.debugKeyData) {
-              logManager.logger.d("decrypedSeedData: ${decrypedSeedData
+              _logManager.logger.d("decrypedSeedData: ${decrypedSeedData
                   .length}: $decrypedSeedData");
-              logManager.logger.d("decodedSeedData: ${decodedSeedData
+              _logManager.logger.d("decodedSeedData: ${decodedSeedData
                   .length}: $decodedSeedData");
-              logManager.logger.d("expanded: ${expanded.length}: $expanded");
+              _logManager.logger.d("expanded: ${expanded.length}: $expanded");
             }
 
 
@@ -162,7 +162,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
             var name = (_keyItem?.name)!;
 
 
-            cryptor.decrypt(name).then((value) {
+            _cryptor.decrypt(name).then((value) {
               name = value;
 
               _validateFields();
@@ -189,7 +189,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       var keyName = (widget.keyItem?.name)!;
 
 
-      final decryptedName = await cryptor.decrypt(keyName);
+      final decryptedName = await _cryptor.decrypt(keyName);
       setState(() {
         _mainKeyName = decryptedName;
       });
@@ -204,10 +204,10 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
           // if (peerKey.version != null) {
           //   version = (peerKey?.version)!;
           // }
-          final decryptedPeerPublicKey = await cryptor.decrypt(peerKey.key);
+          final decryptedPeerPublicKey = await _cryptor.decrypt(peerKey.key);
           // _peerPublicKey = base64.decode(decryptedPeerPublicKey);
 
-          final decryptedPeerName = await cryptor.decrypt(peerKey.name);
+          final decryptedPeerName = await _cryptor.decrypt(peerKey.name);
           // _peerKeyName = decryptedPeerName;
           setState(() {
             _peerPublicKey = base64.decode(decryptedPeerPublicKey);
@@ -217,8 +217,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       }
 
       /// TODO: set seedKey and encryption/auth keys
-      // final decrypedSeedData = await cryptor.decrypt(keydata);
-      final decrypedMainPrivateKeyData = await cryptor.decrypt(keydata);
+      // final decrypedSeedData = await _cryptor.decrypt(keydata);
+      final decrypedMainPrivateKeyData = await _cryptor.decrypt(keydata);
 
       // print("decrypedMainPrivateKeyData: $decrypedMainPrivateKeyData");
       // _mainPrivateKey = base64.decode(decrypedMainPrivateKeyData);
@@ -294,10 +294,10 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     // print('Shared secret: $sharedSecretBytes');
     // print('Shared secret hex: ${hex.encode(sharedSecretBytes)}');
 
-    // final sharedSecretKeyHash = await cryptor.sha256(hex.encode(sharedSecretBytes));
+    // final sharedSecretKeyHash = await _cryptor.sha256(hex.encode(sharedSecretBytes));
     // print("shared secret key hash: ${sharedSecretKeyHash}");
 
-    final expanded = await cryptor.expandKey(sharedSecretBytes);
+    final expanded = await _cryptor.expandKey(sharedSecretBytes);
     // print('Shared secret expanded: $expanded');
     _Kenc = expanded.sublist(0, 32);
     _Kauth = expanded.sublist(32, 64);
@@ -336,8 +336,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     _Kauth_rec = mac_auth_receive.bytes;
     _Kauth_send = mac_auth_send.bytes;
 
-    final toAddr = cryptor.sha256(hex.encode(_peerPublicKey)).substring(0, 40);
-    final fromAddr = cryptor.sha256(hex.encode(_mainPublicKey)).substring(0,40);
+    final toAddr = _cryptor.sha256(hex.encode(_peerPublicKey)).substring(0, 40);
+    final fromAddr = _cryptor.sha256(hex.encode(_mainPublicKey)).substring(0,40);
 
 
     setState(() {
@@ -346,10 +346,10 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     });
 
     if (AppConstants.debugKeyData) {
-      logManager.logger.d('secret _Kenc_recec: ${hex.encode(_Kenc_rec)}');
-      logManager.logger.d('secret _Kenc_sendend: ${hex.encode(_Kenc_send)}');
-      logManager.logger.d('secret _Kauth_recec: ${hex.encode(_Kauth_rec)}');
-      logManager.logger.d('secret _Kauth_sendend: ${hex.encode(_Kauth_send)}');
+      _logManager.logger.d('secret _Kenc_recec: ${hex.encode(_Kenc_rec)}');
+      _logManager.logger.d('secret _Kenc_sendend: ${hex.encode(_Kenc_send)}');
+      _logManager.logger.d('secret _Kauth_recec: ${hex.encode(_Kauth_rec)}');
+      _logManager.logger.d('secret _Kauth_sendend: ${hex.encode(_Kauth_send)}');
     }
   }
 
@@ -716,7 +716,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                         await Clipboard.setData(ClipboardData(
                             text: _messageTextController.text));
 
-                        settingsManager.setDidCopyToClipboard(true);
+                        _settingsManager.setDidCopyToClipboard(true);
 
                         EasyLoading.showToast('Copied',
                             duration: Duration(milliseconds: 500));
@@ -749,7 +749,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                         await Clipboard.setData(ClipboardData(
                             text: _messageTextController.text));
 
-                        settingsManager.setDidCopyToClipboard(true);
+                        _settingsManager.setDidCopyToClipboard(true);
 
                         EasyLoading.showToast('Copied',
                             duration: Duration(milliseconds: 500));
@@ -952,7 +952,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                           // await Clipboard.setData(ClipboardData(
                           //     text: _messageTextController.text));
                           //
-                          // settingsManager.setDidCopyToClipboard(true);
+                          // _settingsManager.setDidCopyToClipboard(true);
 
                           EasyLoading.showToast('Message Saved',
                               duration: Duration(milliseconds: 500));
@@ -1086,7 +1086,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
   void _validateFields() {
@@ -1122,14 +1122,14 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
   _pressedShareEncryptedMessage() {
 
     if (_qrMessageItem == null) {
-      logManager.logger.e("QR item empty 1");
+      _logManager.logger.e("QR item empty 1");
       return;
     }
 
     final qrItemString = _qrMessageItem?.toRawJson();
 
     if (qrItemString == null) {
-      logManager.logger.e("QR item empty 2");
+      _logManager.logger.e("QR item empty 2");
       return;
     }
 
@@ -1169,20 +1169,20 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     // print("message length: ${message.length}");
     /// TODO: need to encrypt with shared secret key
     ///
-    final encryptedMessage = await cryptor.encryptWithKey(_Kenc_send, _Kauth_send, message);
+    final encryptedMessage = await _cryptor.encryptWithKey(_Kenc_send, _Kauth_send, message);
     final encryptedBlobBytes = base64.decode(encryptedMessage);
 
     final iv = encryptedBlobBytes.sublist(0,16);
     final mac = encryptedBlobBytes.sublist(16,48);
     final blob = encryptedBlobBytes.sublist(48,encryptedBlobBytes.length);
 
-    logManager.logger.d("iv: ${hex.encode(iv)}\nmac: ${hex.encode(mac)}\nblob: ${hex.encode(blob)}");
-    // logManager.logger.d("mac: ${hex.encode(mac)}");
-    // logManager.logger.d("blob: ${hex.encode(blob)}");
+    _logManager.logger.d("iv: ${hex.encode(iv)}\nmac: ${hex.encode(mac)}\nblob: ${hex.encode(blob)}");
+    // _logManager.logger.d("mac: ${hex.encode(mac)}");
+    // _logManager.logger.d("blob: ${hex.encode(blob)}");
 
 
-    final toAddr = cryptor.sha256(hex.encode(_peerPublicKey)).substring(0, 40);
-    final fromAddr = cryptor.sha256(hex.encode(_mainPublicKey)).substring(0,40);
+    final toAddr = _cryptor.sha256(hex.encode(_peerPublicKey)).substring(0, 40);
+    final fromAddr = _cryptor.sha256(hex.encode(_mainPublicKey)).substring(0,40);
 
     final appendedMessage = "to:" + toAddr + ":" + encryptedMessage;
     // print("appendedMessage: ${appendedMessage.length}: $appendedMessage");
@@ -1200,7 +1200,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
     // print("message_send_plain json: ${message_send_plain.toRawJson().length}: ${message_send_plain.toJson()}");
 
-    final msg_hash = cryptor.sha256(message_send_plain.toRawJson());
+    final msg_hash = _cryptor.sha256(message_send_plain.toRawJson());
     // print("msg_hash: ${msg_hash.length}: ${msg_hash}");
 
     final msgHashKey = SecretKey(hex.decode(msg_hash));
@@ -1243,7 +1243,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
     final qrItemString = _qrMessageItem?.toRawJson();
     if (qrItemString != null) {
-      // logManager.logger.d("qrItemString length: ${qrItemString.length}");
+      // _logManager.logger.d("qrItemString length: ${qrItemString.length}");
 
       /// limit ability to show code for messages within code limit
       if (qrItemString.length >= 1286) {
@@ -1274,7 +1274,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       /// decode this into an EncryptedPeerMessage object
       messageItem = EncryptedPeerMessage.fromRawJson(message);
     } catch (e) {
-      logManager.logger.e("Exception: decrypt: $e");
+      _logManager.logger.e("Exception: decrypt: $e");
       setState(() {
         _didEncrypt = false;
         _didDecryptSuccessfully = false;
@@ -1302,8 +1302,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     }
 
     /// check against the from and to address
-    final toAddr = cryptor.sha256(base64.encode(_peerPublicKey)).substring(0, 40);
-    final fromAddr = cryptor.sha256(base64.encode(_mainPublicKey)).substring(0,40);
+    final toAddr = _cryptor.sha256(base64.encode(_peerPublicKey)).substring(0, 40);
+    final fromAddr = _cryptor.sha256(base64.encode(_mainPublicKey)).substring(0,40);
 
     final messageFromAddr = messageItem.from;
     final messageToAddr = messageItem.to;
@@ -1332,7 +1332,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
         jmac: "",
     );
 
-    final msg_rec_hash = cryptor.sha256(check_received_message.toRawJson());
+    final msg_rec_hash = _cryptor.sha256(check_received_message.toRawJson());
     // print("msg_rec_hash: ${msg_rec_hash}");
 
     final msgRecHashKey = SecretKey(hex.decode(msg_rec_hash));
@@ -1350,7 +1350,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
         _didEncrypt = false;
         _didDecryptSuccessfully = false;
       });
-      logManager.logger.w("JMACs DO NOT Equal!!");
+      _logManager.logger.w("JMACs DO NOT Equal!!");
       return;
     }
 
@@ -1359,7 +1359,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
 
     /// need to decrypt with shared secret key
-    final decryptedMessage = await cryptor.decryptWithKey(Kuse_e, Kuse_a, messageItem.message);
+    final decryptedMessage = await _cryptor.decryptWithKey(Kuse_e, Kuse_a, messageItem.message);
 
     if (decryptedMessage == null) {
       setState(() {
@@ -1396,7 +1396,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
     final qrItemString = _qrMessageItem?.toRawJson();
     if (qrItemString != null) {
-      logManager.logger.d("qrItemString length: ${qrItemString.length}");
+      _logManager.logger.d("qrItemString length: ${qrItemString.length}");
 
       /// limit ability to show code for messages within code limit
       if (qrItemString.length >= 1286) {
@@ -1431,7 +1431,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
         });
       }
     } catch (e) {
-      logManager.logger.e("Exception: Decrypt: ${e}");
+      _logManager.logger.e("Exception: Decrypt: ${e}");
       setState((){
         _hasEmbeddedMessageObject = false;
         _showShareMessageAsQRCode = false;

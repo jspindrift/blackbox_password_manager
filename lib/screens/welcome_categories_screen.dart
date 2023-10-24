@@ -1,12 +1,6 @@
-import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
-
-import 'package:argon2/argon2.dart';
 import '../screens/key_list_screen.dart';
 import '../screens/welcome_all_list_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:enum_to_string/enum_to_string.dart';
 import "package:flutter_easyloading/flutter_easyloading.dart";
 import "package:bip39/bip39.dart" as bip39;
 
@@ -22,7 +16,6 @@ import '../screens/add_password_screen.dart';
 import '../screens/add_note_screen.dart';
 import '../screens/note_list_screen.dart';
 import '../screens/welcome_screen.dart';
-import 'add_key_item_screen.dart';
 import 'add_public_encryption_key_screen.dart';
 
 
@@ -52,18 +45,18 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
   List<String> _allTags = [];
   List<String> _decryptedPasswordList = [];
 
-  final keyManager = KeychainManager();
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final cryptor = Cryptor();
+  final _keyManager = KeychainManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _cryptor = Cryptor();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("WelcomeCategoriesScreen", "initState", "initState");
+    _logManager.log("WelcomeCategoriesScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
     _getAvailableCategories();
   }
@@ -75,7 +68,7 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
     _allTags = [];
     _decryptedPasswordList = [];
 
-    final items = await keyManager.getAllItems();
+    final items = await _keyManager.getAllItems();
 
     // iterate through items
     for (var item in items.list) {
@@ -112,7 +105,7 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
 
           if (passwordItem.geoLock == null) {
             final decryptedPassword =
-                await cryptor.decrypt(passwordItem.password);
+                await _cryptor.decrypt(passwordItem.password);
             if (passwordItem.isBip39) {
               final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
               _decryptedPasswordList.add(mnemonic);
@@ -183,7 +176,7 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
 
     _allTags.sort((e1, e2) => e1.compareTo(e2));
 
-    settingsManager.saveItemTags(_allTags);
+    _settingsManager.saveItemTags(_allTags);
 
     _availableCategories = [];
     var tempCategoryCounts = [];
@@ -605,7 +598,7 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
                                 state(() {
                                   // _tagTextController.text = "";
                                   // _tagTextFieldValid = false;
-                                  // _filteredTags = settingsManager.itemTags;
+                                  // _filteredTags = _settingsManager.itemTags;
                                 });
 
                                 Navigator.of(context).pop();

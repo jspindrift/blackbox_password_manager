@@ -108,30 +108,30 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
 
   String _dropdownValue = delimeterList.first;
 
-  final cryptor = Cryptor();
-  final keyManager = KeychainManager();
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final geolocationManager = GeoLocationManager();
+  final _cryptor = Cryptor();
+  final _keyManager = KeychainManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _geolocationManager = GeoLocationManager();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("AddPasswordScreen", "initState", "initState");
+    _logManager.log("AddPasswordScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
-    _selectedIndex = settingsManager.currentTabIndex;
-    _filteredTags = settingsManager.itemTags;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
+    _selectedIndex = _settingsManager.currentTabIndex;
+    _filteredTags = _settingsManager.itemTags;
 
     if (_testGeoLock) {
-      if (geolocationManager.geoLocationUpdate == null) {
-        geolocationManager.initialize();
+      if (_geolocationManager.geoLocationUpdate == null) {
+        _geolocationManager.initialize();
       }
     }
 
-    _isLocationSettingsEnabled = geolocationManager.isLocationSettingsEnabled;
-    logManager.logger.d("_isLocationSettingsEnabled: $_isLocationSettingsEnabled");
+    _isLocationSettingsEnabled = _geolocationManager.isLocationSettingsEnabled;
+    _logManager.logger.d("_isLocationSettingsEnabled: $_isLocationSettingsEnabled");
 
     /// We do this so tags show up in the UI when added.
     /// Not sure why this works but it does
@@ -829,7 +829,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
   /// validate that we have values in all the necessary fields
@@ -1437,7 +1437,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                             state(() {
                               _tagTextController.text = "";
                               _tagTextFieldValid = false;
-                              _filteredTags = settingsManager.itemTags;
+                              _filteredTags = _settingsManager.itemTags;
                             });
 
                             Navigator.of(context).pop();
@@ -1507,7 +1507,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                                     state(() {
                                       _tagTextController.text = "";
                                       _tagTextFieldValid = false;
-                                      _filteredTags = settingsManager.itemTags;
+                                      _filteredTags = _settingsManager.itemTags;
                                     });
                                   },
                                 ),
@@ -1569,10 +1569,10 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                                       _selectedTags.add(false);
                                     });
 
-                                    if (!settingsManager.itemTags
+                                    if (!_settingsManager.itemTags
                                         .contains(userTag)) {
                                       var updatedTagList =
-                                          settingsManager.itemTags.copy();
+                                          _settingsManager.itemTags.copy();
                                       updatedTagList.add(userTag);
 
                                       updatedTagList
@@ -1630,7 +1630,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                             var tagTile = ListTile(
                               title: Text(
                                 _filteredTags[index],
-                                // settingsManager.itemTags[index],
+                                // _settingsManager.itemTags[index],
                                 // "test",
                                 style: TextStyle(
                                   color: isCurrentTag
@@ -1697,11 +1697,11 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
 
     if (text.isEmpty) {
       state(() {
-        _filteredTags = settingsManager.itemTags;
+        _filteredTags = _settingsManager.itemTags;
       });
     } else {
       _filteredTags = [];
-      for (var t in settingsManager.itemTags) {
+      for (var t in _settingsManager.itemTags) {
         if (t.contains(text)) {
           // state(() {
           _filteredTags.add(t);
@@ -1715,7 +1715,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
   /// save the new password item
   Future<void> _pressedSaveItem() async {
     final createDate = DateTime.now().toIso8601String();
-    final uuid = cryptor.getUUID();
+    final uuid = _cryptor.getUUID();
 
     final name = _nameTextController.text;
     final username = _usernameTextController.text;
@@ -1724,7 +1724,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
 
     final passwordItem = PasswordItem(
       id: uuid,
-      keyId: keyManager.keyId,
+      keyId: _keyManager.keyId,
       version: AppConstants.passwordItemVersion,
       name: name, //encryptedName,
       username: username, //encryptedUsername,
@@ -1741,20 +1741,20 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
     );
 
     /// encrypt our parameters
-    await passwordItem.encryptParams(_isGeoLockedEnabled ? geolocationManager.geoLocationUpdate : null);
+    await passwordItem.encryptParams(_isGeoLockedEnabled ? _geolocationManager.geoLocationUpdate : null);
 
     final passwordItemString = passwordItem.toRawJson();
-    // logManager.logger.d('passwordItem toRawJson: ${passwordItemString}');
+    // _logManager.logger.d('passwordItem toRawJson: ${passwordItemString}');
 
 
     final genericItem = GenericItem(type: "password", data: passwordItemString);
-    // logManager.logger.d('genericItem toRawJson: ${genericItem.toRawJson()}');
+    // _logManager.logger.d('genericItem toRawJson: ${genericItem.toRawJson()}');
 
     final genericItemString = genericItem.toRawJson();
-    // final generalItemHash = cryptor.sha256(genericItemString);
+    // final generalItemHash = _cryptor.sha256(genericItemString);
     // print('generalItemHash:$uuid: ${generalItemHash}');
 
-    final status = await keyManager.saveItem(uuid, genericItemString);
+    final status = await _keyManager.saveItem(uuid, genericItemString);
 
     if (status) {
       Navigator.of(context).pop('savedItem');

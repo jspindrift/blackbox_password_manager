@@ -7,7 +7,6 @@ import '../screens/add_public_encryption_key_screen.dart';
 import '../screens/edit_public_encryption_key_screen.dart';
 import '../screens/peer_public_key_list_screen.dart';
 import '../screens/rekey_auth_screen.dart';
-import '../screens/secret_codes_screen.dart';
 import '../screens/show_log_detail2_screen.dart';
 import '../screens/welcome_all_list_screen.dart';
 import 'package:flutter/material.dart';
@@ -147,7 +146,6 @@ class MyApp extends StatelessWidget {
                 isEncrypted: false,
               ),
           RecoveryModeScreen.routeName: (ctx) => RecoveryModeScreen(),
-          SecretCodesScreen.routeName: (ctx) => SecretCodesScreen(),
           AddKeyItemScreen.routeName: (ctx) => AddKeyItemScreen(),
           WelcomeAllListScreen.routeName: (ctx) => WelcomeAllListScreen(),
           ActiveEncryptionScreen.routeName: (ctx) => ActiveEncryptionScreen(

@@ -59,28 +59,28 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   bool _isDarkModeEnabled = false;
 
-  final keyManager = KeychainManager();
-  final settingsManager = SettingsManager();
-  final cryptor = Cryptor();
-  final logManager = LogManager();
+  final _keyManager = KeychainManager();
+  final _settingsManager = SettingsManager();
+  final _cryptor = Cryptor();
+  final _logManager = LogManager();
 
   @override
   void initState() {
     super.initState();
 
     setState(() {
-      _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+      _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
     });
 
-    _selectedIndex = settingsManager.currentTabIndex;
+    _selectedIndex = _settingsManager.currentTabIndex;
     // print("_selectedIndex: $_selectedIndex");
 
-    // keyManager.readRecoveryPasscodeKey();
+    // _keyManager.readRecoveryPasscodeKey();
 
-    logManager.log("WelcomeScreen", "initState", "initState");
-    // logManager.logger.d("WelcomeScreen - initState");
+    _logManager.log("WelcomeScreen", "initState", "initState");
+    // _logManager.logger.d("WelcomeScreen - initState");
 
-    keyManager.getAllItems().then((value) {
+    _keyManager.getAllItems().then((value) {
       // passwordList = value;
       // passwordListByDate = value;
 
@@ -133,7 +133,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         // if (passwordItem?.keyIndex != null) {
         //   keyIndex = (passwordItem?.keyIndex)!;
         // }
-        final decryptedName = await cryptor.decrypt(passwordItem.name);
+        final decryptedName = await _cryptor.decrypt(passwordItem.name);
         var thisItem = items.list.firstWhere((element) {
           if (element.type == "password") {
             var checkItem = PasswordItem.fromRawJson(element.data);
@@ -150,14 +150,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
         // print("thisItem: $updatedPasswordItem");
         updatedPasswordItem.name = decryptedName;
-        final decryptedUsername = await cryptor.decrypt(passwordItem.username);
+        final decryptedUsername = await _cryptor.decrypt(passwordItem.username);
         updatedPasswordItem.username = decryptedUsername;
 
         /// TODO: get all passwords (decrypted) and hold to flag any reused passwords
         ///
         if (passwordItem.geoLock == null) {
           final decryptedPassword =
-              await cryptor.decrypt(passwordItem.password);
+              await _cryptor.decrypt(passwordItem.password);
 
           if (passwordItem.isBip39) {
             final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
@@ -186,7 +186,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   /// get password items, sort and filter
   void _updatePasswordItemList() async {
-    final items = await keyManager.getAllItems(); //.then((value) {
+    final items = await _keyManager.getAllItems(); //.then((value) {
     // passwordList = value;
     // passwordListByDate = value;
 
@@ -500,7 +500,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     try {
       /// get item by id and convert
       ///
-      final itemString = await keyManager.getItem(id);
+      final itemString = await _keyManager.getItem(id);
       final item = PasswordItem.fromRawJson(itemString);
 
       /// get item fields
@@ -525,9 +525,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       //   keyIndex = (item?.keyIndex)!;
       // }
 
-      final name = await cryptor.decrypt(encryptedName);
-      final username = await cryptor.decrypt(encryptedUsername);
-      final password = await cryptor.decrypt(encryptedPassword);
+      final name = await _cryptor.decrypt(encryptedName);
+      final username = await _cryptor.decrypt(encryptedUsername);
+      final password = await _cryptor.decrypt(encryptedPassword);
 
       /// build QR Code item
       ///
@@ -576,7 +576,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             icon: Icon(Icons.camera),
             color: _isDarkModeEnabled ? Colors.greenAccent : null,
             onPressed: () async {
-              settingsManager.setIsScanningQRCode(true);
+              _settingsManager.setIsScanningQRCode(true);
 
               await _scanQR();
             },
@@ -752,7 +752,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
             "#ff6666", "Cancel", true, ScanMode.QR);
 
-        settingsManager.setIsScanningQRCode(false);
+        _settingsManager.setIsScanningQRCode(false);
 
         /// user pressed cancel
         if (barcodeScanRes == "-1") {
@@ -770,11 +770,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             _showErrorDialog("Invalid code format");
           }
         } catch (e) {
-          logManager.logger.w("exception: $e");
+          _logManager.logger.w("exception: $e");
         }
       } on PlatformException {
         barcodeScanRes = "Failed to get platform version.";
-        logManager.logger.w("Platform exception");
+        _logManager.logger.w("Platform exception");
       }
     } else if (Platform.isAndroid) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -782,7 +782,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             .push(MaterialPageRoute(
           builder: (context) => QRScanView(),
         )).then((value) {
-          settingsManager.setIsScanningQRCode(false);
+          _settingsManager.setIsScanningQRCode(false);
 
           try {
             QRCodeItem item = QRCodeItem.fromRawJson(value);
@@ -797,7 +797,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             }
           } catch (e) {
             _showErrorDialog("Exception: $e");
-            logManager.logger.w("Exception: $e");
+            _logManager.logger.w("Exception: $e");
           }
         });
       });
@@ -812,13 +812,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
 
   Future<void> _saveScannedItem(QRCodeItem item) async {
     final createDate = DateTime.now();
-    final uuid = cryptor.getUUID();
+    final uuid = _cryptor.getUUID();
 
     final name = item.name;
     final username = item.username;
@@ -826,8 +826,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
     // /// Encrypt password and items here
     // /// ...
-    // final encryptedName = await cryptor.encrypt(name);
-    // final encryptedUsername = await cryptor.encrypt(username);
+    // final encryptedName = await _cryptor.encrypt(name);
+    // final encryptedUsername = await _cryptor.encrypt(username);
     //
     var isBip39Valid = bip39.validateMnemonic(password);
     //
@@ -836,18 +836,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     //   final seed = bip39.mnemonicToEntropy(password);
     //
     //   /// Encrypt seed here
-    //   encryptedPassword = await cryptor.encrypt(seed);
+    //   encryptedPassword = await _cryptor.encrypt(seed);
     // } else {
     //   /// Encrypt password here
-    //   encryptedPassword = await cryptor.encrypt(password);
+    //   encryptedPassword = await _cryptor.encrypt(password);
     // }
     //
     // /// Encrypt notes
-    // final encryptedNotes = await cryptor.encrypt("");
+    // final encryptedNotes = await _cryptor.encrypt("");
 
     final passwordItem = PasswordItem(
       id: uuid,
-      keyId: keyManager.keyId,
+      keyId: _keyManager.keyId,
       version: AppConstants.passwordItemVersion,
       name: name, //encryptedName,
       username: username, //encryptedUsername,
@@ -866,14 +866,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     await passwordItem.encryptParams(null);
 
     final passwordItemString = passwordItem.toRawJson();
-    // logManager.logger.d("passwordItem toRawJson: $passwordItemString");
+    // _logManager.logger.d("passwordItem toRawJson: $passwordItemString");
 
     final genericItem = GenericItem(type: "password", data: passwordItemString);
     // print('genericItem toRawJson: ${genericItem.toRawJson()}');
 
     final genericItemString = genericItem.toRawJson();
 
-    final status = await keyManager.saveItem(uuid, genericItemString);
+    final status = await _keyManager.saveItem(uuid, genericItemString);
     // print("passwordItem status: $status");
 
     if (status) {
@@ -888,7 +888,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   void _duplicateItem(String id) async {
     try {
       /// get item by id and convert
-      final itemString = await keyManager.getItem(id);
+      final itemString = await _keyManager.getItem(id);
 
       final item = GenericItem.fromRawJson(itemString);
 
@@ -903,7 +903,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
       /// get timestamp and uuid
       final timestamp = DateTime.now();
-      final uuid = cryptor.getUUID();
+      final uuid = _cryptor.getUUID();
 
       final encryptedName = (passwordItem?.name)!;
       final encryptedUsername = (passwordItem?.username)!;
@@ -914,32 +914,32 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
       /// decrypt fields
       ///
-      final name = await cryptor.decrypt(encryptedName);
-      final username = await cryptor.decrypt(encryptedUsername);
+      final name = await _cryptor.decrypt(encryptedName);
+      final username = await _cryptor.decrypt(encryptedUsername);
 
       /// if bip39, password is the seed hex
-      var password = await cryptor.decrypt(encryptedPassword);
+      var password = await _cryptor.decrypt(encryptedPassword);
 
       /// TODO: change to use key index on encryption
       /// re-encrypt item fields
       ///
       final isBip39 = (passwordItem?.isBip39)!;
       if (isBip39) {
-        password = cryptor.entropyToMnemonic(password);
+        password = _cryptor.entropyToMnemonic(password);
       }
 
-      // final reEncryptedName = await cryptor.encrypt(name);
-      // final reEncryptedUsername = await cryptor.encrypt(username);
+      // final reEncryptedName = await _cryptor.encrypt(name);
+      // final reEncryptedUsername = await _cryptor.encrypt(username);
       //
       // /// Encrypt seed here
-      // final reEncryptedPassword = await cryptor.encrypt(password);
-      // final reEncryptedNotes = await cryptor.encrypt("");
+      // final reEncryptedPassword = await _cryptor.encrypt(password);
+      // final reEncryptedNotes = await _cryptor.encrypt("");
 
       /// build item
       ///
       final newPasswordItem = PasswordItem(
         id: uuid,
-        keyId: keyManager.keyId,
+        keyId: _keyManager.keyId,
         version: AppConstants.passwordItemVersion,
         name: name, //reEncryptedName,
         username: username, //reEncryptedUsername,
@@ -970,7 +970,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
       /// save item
       ///
-      final status = await keyManager.saveItem(uuid, genericItemString);
+      final status = await _keyManager.saveItem(uuid, genericItemString);
 
       /// open edit_password screen with newly duplicated item
       ///
@@ -991,7 +991,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       }
     } catch (e) {
       _showErrorDialog("Could not duplicate item: $e");
-      logManager.logger.d("$e");
+      _logManager.logger.d("$e");
     }
   }
 
@@ -1015,7 +1015,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             ),
             onPressed: () async {
               /// delete the item using id
-              final status = await keyManager.deleteItem(id);
+              final status = await _keyManager.deleteItem(id);
 
               Navigator.of(context).pop();
               if (status) {

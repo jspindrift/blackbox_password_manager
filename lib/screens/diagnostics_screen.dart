@@ -29,52 +29,52 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
   int _numberOfPasswordItems = 0;
   int _passwordFileSize = 0;
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final keyManager = KeychainManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _keyManager = KeychainManager();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("DiagnosticsScreen", "initState", "initState");
+    _logManager.log("DiagnosticsScreen", "initState", "initState");
 
-    logManager.getLogFileSize().then((value) {
+    _logManager.getLogFileSize().then((value) {
       setState(() {
         _logFileSize = value;
       });
     });
 
-    logManager.verifyLogFile().then((value) {
+    _logManager.verifyLogFile().then((value) {
       setState(() {
         _logsAreValid = value!;
       });
     });
 
-    _numberOfPasswordItems = keyManager.numberOfPasswordItems;
-    _passwordFileSize = keyManager.passwordItemsSize;
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
-    _selectedIndex = settingsManager.currentTabIndex;
+    _numberOfPasswordItems = _keyManager.numberOfPasswordItems;
+    _passwordFileSize = _keyManager.passwordItemsSize;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
+    _selectedIndex = _settingsManager.currentTabIndex;
   }
 
   @override
   Widget build(BuildContext context) {
-    // final seconds = logManager.lifeTimeInSeconds;
+    // final seconds = _logManager.lifeTimeInSeconds;
     // final minutes = seconds/60;
     // final hours = seconds/3600;
     // final days = seconds/(24*3600);
 
     // final timeString = days > 0 ? "$days days" : "";
 
-    logManager.getLogFileSize().then((value) {
+    _logManager.getLogFileSize().then((value) {
       _logFileSize = value;
     });
 
-    logManager.verifyLogFile().then((value) {
+    _logManager.verifyLogFile().then((value) {
       _logsAreValid = value!;
     });
 
-    _numberOfPasswordItems = keyManager.numberOfPasswordItems;
+    _numberOfPasswordItems = _keyManager.numberOfPasswordItems;
 
     if (_logFileSize > 1024) {
       _logFileSizeScaled = _logFileSize / 1024;
@@ -144,20 +144,20 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                       builder: (context) => ShowLogsScreen(),
                     ),
                   ).then((value) {
-                    logManager.getLogFileSize().then((value) {
+                    _logManager.getLogFileSize().then((value) {
                       setState(() {
                         _logFileSize = value;
                       });
                     });
 
-                    logManager.verifyLogFile().then((value) {
+                    _logManager.verifyLogFile().then((value) {
                       // print("verify: $value");
                       setState(() {
                         _logsAreValid = value!;
                       });
                     });
 
-                    _numberOfPasswordItems = keyManager.numberOfPasswordItems;
+                    _numberOfPasswordItems = _keyManager.numberOfPasswordItems;
                   });
                 },
               ),
@@ -196,7 +196,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                           color: _isDarkModeEnabled ? Colors.white : null),
                     ),
                     subtitle: Text(
-                      "lifetime: ${logManager.lifeTimeInSeconds} seconds\nusage: ${logManager.appUsageInSeconds} seconds\n${(100 * logManager.appUsageInSeconds / logManager.lifeTimeInSeconds).toStringAsFixed(2)}%",
+                      "lifetime: ${_logManager.lifeTimeInSeconds} seconds\nusage: ${_logManager.appUsageInSeconds} seconds\n${(100 * _logManager.appUsageInSeconds / _logManager.lifeTimeInSeconds).toStringAsFixed(2)}%",
                       style: TextStyle(
                           color: _isDarkModeEnabled ? Colors.white : null),
                     ),
@@ -304,11 +304,11 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
   void deleteLogs() {
-    logManager.deleteLogFile();
+    _logManager.deleteLogFile();
     setState(() {});
   }
 

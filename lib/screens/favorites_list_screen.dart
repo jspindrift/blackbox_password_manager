@@ -39,19 +39,19 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
 
   final _allCategories = ["Password", "Secure Note", "Key"];
 
-  final keyManager = KeychainManager();
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final cryptor = Cryptor();
+  final _keyManager = KeychainManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _cryptor = Cryptor();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("FavoritesListScreen", "initState", "initState");
-    logManager.logger.d("FavoritesListScreen - initState");
+    _logManager.log("FavoritesListScreen", "initState", "initState");
+    _logManager.logger.d("FavoritesListScreen - initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
     _getFavoriteItems();
   }
@@ -61,7 +61,7 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
     _allTags = [];
     _decryptedPasswordList = [];
 
-    final items = await keyManager.getAllItems() as GenericItemList;
+    final items = await _keyManager.getAllItems() as GenericItemList;
 
     // iterate through items
     for (var item in items.list) {
@@ -76,9 +76,9 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
           // final keyIndex = (passwordItem.keyIndex)!;
 
           if (passwordItem.favorite) {
-            final decryptedName = await cryptor.decrypt(passwordItem.name);
+            final decryptedName = await _cryptor.decrypt(passwordItem.name);
             final decryptedUsername =
-                await cryptor.decrypt(passwordItem.username);
+                await _cryptor.decrypt(passwordItem.username);
 
             passwordItem.name = decryptedName;
             passwordItem.username = decryptedUsername;
@@ -88,7 +88,7 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
 
           if (passwordItem.geoLock == null) {
             final decryptedPassword =
-                await cryptor.decrypt(passwordItem.password);
+                await _cryptor.decrypt(passwordItem.password);
             if (passwordItem.isBip39) {
               final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
               _decryptedPasswordList.add(mnemonic);
@@ -114,8 +114,8 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
 
           if (noteItem.favorite) {
             if (noteItem.geoLock == null) {
-              final decryptedName = await cryptor.decrypt(noteItem.name);
-              final decryptedNote = await cryptor.decrypt(noteItem.notes);
+              final decryptedName = await _cryptor.decrypt(noteItem.name);
+              final decryptedNote = await _cryptor.decrypt(noteItem.notes);
               noteItem.name = decryptedName;
               noteItem.notes = decryptedNote;
             }
@@ -133,10 +133,10 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
           // final keyIndex = (keyItem.keyIndex)!;
 
           if (keyItem.favorite) {
-            final decryptedName = await cryptor.decrypt(keyItem.name);
+            final decryptedName = await _cryptor.decrypt(keyItem.name);
             keyItem.name = decryptedName;
 
-            final decryptedNote = await cryptor.decrypt(keyItem.notes);
+            final decryptedNote = await _cryptor.decrypt(keyItem.notes);
             keyItem.notes = decryptedNote;
 
             _favoriteItems.add(keyItem);
@@ -158,7 +158,7 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
     _allTags.sort((e1, e2) => e1.compareTo(e2));
     // print("favorites _allTags: $_allTags");
 
-    settingsManager.saveItemTags(_allTags);
+    _settingsManager.saveItemTags(_allTags);
 
     // print("_passwordsWithTag: $_passwordsWithTag");
     // print("_decryptedPasswordList:${_decryptedPasswordList.length}: $_decryptedPasswordList");
@@ -646,7 +646,7 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
                                 state(() {
                                   // _tagTextController.text = "";
                                   // _tagTextFieldValid = false;
-                                  // _filteredTags = settingsManager.itemTags;
+                                  // _filteredTags = _settingsManager.itemTags;
                                 });
 
                                 Navigator.of(context).pop();

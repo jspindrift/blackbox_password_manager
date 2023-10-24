@@ -95,16 +95,16 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
   final algorithm_nomac = AesCtr.with256bits(macAlgorithm: MacAlgorithm.empty);
 
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final keyManager = KeychainManager();
-  final cryptor = Cryptor();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _keyManager = KeychainManager();
+  final _cryptor = Cryptor();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("AddPeerPublicKeyScreen", "initState", "initState");
+    _logManager.log("AddPeerPublicKeyScreen", "initState", "initState");
 
     _mainKeyItem = widget.keyItem;
 
@@ -119,7 +119,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
 
     // final keyIndex = (widget.keyItem.keyIndex)!;
     /// decrypt root seed and expand
-    cryptor.decrypt(widget.keyItem.key).then((value) {
+    _cryptor.decrypt(widget.keyItem.key).then((value) {
       final decryptedSeedData = value;
       // print("decryptedSeedData: ${decryptedSeedData}");
 
@@ -174,15 +174,15 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
     //   _peerPublicKeys = [];
     // }
 
-    // _filteredTags = settingsManager.itemTags;
-    for (var tag in settingsManager.itemTags) {
+    // _filteredTags = _settingsManager.itemTags;
+    for (var tag in _settingsManager.itemTags) {
       _selectedTags.add(false);
       // _filteredTags.add(tag);
     }
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    _selectedIndex = settingsManager.currentTabIndex;
+    _selectedIndex = _settingsManager.currentTabIndex;
 
     _validateFields();
 
@@ -1189,11 +1189,11 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
   Future<void> _scanCode(BuildContext context) async {
-    settingsManager.setIsScanningQRCode(true);
+    _settingsManager.setIsScanningQRCode(true);
 
     /// TODO: fix the Android bug that does not let the camera operate
     if (Platform.isIOS) {
@@ -1205,7 +1205,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
           builder: (context) => QRScanView(),
         ))
             .then((value) {
-          settingsManager.setIsScanningQRCode(false);
+          _settingsManager.setIsScanningQRCode(false);
 
           try {
             QRCodeKeyItem item =
@@ -1234,7 +1234,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
       barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
           "#ff6666", "Cancel", true, ScanMode.QR);
 
-      settingsManager.setIsScanningQRCode(false);
+      _settingsManager.setIsScanningQRCode(false);
 
       /// user pressed cancel
       if (barcodeScanRes == "-1") {
@@ -1253,14 +1253,14 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
           _showErrorDialog("Invalid code format");
         }
       } catch (e) {
-        logManager.logger.w("Platform exception: $e");
+        _logManager.logger.w("Platform exception: $e");
 
         /// decide to decrypt or save item.
         _showErrorDialog("Invalid code format");
       }
     } on PlatformException {
       barcodeScanRes = "Failed to get platform version.";
-      logManager.logger.w("Platform exception");
+      _logManager.logger.w("Platform exception");
     }
   }
 
@@ -1407,7 +1407,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
         }
       }
     } catch (e) {
-      logManager.logger.d("Platform Exception: $e");
+      _logManager.logger.d("Platform Exception: $e");
       setState(() {
         _fieldsAreValid = false;
       });
@@ -1484,7 +1484,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
     // print('peer Public Key Hex: ${hex.encode(bobPublicKey.bytes)}');
 
     // final mypublicKeyExchange = await mainKeyPair.extractPublicKey();
-    // final ahash = cryptor.sha256(hex.encode(mypublicKeyExchange.bytes));
+    // final ahash = _cryptor.sha256(hex.encode(mypublicKeyExchange.bytes));
 
     // We can now calculate a shared secret.
     final sharedSecret = await algorithm.sharedSecretKey(
@@ -1493,7 +1493,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
     );
     final sharedSecretBytes = await sharedSecret.extractBytes();
 
-    final sharedSecretKeyHash = await cryptor.sha256(hex.encode(sharedSecretBytes));
+    final sharedSecretKeyHash = await _cryptor.sha256(hex.encode(sharedSecretBytes));
     // final code = RecoveryKeyCode(id: ahash, key: hex.encode(sharedSecretBytes));
     // print("secret key bytes: ${sharedSecretBytes}");
     // print("secret key hex: ${hex.encode(sharedSecretBytes)}");
@@ -1504,7 +1504,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
     });
 
     /// expand our shared secret
-    final expanded = await cryptor.expandKey(sharedSecretBytes);
+    final expanded = await _cryptor.expandKey(sharedSecretBytes);
     // print('Shared secret expanded: $expanded');
 
     setState(() { //async {
@@ -1520,10 +1520,10 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
     );
 
     _Kmac = checkMac.bytes;
-    _Kxor = cryptor.xor(Uint8List.fromList(_Kenc), Uint8List.fromList(_Kauth));
+    _Kxor = _cryptor.xor(Uint8List.fromList(_Kenc), Uint8List.fromList(_Kauth));
 
-    // logManager.logger.d("KXOR: ${hex.encode(_Kxor)}");
-    // logManager.logger.d("KMAC: ${hex.encode(_Kmac)}");
+    // _logManager.logger.d("KXOR: ${hex.encode(_Kxor)}");
+    // _logManager.logger.d("KMAC: ${hex.encode(_Kmac)}");
 
 
     _calculateOTPToken();
@@ -1548,7 +1548,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
     }
     // final createdDate = (_mainKeyItem?.cdate)!;
      var createdDate = DateTime.now().toIso8601String();
-    var peer_uuid = cryptor.getUUID();
+    var peer_uuid = _cryptor.getUUID();
 
     final peerName = _peerNameTextController.text;
     final peerNotes = _notesTextController.text;
@@ -1562,16 +1562,16 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
 
     /// we don't neet to re-encrypt key items
     ///
-    // final encryptedName = await cryptor.encrypt(name);
+    // final encryptedName = await _cryptor.encrypt(name);
     //
-    // final encryptedNotes = await cryptor.encrypt(notes);
-    // final encryptedKey = await cryptor.encrypt(hex.encode(_mainPrivKey));
+    // final encryptedNotes = await _cryptor.encrypt(notes);
+    // final encryptedKey = await _cryptor.encrypt(hex.encode(_mainPrivKey));
     final encodedLength = utf8.encode(peerName).length + utf8.encode(peerNotes).length + utf8.encode(peerPubKey).length;
-    final keyIndex = settingsManager.doEncryption(encodedLength);
-    // logManager.logger.d("keyIndex: $keyIndex");
+    final keyIndex = _settingsManager.doEncryption(encodedLength);
+    // _logManager.logger.d("keyIndex: $keyIndex");
 
-    final encryptedPeerName = await cryptor.encrypt(peerName);
-    final encryptedPeerNotes = await cryptor.encrypt(peerNotes);
+    final encryptedPeerName = await _cryptor.encrypt(peerName);
+    final encryptedPeerNotes = await _cryptor.encrypt(peerNotes);
 
     var encryptedPeerPublicKey = "";
 
@@ -1579,15 +1579,15 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
       // print("_importedKeyDataTextController.text: ${_importedKeyDataTextController.text}");
       if (_isImportedKeyBase64) {
         encryptedPeerPublicKey =
-        await cryptor.encrypt(_importedKeyDataTextController.text);
+        await _cryptor.encrypt(_importedKeyDataTextController.text);
       } else if (_isImportedKeyHex) {
         encryptedPeerPublicKey =
-        await cryptor.encrypt(base64.encode(hex.decode(_importedKeyDataTextController.text)));
+        await _cryptor.encrypt(base64.encode(hex.decode(_importedKeyDataTextController.text)));
       }
       // print("encryptedPeerPublicKey: ${encryptedPeerPublicKey}");
 
     } else {
-      encryptedPeerPublicKey = await cryptor.encrypt(_scannedKeyDataTextController.text);
+      encryptedPeerPublicKey = await _cryptor.encrypt(_scannedKeyDataTextController.text);
     }
 
     if (encryptedPeerPublicKey == null) {
@@ -1633,7 +1633,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
       mdate: widget.keyItem.mdate,
     );
 
-    final itemMac = await cryptor.hmac256(keyItem.toRawJson());
+    final itemMac = await _cryptor.hmac256(keyItem.toRawJson());
     keyItem.mac = itemMac;
 
     final keyItemJson = keyItem.toRawJson();
@@ -1648,7 +1648,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
 
     /// save key item in keychain
     ///
-    final status = await keyManager.saveItem(widget.keyItem.id, genericItemString);
+    final status = await _keyManager.saveItem(widget.keyItem.id, genericItemString);
 
     // final status = true;
 

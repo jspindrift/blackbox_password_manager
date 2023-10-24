@@ -1,15 +1,8 @@
-import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
-import "dart:typed_data";
-
-import '../helpers/ivHelper.dart';
-import '../screens/secret_codes_screen.dart';
-import 'package:convert/convert.dart';
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
+
+import '../managers/WOTSManager.dart';
 import '../managers/Cryptor.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
@@ -36,19 +29,24 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
 
   int _selectedIndex = 3;
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final keyManager = KeychainManager();
-  final testCrypto = TestCrypto();
-  final cryptor = Cryptor();
+  int _signCounter = 1;
+
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _keyManager = KeychainManager();
+  final _testCrypto = TestCrypto();
+  final _cryptor = Cryptor();
+
+  /// post quantum signing
+  final _wotsManager = WOTSManager();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("AdvancedSettingsScreen", "initState", "initState");
+    _logManager.log("AdvancedSettingsScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
   }
 
   void _onItemTapped(int index) {
@@ -59,7 +57,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     Navigator.of(context)
         .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
 
-    settingsManager.changeRoute(index);
+    _settingsManager.changeRoute(index);
   }
 
   @override
@@ -214,10 +212,10 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                         _isDarkModeEnabled = !_isDarkModeEnabled;
                       });
 
-                      await settingsManager.saveDarkMode(_isDarkModeEnabled);
+                      await _settingsManager.saveDarkMode(_isDarkModeEnabled);
 
                       /// broadcast dark mode change to HomeTabScreen
-                      settingsManager.processDarkModeChange(_isDarkModeEnabled);
+                      _settingsManager.processDarkModeChange(_isDarkModeEnabled);
                     },
                   ),
                   onTap: () {
@@ -446,15 +444,15 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                   ),
                 ),
               ),
-
-              /// TODO: keep this Report Function in there...
-              ///
-              if (kDebugMode)
-                Divider(
+              Visibility(
+              visible: kDebugMode,
+              child: Divider(
                   color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
                 ),
-              if (kDebugMode)
-                Padding(
+              ),
+              Visibility(
+              visible: kDebugMode,
+              child: Padding(
                   padding: EdgeInsets.all(0.0),
                   child: ListTile(
                     enabled: true,
@@ -490,7 +488,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                     },
                   ),
                 ),
-
+              ),
               Visibility(
                 visible: kDebugMode,
                 child: Divider(
@@ -526,75 +524,20 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                             : Colors.redAccent,
                       ),
                       onPressed: () async {
-                        // await testCrypto.runTests();
+                        // await _testCrypto.runTests();
                         // await TestKeyGen().runTests(context);
-                        _runTests();
+                        // _runTests();
+                        _runTestsReset();
                       },
                     ),
                     onTap: () async {
-                      // await testCrypto.runTests();
+                      // await _testCrypto.runTests();
                       // await TestKeyGen().runTests(context);
                       _runTests();
                     },
                   ),
                 ),
               ),
-              Visibility(
-                visible: false,
-                child: Divider(
-                  color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
-                ),
-              ),
-              Visibility(
-                visible: false,
-                child: Padding(
-                  padding: EdgeInsets.all(0.0),
-                  child: ListTile(
-                    enabled: true,
-                    title: Text(
-                      'Secret Codes',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: _isDarkModeEnabled ? Colors.white : null,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Unlock new features',
-                      style: TextStyle(
-                        fontSize: 14,
-                        // fontWeight: FontWeight.bold,
-                        color: _isDarkModeEnabled ? Colors.white : null,
-                      ),
-                    ),
-                    trailing: IconButton(
-                      icon: Icon(
-                        Icons.code,
-                        color: _isDarkModeEnabled
-                            ? Colors.greenAccent
-                            : Colors.redAccent,
-                      ),
-                      onPressed: () async {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SecretCodesScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    onTap: () async {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SecretCodesScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-
               Divider(
                 color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
               ),
@@ -756,20 +699,69 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   }
 
   void _runTests() async {
-    logManager.logger.d("running experimental tests");
+    _logManager.logger.d("running experimental tests");
 
     /// Do some testing here...
     ///
 
-    // final message = "hello world.";
-    // final kek = List.filled(32, 0);
+    final message = "hello world:${_wotsManager.lastBlockHash}";
+    final kek = List.filled(32, 0);
     // final kak = List.filled(32, 1);
     // final ivg = List.filled(16, 0);
     //
-    // final ctx = await cryptor.superEncryption(kek, kak, ivg, message);
-    // final ptx = await cryptor.superDecryption(kek, kak, ivg, ctx);
+    // final ctx = await _cryptor.superEncryption(kek, kak, ivg, message);
+    // final ptx = await _cryptor.superDecryption(kek, kak, ivg, ctx);
 
-    logManager.logger.d("tests done");
+    /// create variable top public key
+    // _wotsManager.createTopPubKey(kek, 0);
+
+
+    final sigItem = await _wotsManager.signMessage(kek, _signCounter, message);
+    // _logManager.logLongMessage("sigItem: ${sigItem?.toRawJson()}");
+
+    final isValid = await _wotsManager.verifySignature(sigItem);
+    _logManager.logger.d("isValid: ${isValid}");
+
+    _signCounter++;
+
+    _logManager.logger.d("tests done");
+  }
+
+  void _runTestsReset() async {
+    _logManager.logger.d("running experimental tests");
+
+    /// Do some testing here...
+    ///
+
+    _signCounter = 0;
+    _wotsManager.reset();
+
+    // await _runWOTSTimingTest();
+
+    _runTests();
+  }
+
+  Future<void> _runWOTSTimingTest() async {
+
+    final startTime = DateTime.now();
+
+    final kek = List.filled(32, 0);
+    final numTests = 32;
+
+    List<String> topHashes = [];
+
+    for (var index = 0; index < numTests; index++) {
+      final topHash = await _wotsManager.createTopPubKey(kek, index);
+      topHashes.add(topHash);
+    }
+
+    _logManager.logLongMessage("topHashes: ${topHashes}");
+
+    final endTime = DateTime.now();
+    final timeDiff = endTime.difference(startTime);
+    _logManager.logger.d("_runWOTSTimingTest: time diff: ${timeDiff.inMilliseconds} ms\n"
+        "${timeDiff.inMilliseconds/numTests}");
+
   }
 
 
@@ -845,10 +837,10 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   /// delete the account items and encryption key and force user back
   /// to login screen to setup a new account
   Future<void> _confirmedDeleteAccount() async {
-    final status = await keyManager.deleteForBackup();
+    final status = await _keyManager.deleteForBackup();
     if (status) {
-      settingsManager.removeAllPreferences();
-      settingsManager.postResetAppNotification();
+      _settingsManager.removeAllPreferences();
+      _settingsManager.postResetAppNotification();
       Navigator.popUntil(context, (route) => route.isFirst);
     } else {
       _showErrorDialog('Delete account failed');
@@ -858,10 +850,10 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
 
   /// TODO: get rid of this.  This is used for testing purposes
   Future<void> _confirmedDeleteEverything() async {
-    final status = await keyManager.deleteAll();
+    final status = await _keyManager.deleteAll();
     if (status) {
-      settingsManager.removeAllPreferences();
-      settingsManager.postResetAppNotification();
+      _settingsManager.removeAllPreferences();
+      _settingsManager.postResetAppNotification();
       Navigator.popUntil(context, (route) => route.isFirst);
     } else {
       _showErrorDialog('Delete everything failed');
@@ -898,7 +890,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   }
 
   void _confirmedFoundABug() {
-    logManager.log(
+    _logManager.log(
         "AdvancedSettingsScreen", "_confirmedFoundABug", "BUG REPORTED 🐞");
 
     Navigator.of(context).pop();

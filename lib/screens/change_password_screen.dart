@@ -1,9 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
-import '../helpers/InactivityTimer.dart';
+// import '../helpers/InactivityTimer.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/Cryptor.dart';
 import '../managers/LogManager.dart';
@@ -45,21 +44,21 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   int _wrongPasswordCount = 0;
 
-  var cryptor = Cryptor();
-  var keyManager = KeychainManager();
-  var logManager = LogManager();
-  var settingsManager = SettingsManager();
-  final inactivityTimer = InactivityTimer();
+  var _cryptor = Cryptor();
+  var _keyManager = KeychainManager();
+  var _logManager = LogManager();
+  var _settingsManager = SettingsManager();
+  // final inactivityTimer = InactivityTimer();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("ChangePasswordScreen", "initState", "initState");
+    _logManager.log("ChangePasswordScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    final isRecovered = settingsManager.isRecoveredSession;
+    final isRecovered = _settingsManager.isRecoveredSession;
 
     _isConfirmingCurrentPassword = !isRecovered;
   }
@@ -526,12 +525,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
     final password = _currentPasswordTextController.text;
 
-    logManager.log(
+    _logManager.log(
         "ChangePasswordScreen", "_confirmCurrentMasterPassword", "confirming");
 
     try {
-      cryptor.deriveKeyCheck(password, keyManager.salt).then((value) {
-        logManager.log("ChangePasswordScreen", "_confirmCurrentMasterPassword",
+      _cryptor.deriveKeyCheck(password, _keyManager.salt).then((value) {
+        _logManager.log("ChangePasswordScreen", "_confirmCurrentMasterPassword",
             "deriveKeyCheck: $value");
 
         // reset fields
@@ -548,16 +547,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           setState(() {
             _isAuthenticating = false;
           });
-          if (_wrongPasswordCount % 3 == 0 && keyManager.hint.isNotEmpty) {
-            _showErrorDialog('Invalid password.\n\nhint: ${keyManager.hint}');
+          if (_wrongPasswordCount % 3 == 0 && _keyManager.hint.isNotEmpty) {
+            _showErrorDialog('Invalid password.\n\nhint: ${_keyManager.hint}');
           } else {
             _showErrorDialog('Invalid password.');
           }
         }
       });
     } catch (e) {
-      logManager.logger.w(e);
-      logManager.log(
+      _logManager.logger.w(e);
+      _logManager.log(
           "ChangePasswordScreen", "_confirmCurrentMasterPassword", "Error: $e");
       _showErrorDialog('An error occurred');
     }
@@ -568,10 +567,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final password = _enterPasswordTextController.text;
     final hint = _passwordHintTextController.text;
 
-    logManager.log("ChangePasswordScreen", "_changeMasterPassword", "changing");
+    _logManager.log("ChangePasswordScreen", "_changeMasterPassword", "changing");
 
     try {
-      var keyParams = await cryptor.deriveNewKey(password);
+      var keyParams = await _cryptor.deriveNewKey(password);
         if (keyParams != null) {
           _enterPasswordTextController.text = "";
           _confirmPasswordTextController.text = "";
@@ -587,7 +586,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           );
 
           // save new password details
-          final saveStatus = await keyManager.saveMasterPassword(
+          final saveStatus = await _keyManager.saveMasterPassword(
               updatedKeyParams,
           );
 
@@ -595,13 +594,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             _isAuthenticating = false;
           });
 
-          await keyManager.readEncryptedKey();
+          await _keyManager.readEncryptedKey();
 
-          logManager.log("ChangePasswordScreen", "_changeMasterPassword",
+          _logManager.log("ChangePasswordScreen", "_changeMasterPassword",
               "deriveNewKey: $saveStatus");
 
           if (saveStatus) {
-            settingsManager.setIsRecoveredSession(false);
+            _settingsManager.setIsRecoveredSession(false);
             EasyLoading.showToast(
               'Password Changed Successfully',
               duration: Duration(seconds: 3),
@@ -609,7 +608,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
             /// check if user pushed the app to the background while changing
             /// to new master password.  This way we dont pop off our lock screen
-            if (cryptor.aesRootSecretKeyBytes.isNotEmpty) {
+            if (_cryptor.aesRootSecretKeyBytes.isNotEmpty) {
               Navigator.of(context).pop();
             }
 
@@ -625,14 +624,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           });
 
           /// check if app was backgrounded while deriving key
-          if (!settingsManager.isOnLockScreen) {
+          if (!_settingsManager.isOnLockScreen) {
             Navigator.of(context).pop();
             _showErrorDialog('An error occurred');
           }
         }
     } catch (e) {
-      logManager.logger.w(e);
-      logManager.log(
+      _logManager.logger.w(e);
+      _logManager.log(
           "ChangePasswordScreen", "_changeMasterPassword", "Error: $e");
       _showErrorDialog('An error occurred');
     }
