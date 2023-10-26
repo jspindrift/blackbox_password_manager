@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
+import '../managers/PostQuantumManager.dart';
 import '../managers/WOTSManager.dart';
 import '../managers/Cryptor.dart';
 import '../managers/LogManager.dart';
@@ -12,7 +14,7 @@ import '../screens/settings_about_screen.dart';
 import '../screens/diagnostics_screen.dart';
 import '../screens/recovery_mode_screen.dart';
 import '../screens/home_tab_screen.dart';
-import '../testing/test_crypto.dart';
+
 
 class AdvancedSettingsScreen extends StatefulWidget {
   const AdvancedSettingsScreen({
@@ -34,11 +36,12 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
   final _keyManager = KeychainManager();
-  final _testCrypto = TestCrypto();
+  // final _testCrypto = TestCrypto();
   final _cryptor = Cryptor();
 
   /// post quantum signing
   final _wotsManager = WOTSManager();
+  final _postQuantumManager = PostQuantumManager();
 
   @override
   void initState() {
@@ -524,16 +527,11 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                             : Colors.redAccent,
                       ),
                       onPressed: () async {
-                        // await _testCrypto.runTests();
-                        // await TestKeyGen().runTests(context);
-                        // _runTests();
-                        _runTestsReset();
+                        _runPostQuantumIntegrityTestWithReset();
                       },
                     ),
                     onTap: () async {
-                      // await _testCrypto.runTests();
-                      // await TestKeyGen().runTests(context);
-                      _runTests();
+                      _runPostQuantumIntegrityTest();
                     },
                   ),
                 ),
@@ -698,51 +696,52 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     );
   }
 
+
+  void _resetTestVariables() {
+    _logManager.logger.d("_resetTestVariables");
+
+    _signCounter = 1;
+    _wotsManager.reset();
+    _postQuantumManager.reset();
+  }
+
   void _runTests() async {
-    _logManager.logger.d("running experimental tests");
+    _logManager.logger.d("_runTests");
 
-    /// Do some testing here...
-    ///
-
+    /// set variables here
     final message = "hello world:${_wotsManager.lastBlockHash}";
     final kek = List.filled(32, 0);
     // final kak = List.filled(32, 1);
     // final ivg = List.filled(16, 0);
-    //
-    // final ctx = await _cryptor.superEncryption(kek, kak, ivg, message);
-    // final ptx = await _cryptor.superDecryption(kek, kak, ivg, ctx);
-
-    /// create variable top public key
-    // _wotsManager.createTopPubKey(kek, 0);
-
-
-    final sigItem = await _wotsManager.signMessage(kek, _signCounter, message);
-    // _logManager.logLongMessage("sigItem: ${sigItem?.toRawJson()}");
-
-    final isValid = await _wotsManager.verifySignature(sigItem);
-    _logManager.logger.d("isValid: ${isValid}");
-
-    _signCounter++;
-
-    _logManager.logger.d("tests done");
-  }
-
-  void _runTestsReset() async {
-    _logManager.logger.d("running experimental tests");
 
     /// Do some testing here...
     ///
 
-    _signCounter = 0;
-    _wotsManager.reset();
+    // final ctx = await _cryptor.superEncryption(kek, kak, ivg, message);
+    // final ptx = await _cryptor.superDecryption(kek, kak, ivg, ctx);
 
-    // await _runWOTSTimingTest();
+    /// create WOTS top public key
+    // _wotsManager.createTopPubKey(kek, 0);
+
+    /// create WOTS signature
+    final sigItem = await _wotsManager.signMessage(kek, _signCounter, message);
+    // _logManager.logLongMessage("sigItem: ${sigItem?.toRawJson()}");
+
+    /// verify WOTS signature
+    final isValid = await _wotsManager.verifySignature(sigItem);
+    _logManager.logger.d("isValid: ${isValid}");
+
+    _signCounter++;
+  }
+
+  void _runTestsWithReset() async {
+    _resetTestVariables();
 
     _runTests();
   }
 
+  /// timed tests for creating multiple sets of WOTS keys
   Future<void> _runWOTSTimingTest() async {
-
     final startTime = DateTime.now();
 
     final kek = List.filled(32, 0);
@@ -750,9 +749,10 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
 
     List<String> topHashes = [];
 
+    /// generate keys
     for (var index = 0; index < numTests; index++) {
-      final topHash = await _wotsManager.createTopPubKey(kek, index);
-      topHashes.add(topHash);
+      await _wotsManager.createTopPubKey(kek, index);
+      topHashes.add(_wotsManager.topPubHash);
     }
 
     _logManager.logLongMessage("topHashes: ${topHashes}");
@@ -761,9 +761,44 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     final timeDiff = endTime.difference(startTime);
     _logManager.logger.d("_runWOTSTimingTest: time diff: ${timeDiff.inMilliseconds} ms\n"
         "${timeDiff.inMilliseconds/numTests}");
-
   }
 
+  /// hybrid asymmetric and WOTS signing
+  Future<void> _runPostQuantumIntegrityTest() async {
+    _logManager.logger.d("_runPostQuantumTest");
+
+    // await _postQuantumManager.postQuantumProjectIntegrityTest();
+
+    /// TODO: uncomment this after to verify
+    await _postQuantumManager.postQuantumProjectIntegrityTestVerify();
+  }
+
+  Future<void> _runPostQuantumIntegrityTestWithReset() async {
+    _resetTestVariables();
+
+    await _runPostQuantumIntegrityTest();
+  }
+
+  /// test overlap WOTS signing protocol
+  Future<void> _runOverlapWOTSTest() async {
+
+    final kek = List.filled(32, 0);
+    final message = "hello world: ${_wotsManager.lastBlockHash}";
+
+    final sigItem = await _wotsManager.overlapSignMessage(kek, _signCounter, message);
+    // _logManager.logLongMessage("sigItem: ${sigItem?.toRawJson()}");
+
+    final isValid = await _wotsManager.verifyOverlapSignature(sigItem);
+    _logManager.logger.d("isValid: ${isValid}");
+
+    _signCounter++;
+  }
+
+  Future<void> _runOverlapWOTSTestWithReset() async {
+    _resetTestVariables();
+
+    await _runOverlapWOTSTest();
+  }
 
 
   void _showConfirmDeleteAccountDialog() {

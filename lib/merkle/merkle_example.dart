@@ -73,7 +73,7 @@ List<String> getTree(List<Uint8List> data) {
 
   final hexTree = List<String>.from(tree.map((x) => hex.encode(x)));//.toList();  //List<String>.from(hex.encode(x))
   // logger.d('End getTree: $hexTree');
-  logger.d('hexTree[\n\t"${hexTree.join('",\n\t"')}"\n]');
+  // logger.d('hexTree[\n\t"${hexTree.join('",\n\t"')}"\n]');
 
 
   return hexTree;

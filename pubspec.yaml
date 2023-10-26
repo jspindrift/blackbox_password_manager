@@ -148,6 +148,8 @@ flutter:
 
   assets:
     - assets/
+    - assets/files/project_file_hashes.txt
+    - assets/files/post_quantum_signature.txt
 
   # To add assets to your application, add an assets section, like this:
   # assets:
