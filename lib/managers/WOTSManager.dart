@@ -41,7 +41,9 @@ class WOTSManager {
 
   /// public leaves
   List<String> _pubLeaves = [];
-  String _topPubHash = "";
+  String _topPublicKey = "";
+  String _nextTopPublicKey = "";
+
   String _lastBlockHash = "";
 
   WOTSBasicSignatureChain _wotsChain = WOTSBasicSignatureChain(blocks: []);
@@ -55,6 +57,10 @@ class WOTSManager {
 
   WOTSOverlapSignatureChain _wotsJoinChain = WOTSOverlapSignatureChain(blocks: []);
 
+  WOTSSimpleOverlapSignatureChain _wotsSimpleJoinChain = WOTSSimpleOverlapSignatureChain(chainId: "",blocks: []);
+
+  WOTSSimpleSignatureDictionary _wotsSimpleChainDictionary = WOTSSimpleSignatureDictionary(chains: []);
+
   int get messageIndex {
     return _messageIndex;
   }
@@ -67,8 +73,8 @@ class WOTSManager {
     return _pubLeaves;
   }
 
-  String get topPubHash {
-    return _topPubHash;
+  String get topPublicKey {
+    return _topPublicKey;
   }
 
   String get lastBlockHash {
@@ -88,6 +94,12 @@ class WOTSManager {
   reset() {
     _pubLeaves = [];
     _privLeaves = [];
+
+    _topJoinLeaves = [];
+    _bottomJoinLeaves = [];
+    _topJoinLeavesHalf = [];
+    _bottomJoinLeavesHalf = [];
+
     _privChecksumLeaf = "";
     _lastBlockHash = "";
 
@@ -95,6 +107,9 @@ class WOTSManager {
 
     _wotsChain = WOTSBasicSignatureChain(blocks: []);
     _wotsJoinChain = WOTSOverlapSignatureChain(blocks: []);
+
+    _wotsSimpleJoinChain = WOTSSimpleOverlapSignatureChain(chainId: "",blocks: []);
+    _wotsSimpleChainDictionary = WOTSSimpleSignatureDictionary(chains: []);
   }
 
   /// BEGIN - Basic WOTS implementation ----------------------------------------
@@ -183,8 +198,8 @@ class WOTSManager {
         "_pubLeaves: $_pubLeaves");
 
     /// hash public leaf values with checksum to get top pub hash
-    _topPubHash = _cryptor.sha256(hex.encode(publicPad));
-    logger.d("topPubHash: ${_topPubHash}");
+    _topPublicKey = _cryptor.sha256(hex.encode(publicPad));
+    logger.d("_topPublicKey: ${_topPublicKey}");
 
     final endTime = DateTime.now();
     final timeDiff = endTime.difference(startTime);
@@ -249,7 +264,7 @@ class WOTSManager {
     /// create WOTS signature object
     WOTSBasicSignatureItem wotsItem = WOTSBasicSignatureItem(
       id: msgIndex,
-      publicKey: _topPubHash,
+      publicKey: _topPublicKey,
       signature: signature,
       checksum: checksumHash,
       message: messageItem,
@@ -289,7 +304,7 @@ class WOTSManager {
 
     final startTime = DateTime.now();
 
-    final topPubHash = item.publicKey;
+    final topPublicKey = item.publicKey;
     final sig = item.signature;
     final csum = item.checksum;
     final message = item.message;
@@ -335,7 +350,7 @@ class WOTSManager {
 
     logger.d("\n\t\t--------------------------END: verifySignature--------------------------");
 
-    return checkTopPubHash == topPubHash;
+    return checkTopPubHash == topPublicKey;
   }
 
   /// END - Basic WOTS implementation ------------------------------------------
@@ -551,7 +566,7 @@ class WOTSManager {
     //     "_pubLeaves: $_pubLeaves");
 
     /// hash public leaf values with checksum to get top pub hash
-    _topPubHash = _cryptor.sha256(hex.encode(publicPad));
+    _topPublicKey = _cryptor.sha256(hex.encode(publicPad));
     // logger.d("topPubHash: ${_topPubHash}");
 
     final endTime = DateTime.now();
@@ -624,7 +639,8 @@ class WOTSManager {
       topMerkle: _topMerkle,
       bottomLeaves: _bottomJoinLeavesHalf,
       bottomMerkle: _bottomMerkle,
-      publicKey: _topPubHash,
+      publicKey: _topPublicKey,
+      nextTopPublicKey: "",
       signature: signature,
       checksum: checksumHash,
       message: messageItem,
@@ -744,6 +760,393 @@ class WOTSManager {
     logger.d("\n\t\t--------------------------END: verifyOverlappingSignature--------------------------");
 
     return checkTopPubKey == topPubKey;
+  }
+
+
+  /// BEGIN - WOTS Simple Overlapping Chain (next top public key)
+  ///
+
+  /// create private and public values for signing and verifying
+  Future<void> _createSimpleOverlapTopPubKey(List<int> rootKey, int msgIndex) async {
+    logger.d("\n\t\t--------------------------_createSimpleOverlapTopPubKey START - [${msgIndex}]--------------------------");
+    final startTime = DateTime.now();
+
+    _pubLeaves = [];
+    _privLeaves = [];
+    _privChecksumLeaf = "";
+    // _messageIndex = msgIndex;
+
+    if (rootKey.isEmpty || rootKey.length != _keySize) {
+      rootKey = List<int>.filled(_keySize, 0);
+    }
+
+    final encKey = SecretKey(rootKey);
+
+    final bigPad = List<int>.filled((_keySize * _numberOfLeaves).toInt(), 0);
+
+    final nonce = ivHelper().getIv4x4(0, 0, msgIndex, 0);
+    // logger.d("ivHelper nonce: $nonce");
+
+    /// Encrypt the zero pad
+    final secretBox = await algorithm_nomac.encrypt(
+      bigPad,
+      secretKey: encKey,
+      nonce: nonce,
+    );
+
+    /// hash the private keys together to get checksum leaf
+    _privChecksumLeaf = _cryptor.sha256(hex.encode(secretBox.cipherText));
+    // _privChecksumLeaf = hex.encode(cryptor.getRandomBytes(32));
+
+    List<int> publicPad = [];
+    final numLeaves = secretBox.cipherText.length / _keySize;
+
+    /// compute the public leaves from private hashes
+    for (var index = 0; index < numLeaves; index++) {
+
+      /// get private leaf block
+      final leaf = secretBox.cipherText.sublist(
+        index * _keySize,
+        _keySize * (index + 1),
+      );
+
+      /// add private leaf block
+      _privLeaves.add(hex.encode(leaf));
+
+      /// compute the public leaf hash
+      var leafHash = hex.encode(leaf);
+      for (var i = 0; i < 255; i++) {
+        leafHash = _cryptor.sha256(leafHash);
+      }
+
+      /// add public leaf hash
+      _pubLeaves.add(leafHash);
+      publicPad.addAll(hex.decode(leafHash));
+    }
+
+    /// Compute the public checksum leaf value
+    var pubChecksumLeaf = _privChecksumLeaf;
+    for (var i = 0; i < _checksumSize-1; i++) {
+      pubChecksumLeaf = _cryptor.sha256(pubChecksumLeaf);
+    }
+    logger.d("pubChecksumLeaf: $pubChecksumLeaf");
+
+    /// add checksum public leaf value to public leaf array
+    publicPad.addAll(hex.decode(pubChecksumLeaf));
+    // _pubLeaves.add(pubChecksumLeaf);
+
+    _logManager.logLongMessage("\nmessageIndex: $msgIndex\n"
+        "_privLeaves: $_privLeaves\n\n"
+        "_pubLeaves: $_pubLeaves");
+
+    /// hash public leaf values with checksum to get top pub hash
+    _topPublicKey = _cryptor.sha256(hex.encode(publicPad));
+    logger.d("_topPublicKey: ${_topPublicKey}");
+
+    _nextTopPublicKey = await _createNextSimpleOverlapTopPubKey(rootKey, msgIndex);
+
+    final endTime = DateTime.now();
+    final timeDiff = endTime.difference(startTime);
+    logger.d("createPubKeyWOTS: time diff: ${timeDiff.inMilliseconds} ms");
+
+    logger.d("\n\t\t--------------------------_createSimpleOverlapTopPubKey END - [${msgIndex}]--------------------------");
+  }
+
+  /// get the next top public key to add to current signature
+  Future<String> _createNextSimpleOverlapTopPubKey(List<int> rootKey, int msgIndex) async {
+    logger.d("\n\t\t--------------------------_createNextSimpleOverlapTopPubKey START - [${msgIndex}]--------------------------");
+    final startTime = DateTime.now();
+
+    var pubLeaves = [];
+    var privLeaves = [];
+    // _privChecksumLeaf = "";
+    // _messageIndex = msgIndex;
+    final nextMessageIndex = msgIndex + 1;
+
+    if (rootKey.isEmpty || rootKey.length != _keySize) {
+      rootKey = List<int>.filled(_keySize, 0);
+    }
+
+    final encKey = SecretKey(rootKey);
+
+    final bigPad = List<int>.filled((_keySize * _numberOfLeaves).toInt(), 0);
+
+    final nonce = ivHelper().getIv4x4(0, 0, nextMessageIndex, 0);
+    // logger.d("ivHelper nonce: $nonce");
+
+    /// Encrypt the zero pad
+    final secretBox = await algorithm_nomac.encrypt(
+      bigPad,
+      secretKey: encKey,
+      nonce: nonce,
+    );
+
+    /// hash the private keys together to get checksum leaf
+    final privateChecksumLeaf = _cryptor.sha256(hex.encode(secretBox.cipherText));
+    // _privChecksumLeaf = hex.encode(cryptor.getRandomBytes(32));
+
+    List<int> publicPad = [];
+    final numLeaves = secretBox.cipherText.length / _keySize;
+
+    /// compute the public leaves from private hashes
+    for (var index = 0; index < numLeaves; index++) {
+
+      /// get private leaf block
+      final leaf = secretBox.cipherText.sublist(
+        index * _keySize,
+        _keySize * (index + 1),
+      );
+
+      /// add private leaf block
+      privLeaves.add(hex.encode(leaf));
+
+      /// compute the public leaf hash
+      var leafHash = hex.encode(leaf);
+      for (var i = 0; i < 255; i++) {
+        leafHash = _cryptor.sha256(leafHash);
+      }
+
+      /// add public leaf hash
+      pubLeaves.add(leafHash);
+      publicPad.addAll(hex.decode(leafHash));
+    }
+
+    /// Compute the public checksum leaf value
+    var pubChecksumLeaf = privateChecksumLeaf;
+    for (var i = 0; i < _checksumSize-1; i++) {
+      pubChecksumLeaf = _cryptor.sha256(pubChecksumLeaf);
+    }
+    logger.d("pubChecksumLeaf: $pubChecksumLeaf");
+
+    /// add checksum public leaf value to public leaf array
+    publicPad.addAll(hex.decode(pubChecksumLeaf));
+    // _pubLeaves.add(pubChecksumLeaf);
+
+    _logManager.logLongMessage("\nnextMessageIndex: $nextMessageIndex\n"
+        "privLeaves: $privLeaves\n\n"
+        "pubLeaves: $pubLeaves");
+
+    /// hash public leaf values with checksum to get top pub hash
+    final nextTopPublicKey = _cryptor.sha256(hex.encode(publicPad));
+    logger.d("nextTopPublicKey: ${nextTopPublicKey}");
+
+    final endTime = DateTime.now();
+    final timeDiff = endTime.difference(startTime);
+    logger.d("createPubKeyWOTS: time diff: ${timeDiff.inMilliseconds} ms");
+
+    logger.d("\n\t\t--------------------------_createNextSimpleOverlapTopPubKey END - [${msgIndex}]--------------------------");
+
+    return nextTopPublicKey;
+  }
+
+  /// create WOTS signature for a message
+  Future<WOTSSimpleOverlapSignatureItem?> signSimpleOverlapMessage(List<int> key, String chainId, int msgIndex, String message) async {
+    logger.d("\n\t\t--------------------------START: signSimpleOverlapMessage--------------------------");
+    logger.d("signMessage[$msgIndex]: ${message}");
+
+    final startTime = DateTime.now();
+    final timestamp = startTime.toIso8601String();
+
+    // if (msgIndex <= _wotsSimpleJoinChain.blocks.length) {
+    //   msgIndex = _wotsSimpleJoinChain.blocks.length + 1;
+    // }
+
+    /// create private/public key leaves
+    await _createSimpleOverlapTopPubKey(key, msgIndex);
+
+    var messageItem;
+    try {
+      messageItem = BasicMessageData.fromRawJson(message);
+      if (messageItem == null) {
+        messageItem = BasicMessageData(
+          time: "00:00:00-00000000JAS", //timestamp,
+          message: message,
+          signature: "",
+        );
+      }
+    } catch (e) {
+      logger.e("error json format");
+      messageItem = BasicMessageData(
+        time: "00:00:00-00000000JAS", //timestamp,
+        message: message,
+        signature: "",
+      );
+    }
+
+    _logManager.logLongMessage("message to hash 1: ${messageItem.toRawJson()}");
+
+    final messageHash = _cryptor.sha256(messageItem.toRawJson());
+    final messageHashBytes = hex.decode(messageHash);
+    logger.d("messageHashHex: $messageHash");
+
+    List<String> signature = [];
+    int index = 0;
+    int checksum = 0;
+    /// compute the WOTS signature
+    for (var c in messageHashBytes) {
+      /// add hash values for checksum
+      checksum = checksum + 255 - c;
+      var leafHash = _privLeaves[index];
+      for (var i = 1; i < 256 - c; i++) {
+        leafHash = _cryptor.sha256(leafHash);
+      }
+      signature.add(leafHash);
+      index += 1;
+    }
+    // logger.d("checksum int value: $checksum");
+
+    /// Compute the checksum leaf value, 32x256 = 8192
+    var checksumHash = _privChecksumLeaf;
+    for (var i = 1; i < 8192-checksum; i++) {
+      checksumHash = _cryptor.sha256(checksumHash);
+    }
+    // logger.d("checksumHash leaf: ${checksumHash}");
+
+    /// create WOTS signature object
+    WOTSSimpleOverlapSignatureItem wotsItem = WOTSSimpleOverlapSignatureItem(
+      id: chainId,
+      index: msgIndex,
+      publicKey: _topPublicKey,
+      nextPublicKey: _nextTopPublicKey,
+      previousHash: _lastBlockHash,
+      signature: signature,
+      checksum: checksumHash,
+      message: messageItem,
+    );
+
+    _logManager.logLongMessage("wotsItem: ${wotsItem.toRawJson()}");
+
+
+    WOTSSimpleOverlapSignatureChain currentChain = WOTSSimpleOverlapSignatureChain(chainId: chainId, blocks: []);
+    // _wotsSimpleJoinChain.blocks.add(wotsItem);
+
+    if (_wotsSimpleChainDictionary.chains.length == 0) {
+      currentChain.chainId = wotsItem.id;
+
+      _wotsSimpleJoinChain.chainId = wotsItem.id;
+      _wotsSimpleJoinChain.blocks.add(wotsItem);
+      _wotsSimpleChainDictionary.chains.add(_wotsSimpleJoinChain);
+    } else {
+      try {
+        final thisChain = _wotsSimpleChainDictionary.chains.firstWhere((
+            element) => element.chainId == chainId);
+        _wotsSimpleJoinChain = thisChain;
+        _wotsSimpleJoinChain.blocks.add(wotsItem);
+        _wotsSimpleChainDictionary.chains.add(currentChain);
+
+      } catch (e) {
+        currentChain.chainId = wotsItem.id;
+        currentChain.blocks.add(wotsItem);
+        _wotsSimpleChainDictionary.chains.add(currentChain);
+      }
+
+      _logManager.logLongMessage("thisChain: ${_wotsSimpleJoinChain.toRawJson()}");
+    }
+
+    _logManager.logLongMessage("\n\n_wotsSimpleChainDictionary: ${_wotsSimpleChainDictionary.toRawJson()}");
+
+    /// sort blocks in the chain by index
+    _wotsSimpleJoinChain.blocks.sort((a, b) => a.id.compareTo(b.id));
+
+    // _logManager.logLongMessage("WOTSManager.signMessage:\n_wotsChain[${_wotsSimpleJoinChain.blocks.length}]\n"
+    //     "[${_wotsSimpleJoinChain.toRawJson().length} bytes] | [${(_wotsSimpleJoinChain.toRawJson().length/1024).toStringAsFixed(2)} KB]\n"
+    //     "chain: ${_wotsSimpleJoinChain.toRawJson()}");
+
+    /// get last block hash in the chain
+    _lastBlockHash = _cryptor.sha256(_wotsSimpleJoinChain.blocks.last.toRawJson());
+    logger.d("lastBlockHash: ${_lastBlockHash}");
+
+    final endTime = DateTime.now();
+    final timeDiff = endTime.difference(startTime);
+    logger.d("signMessage: time diff: ${timeDiff.inMilliseconds} ms");
+
+    logger.d("\n\t\t--------------------------END: signSimpleOverlapMessage--------------------------");
+
+    return wotsItem;
+  }
+
+  /// verify WOTS signature for a message
+  Future<bool> verifySimpleOverlapSignature(WOTSSimpleOverlapSignatureItem? item) async {
+    logger.d("\n\t\t--------------------------START: verifySimpleOverlapSignature--------------------------");
+
+    if (item == null) {
+      return false;
+    }
+
+    final startTime = DateTime.now();
+
+    final chainIdentifier = item.id;
+    final messageIndex = item.index;
+    final topPublicKey = item.publicKey;
+
+    var previousPublicKey = "";
+
+    try {
+      var thisChain = _wotsSimpleChainDictionary.chains.firstWhere((
+          element) => element.chainId == chainIdentifier);
+      thisChain.blocks.sort((a, b) => a.index.compareTo(b.index));
+
+
+      if (thisChain.blocks.length > 1) {
+        previousPublicKey = thisChain.blocks[messageIndex-2].nextPublicKey;
+        logger.e("ERROR: previousPublicKey: ${previousPublicKey} != topPublicKey: ${topPublicKey}");
+
+        if (previousPublicKey != topPublicKey) {
+          logger.e("ERROR: previousPublicKey != topPublicKey");
+          return false;
+        }
+      }
+    } catch (e) {
+      logger.e("error occurred");
+    }
+
+
+    final sig = item.signature;
+    final csum = item.checksum;
+    final message = item.message;
+    _logManager.logLongMessage("message to hash 2: ${message.toRawJson()}");
+
+    final messageHash = _cryptor.sha256(message.toRawJson());
+    final messageHashBytes = hex.decode(messageHash);
+    _logManager.logLongMessage("messageHash: ${messageHash}");
+
+    List<int> checkPublicLeaves = [];
+    int index = 0;
+    int checksum = 0;
+
+    /// compute the public leaves from the signature and message hash
+    for (var c in messageHashBytes) {
+      /// add message hash values for checksum
+      checksum = checksum + 255 - c;
+      var leafHash = sig[index];
+      for (var i = 0; i < c; i++) {
+        leafHash = _cryptor.sha256(leafHash);
+      }
+      checkPublicLeaves.addAll(hex.decode(leafHash));
+      index += 1;
+    }
+
+    /// Compute the public checksum leaf value
+    var checksig = csum;
+    for (var i = 0; i < checksum; i++) {
+      checksig = _cryptor.sha256(checksig);
+    }
+    logger.d("checksig: ${checksig}");
+
+    /// add checksum hash to the public leaves
+    checkPublicLeaves.addAll(hex.decode(checksig));
+
+    /// hash the public leaves + checksum to get top pub hash
+    final checkTopPubHash = _cryptor.sha256(hex.encode(checkPublicLeaves));
+    logger.d("checkTopPubHash: ${checkTopPubHash}");
+
+    final endTime = DateTime.now();
+    final timeDiff = endTime.difference(startTime);
+    logger.d("verifySignature: time diff: ${timeDiff.inMilliseconds} ms");
+
+    logger.d("\n\t\t--------------------------END: verifySimpleOverlapSignature--------------------------");
+
+    return checkTopPubHash == topPublicKey;
   }
 
 }

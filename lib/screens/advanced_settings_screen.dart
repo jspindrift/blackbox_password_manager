@@ -527,11 +527,13 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                             : Colors.redAccent,
                       ),
                       onPressed: () async {
-                        _runPostQuantumIntegrityTestWithReset();
+                        await _runPostQuantumIntegrityTestWithReset();
+                        // await _runSimpleOverlapWOTSTestWithReset();
                       },
                     ),
                     onTap: () async {
-                      _runPostQuantumIntegrityTest();
+                      await _runPostQuantumIntegrityTest();
+                      // await _runSimpleOverlapWOTSTest();
                     },
                   ),
                 ),
@@ -752,7 +754,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     /// generate keys
     for (var index = 0; index < numTests; index++) {
       await _wotsManager.createTopPubKey(kek, index);
-      topHashes.add(_wotsManager.topPubHash);
+      topHashes.add(_wotsManager.topPublicKey);
     }
 
     _logManager.logLongMessage("topHashes: ${topHashes}");
@@ -798,6 +800,28 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     _resetTestVariables();
 
     await _runOverlapWOTSTest();
+  }
+
+
+  /// test overlap WOTS signing protocol
+  Future<void> _runSimpleOverlapWOTSTest() async {
+
+    final kek = List.filled(32, 0);
+    final message = "hello world: ${_wotsManager.lastBlockHash}";
+
+    final sigItem = await _wotsManager.signSimpleOverlapMessage(kek, "chain2", 2, message);
+    // _logManager.logLongMessage("sigItem: ${sigItem?.toRawJson()}");
+
+    final isValid = await _wotsManager.verifySimpleOverlapSignature(sigItem);
+    _logManager.logger.d("isValid: ${isValid}");
+
+    _signCounter++;
+  }
+
+  Future<void> _runSimpleOverlapWOTSTestWithReset() async {
+    _resetTestVariables();
+
+    await _runSimpleOverlapWOTSTest();
   }
 
 

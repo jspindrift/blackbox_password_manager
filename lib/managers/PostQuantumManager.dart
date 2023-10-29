@@ -174,7 +174,9 @@ class PostQuantumManager {
 
     final fileHash = _cryptor.sha256(fileHashList);
 
-    final kek = hex.decode(fileHash);// List.filled(32, 0);
+    // final kek = hex.decode(fileHash);// List.filled(32, 0);
+    final kek = List.filled(32, 0);
+
     var keyIndex_secp256k1 = 0;
     // final kek = hex.encode(_cryptor.getRandomBytes(32));
 
@@ -210,7 +212,9 @@ class PostQuantumManager {
     msgObject.signature = msgSignature!.toCompactHex();
 
     /// compute WOTS signature on message object
-    await _wotsManager.signMessage(kek, 1, msgObject.toRawJson());
+    // await _wotsManager.signMessage(kek, 1, msgObject.toRawJson());
+    await _wotsManager.signSimpleOverlapMessage(kek, "main", 1, msgObject.toRawJson());
+
   }
 
   Future<void> postQuantumProjectIntegrityTestVerify() async {
@@ -219,10 +223,14 @@ class PostQuantumManager {
 
     var storedSignatureFormatted = storedSignature.replaceAll("\n", "");
 
-    final storedSignatureObject = WOTSBasicSignatureItem.fromRawJson(storedSignatureFormatted);
+    // final storedSignatureObject = WOTSBasicSignatureItem.fromRawJson(storedSignatureFormatted);
+    final storedSignatureObject = WOTSSimpleOverlapSignatureItem.fromRawJson(storedSignatureFormatted);
+
     _logManager.logLongMessage("storedSignatureObject:\n\n${storedSignatureObject}");
 
-    final isValid = await _wotsManager.verifySignature(storedSignatureObject);
+    // final isValid = await _wotsManager.verifySignature(storedSignatureObject);
+    final isValid = await _wotsManager.verifySimpleOverlapSignature(storedSignatureObject);
+
     _logManager.logger.d("storedSignatureObject: isValid: ${isValid}");
   }
 
