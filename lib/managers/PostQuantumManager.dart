@@ -163,22 +163,15 @@ class PostQuantumManager {
 
   Future<void> postQuantumProjectIntegrityTest() async {
 
-    // final storedSignature = await loadAssetSignature();
-    // _logManager.logLongMessage("storedSignature:\n\n${storedSignature.replaceAll(" ", "").replaceAll("\n", "")}");
-    //
-    // final storedSignatureObject = WOTSBasicSignatureItem.fromRawJson(storedSignature.replaceAll(" ", "").replaceAll("\n", ""));
-    // _logManager.logLongMessage("storedSignatureObject:\n\n${storedSignatureObject}");
-
     final fileHashList = await loadAsset();
-    _logManager.logLongMessage("fileHashes:\n\n${fileHashList}");
+    // _logManager.logLongMessage("fileHashes:\n\n${fileHashList}");
 
     final fileHash = _cryptor.sha256(fileHashList);
 
-    // final kek = hex.decode(fileHash);// List.filled(32, 0);
     final kek = List.filled(32, 0);
+    // final kek = hex.encode(_cryptor.getRandomBytes(32));
 
     var keyIndex_secp256k1 = 0;
-    // final kek = hex.encode(_cryptor.getRandomBytes(32));
 
     if (publicKeys.isEmpty) {
       await createKeyTree(2);
@@ -211,10 +204,33 @@ class PostQuantumManager {
     /// add asymmetric signature to message object
     msgObject.signature = msgSignature!.toCompactHex();
 
+    /// decode the post_quantum_signature object to get values for next signature
+    var storedSignature = await loadAssetSignature();
+    _logManager.logLongMessage("storedSignature:\n\n${storedSignature.replaceAll(" ", "").replaceAll("\n", "")}");
+
+    var storedSignatureFormatted = storedSignature.replaceAll("\n", "");
+
+    var thisSigatureIndex = 1;
+    var lastBlockHash = "";
+    try {
+      var storedSignatureChainObject = WOTSSimpleOverlapSignatureChain.fromRawJson(
+          storedSignatureFormatted,
+      );
+      storedSignatureChainObject.blocks.sort((a, b) => a.index.compareTo(b.index));
+
+      _wotsManager.setSignatureChainObject(storedSignatureChainObject);
+
+      thisSigatureIndex = storedSignatureChainObject.blocks.last.index + 1;
+      lastBlockHash = _cryptor.sha256(
+          storedSignatureChainObject.blocks.last.toRawJson());
+    } catch (e) {
+      logger.e("no previous block to get, must be genesis");
+    }
+
+
     /// compute WOTS signature on message object
     // await _wotsManager.signMessage(kek, 1, msgObject.toRawJson());
-    await _wotsManager.signSimpleOverlapMessage(kek, "main", 1, msgObject.toRawJson());
-
+    await _wotsManager.signSimpleOverlapMessage(kek, "main", lastBlockHash, thisSigatureIndex, msgObject.toRawJson());
   }
 
   Future<void> postQuantumProjectIntegrityTestVerify() async {
@@ -222,15 +238,14 @@ class PostQuantumManager {
     _logManager.logLongMessage("storedSignature:\n\n${storedSignature.replaceAll(" ", "").replaceAll("\n", "")}");
 
     var storedSignatureFormatted = storedSignature.replaceAll("\n", "");
+    _logManager.logLongMessage("storedSignatureFormatted:\n\n${storedSignatureFormatted}");
 
     // final storedSignatureObject = WOTSBasicSignatureItem.fromRawJson(storedSignatureFormatted);
-    final storedSignatureObject = WOTSSimpleOverlapSignatureItem.fromRawJson(storedSignatureFormatted);
-
-    _logManager.logLongMessage("storedSignatureObject:\n\n${storedSignatureObject}");
+    final storedSignatureObject = WOTSSimpleOverlapSignatureChain.fromRawJson(storedSignatureFormatted);
+    // _logManager.logLongMessage("storedSignatureObject:\n\n${storedSignatureObject}");
 
     // final isValid = await _wotsManager.verifySignature(storedSignatureObject);
-    final isValid = await _wotsManager.verifySimpleOverlapSignature(storedSignatureObject);
-
+    final isValid = await _wotsManager.verifySimpleOverlapSignature(storedSignatureObject.blocks.last);
     _logManager.logger.d("storedSignatureObject: isValid: ${isValid}");
   }
 

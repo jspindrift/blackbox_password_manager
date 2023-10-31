@@ -400,6 +400,7 @@ class WOTSSimpleOverlapSignatureChain {
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
+      "chainId": chainId,
       "blocks": blocks,
     };
 
