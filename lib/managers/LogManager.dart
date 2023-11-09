@@ -297,10 +297,7 @@ class LogManager {
     return _shared;
   }
 
-  static const _logManagerType = 0; // 0 = blockchain, 1 = append only
-
-  static const _minCreationTime = '2022-12-04T08:28:44.219169';
-  // static const _minCreationTime = '2022-12-05T08:28:44.219169';
+  static const _minCreationTime = '2023-11-07T08:28:44.219169';
 
   static const _logFileLimitSize = 10485760; // 10 MB in bytes
   static const _logFileLimitSize_1MB = 1048576; // 1 MB in bytes
@@ -347,9 +344,7 @@ class LogManager {
   bool _logsAreVerifiable = false;
 
   bool _deletedLogFile = false;
-  bool _savingConcurrent = false;
   bool _isSavingLogs = false;
-  // String _noPinCodeMessage = 'failure: Bad state: No element';
 
   final fileManager = FileManager();
   final cryptor = Cryptor();
@@ -357,7 +352,7 @@ class LogManager {
   final digester = Digester();
   final deviceManager = DeviceManager();
   final settingsManager = SettingsManager();
-  // final tokenModel = TokenModel();
+
 
   int get lifeTimeInSeconds {
     return _lifeTimeInSeconds;
@@ -379,82 +374,80 @@ class LogManager {
     _isSavingLogs = value;
   }
 
-  /// cannot use this or causes stackoverflow
-  // final keyManager = KeychainManager();
 
   LogManager._internal();
 
-  void initialize() async {
-    initialize2();
-
-    try {
-      /// TODO: remove after testing
-      ///
-      // deleteLogFile();
-
-      await settingsManager.initialize();
-
-      fileManager.readLogData().then((value) {
-        _initialLogSizeInBytes = value.length;
-        _initialLogSizeInKilobytes = value.length / 1024;
-        _initialLogSizeInMegabytes = value.length / 1048576;
-        _initialLogSizeInGigabytes = value.length / 1073741824;
-        logger.d(
-            'initialize retrieved data: $_initialLogSizeInBytes bytes, $_initialLogSizeInKilobytes kB, $_initialLogSizeInMegabytes MB, $_initialLogSizeInGigabytes Gb');
-
-        final timestamp = DateTime.now();
-
-        if (!timestamp.isAfter(DateTime.parse(_minCreationTime))) {
-          logger.w('invalid time: failed to log2');
-          return;
-        }
-
-        if (value != null) {
-          if (value.isNotEmpty) {
-            logger.d(
-                'is file size less than limit: ${_initialLogSizeInBytes <= _logFileLimitSize}');
-
-            _blockchain = Blockchain.fromRawJson(value);
-            _blockHeight = _blockchain.blocks.length;
-            logger.d(
-                'blockchain: $_blockHeight blocks, time: ${_blockchain.time}');
-
-            // final version = settingsManager.packageInfo.version;
-            final appVersion = settingsManager.versionAndBuildNumber();//settingsManager.packageInfo.version;
-
-            final startTime = DateTime.now().toIso8601String();
-
-            final logLine = LogLine(
-              time: startTime,
-              callingFunction:
-                  "LogManager.initialize", //programInfo.callerFunctionName,
-              message: 'Initialize LogManager: version: $appVersion',
-            );
-
-            _logLineList.list.add(logLine);
-
-            _block = Block(
-              blockNumber: _blockHeight,
-              time: startTime,
-              logList: _logLineList,
-              hash: '',
-              mac: '',
-            );
-          } else {
-            /// create the first blockchain log
-            ///
-            _createFirstBlock();
-          }
-        } else {
-          /// create the first blockchain log
-          ///
-          _createFirstBlock();
-        }
-      });
-    } catch (e) {
-      logger.w("log exception: $e");
-    }
-  }
+  // void initialize() async {
+  //   // initialize2();
+  //
+  //   try {
+  //     /// TODO: remove after testing
+  //     ///
+  //     // deleteLogFile();
+  //
+  //     await settingsManager.initialize();
+  //
+  //     fileManager.readLogData().then((value) {
+  //       _initialLogSizeInBytes = value.length;
+  //       _initialLogSizeInKilobytes = value.length / 1024;
+  //       _initialLogSizeInMegabytes = value.length / 1048576;
+  //       _initialLogSizeInGigabytes = value.length / 1073741824;
+  //       logger.d(
+  //           'initialize retrieved data: $_initialLogSizeInBytes bytes, $_initialLogSizeInKilobytes kB, $_initialLogSizeInMegabytes MB, $_initialLogSizeInGigabytes Gb');
+  //
+  //       final timestamp = DateTime.now();
+  //
+  //       if (!timestamp.isAfter(DateTime.parse(_minCreationTime))) {
+  //         logger.w('invalid time: failed to log2');
+  //         return;
+  //       }
+  //
+  //       if (value != null) {
+  //         if (value.isNotEmpty) {
+  //           logger.d(
+  //               'is file size less than limit: ${_initialLogSizeInBytes <= _logFileLimitSize}');
+  //
+  //           _blockchain = Blockchain.fromRawJson(value);
+  //           _blockHeight = _blockchain.blocks.length;
+  //           logger.d(
+  //               'blockchain: $_blockHeight blocks, time: ${_blockchain.time}');
+  //
+  //           // final version = settingsManager.packageInfo.version;
+  //           final appVersion = settingsManager.versionAndBuildNumber();//settingsManager.packageInfo.version;
+  //
+  //           final startTime = DateTime.now().toIso8601String();
+  //
+  //           final logLine = LogLine(
+  //             time: startTime,
+  //             callingFunction:
+  //                 "LogManager.initialize", //programInfo.callerFunctionName,
+  //             message: 'Initialize LogManager: version: $appVersion',
+  //           );
+  //
+  //           _logLineList.list.add(logLine);
+  //
+  //           _block = Block(
+  //             blockNumber: _blockHeight,
+  //             time: startTime,
+  //             logList: _logLineList,
+  //             hash: '',
+  //             mac: '',
+  //           );
+  //         } else {
+  //           /// create the first blockchain log
+  //           ///
+  //           _createFirstBlock();
+  //         }
+  //       } else {
+  //         /// create the first blockchain log
+  //         ///
+  //         _createFirstBlock();
+  //       }
+  //     });
+  //   } catch (e) {
+  //     logger.w("log exception: $e");
+  //   }
+  // }
 
   void initialize2() async {
     logger.d("LogManager: initialize2");
@@ -465,10 +458,8 @@ class LogManager {
 
       await settingsManager.initialize();
 
-      var numberOfSessions = 0;
-
       final sessionNumber = settingsManager.sessionNumber;
-      // print("initialize2 sessionNumber: $sessionNumber");
+
       settingsManager.incrementSessionNumber();
 
       if (sessionNumber == 0) {
@@ -477,24 +468,6 @@ class LogManager {
 
       fileManager.readLogDataAppend().then((value) async {
         final parts = value.split("\n");
-        // print("newlines: ${parts.length}");
-        // print("last line: ${parts.last}");
-
-        /// this wont happen here, for testing
-        // var lastLine;
-        // if (parts.length > 1) {
-        //   lastLine = parts[parts.length-1];
-        // } else {
-        //   lastLine = parts[0];
-        // }
-        // final lastLine = parts[parts.length-1];
-        // print("last line: ${lastLine}");
-
-        // final parts2 = lastLine.split(", ");
-        // final hashline = parts2.first.replaceAll("hash: ", "");
-        // final macline = parts2.last.replaceAll("digest: ", "");
-        // print("hashline line: ${hashline}");
-        // print("macline line: ${macline}");
 
         int index = 0;
         String appendedString = "";
@@ -507,30 +480,12 @@ class LogManager {
               // print("decoded line: $isLogLine");
               appendedString += part + "\n";
             }
-            // else {
-            //   print("cant decode line: $part");
-            //
-            //   // final parts2 = part.split(", ");
-            //   // print("parts2 first: ${parts2.first}");
-            //   // print("parts2 last: ${parts2.last}");
-            //   //
-            //   // final hashline = parts2.first.replaceAll("hash: ", "");
-            //   // final macline = parts2.last.replaceAll("digest: ", "");
-            //   // print("hashline line[$index]: ${hashline}");
-            //   // print("macline line[$index]: ${macline}");
-            //   //
-            //   // final logHash = hasher.sha256Hash(appendedString);
-            //   // print('logHash: ${logHash}');
-            //
-            //   // appendedString += part;
-            //
-            // }
+
           } catch (e) {
             // print("error: $e\n...cant decode line: ${part.length}: $part");
             final parts2 = part.split(", ");
             if (parts2.length > 1) {
               _logsAreVerifiable = true;
-              numberOfSessions += 1;
               // print("parts2 first: ${parts2.first}");
               // print("parts2 last: ${parts2.last}");
 
@@ -558,9 +513,6 @@ class LogManager {
                 logger.w(
                     "invalid hash/digest[$index]: $hashCheck, $logHash, $logMacHex");
               }
-              // else {
-              //   logger.d("valid logs");
-              // }
 
               if (index == parts.length - 1) {
                 appendedString += part;
@@ -577,16 +529,6 @@ class LogManager {
           }
           index += 1;
         }
-
-        // print("numberOfSessions: $numberOfSessions");
-        //
-        // print("IS APPENDED length: ${appendedString.length}, ${value.length}");
-        //
-        // print("IS APPENDED STRING ==: ${appendedString == value}");
-
-        // print("_logsAreVerifiable: $_logsAreVerifiable");
-        // print("_hasInvalidLogs: $_hasInvalidLogs");
-        // print("_validLogs: $_validLogs");
 
         if (_logsAreVerifiable) {
           _validLogs = !_hasInvalidLogs;
@@ -615,45 +557,13 @@ class LogManager {
             logger.d(
                 'is file size less than 1MB: ${_initialLogSizeInBytes <= _logFileLimitSize_1MB}');
 
-            // _blockchain = Blockchain.fromRawJson(value);
-            // _blockHeight = _blockchain.blocks.length;
-            // logger.d(
-            //     'blockchain: $_blockHeight blocks, time: ${_blockchain.time}');
-            //
-            // final version = settingsManager.packageInfo.version;
-            final appVersion = settingsManager.versionAndBuildNumber();//settingsManager.packageInfo.version;
-
+            final appVersion = settingsManager.versionAndBuildNumber();
             final startTime = DateTime.now().toIso8601String();
-            //
-            // final logLine = LogLine(
-            //   time: startTime,
-            //   callingFunction:
-            //   "LogManager.initialize", //programInfo.callerFunctionName,
-            //   message: 'Initialize LogManager: version: $version',
-            // );
-            //
-            // _logLineList.list.add(logLine);
-            //
-            // _block = Block(
-            //   blockNumber: _blockHeight,
-            //   time: startTime,
-            //   logList: _logLineList,
-            //   hash: '',
-            //   mac: '',
-            // );
 
             final logHash = hasher.sha256Hash(value);
-            // print('logHash: ${logHash}');
-
-            // final logKey = base64.encode(cryptor.logSecretKeyBytes);
-            // print('logKey cryptor: ${logKey}');
-
             final logKeyHex = hex.encode(cryptor.logSecretKeyBytes);
             // print('logKeyHex cryptor: ${logKeyHex}');
 
-            // print('mac log with key: $logKey');
-            // final logMac = await digester.hmac(logHash, logKey);
-            // print('logMac: ${hex.encode(logMac)}');
             var logHexMacEncoded = "";
             try {
               final logHexMac = await digester.hmac(logHash, logKeyHex);
@@ -662,22 +572,11 @@ class LogManager {
             } catch (e) {
               logger.e("Exception: $e");
             }
-            /// TODO: diff logging
-            // _logLineCount += 1;
-            // final logLineHash = BasicLogLine(
-            //   time: startTime,
-            //   index: 0,
-            //   callingFunction:
-            //   "LogManager.initialize",
-            //   message: "hash: $logHash, digest: $logMac",
-            // );
 
             /// Write hash and digest to log file
             final logHashLine = "hash: $logHash, digest: $logHexMacEncoded";
 
             await fileManager.writeLogDataAppend(logHashLine + "\n");
-
-            // _basicLogLineList.list.add(logLineHash);
 
             /// TODO: diff logging
             _logLineCount += 1;
@@ -715,74 +614,6 @@ class LogManager {
     }
   }
 
-  /// create the first block in our chain.
-  void _createFirstBlock() async {
-    logger.d('Create First Block');
-    try {
-      _blockchain = Blockchain(time: "create first block", blocks: []);
-
-      // CustomTrace programInfo = CustomTrace(StackTrace.current);
-      final deviceId = await deviceManager.getDeviceId();
-
-      /// create the first blockchain log
-      ///
-      final startTime = DateTime.now();
-      final startTimeString = startTime.toIso8601String();
-
-      if (!startTime.isAfter(DateTime.parse(_minCreationTime))) {
-        logger.d('we not good');
-        return;
-      }
-
-      var logLine = LogLine(
-        time: startTimeString,
-        callingFunction: "LogManager._createFirstBlock",
-        message: 'Genesis: deviceId: $deviceId',
-      );
-
-      _logLineList.list.add(logLine);
-
-      // final version = settingsManager.packageInfo.version;
-      final appVersion = settingsManager.versionAndBuildNumber();//settingsManager.packageInfo.version;
-
-      logLine = LogLine(
-        time: startTimeString,
-        callingFunction: "LogManager._createFirstBlock",
-        message: 'version: $appVersion',
-      );
-
-      _logLineList.list.add(logLine);
-
-      final logLineJsonString = logLine.toRawJson();
-
-      final hash = hasher.sha256Hash(logLineJsonString);
-
-      _block = Block(
-        blockNumber: 0,
-        time: startTimeString,
-        logList: _logLineList,
-        hash: hash,
-        mac: '',
-      );
-
-      _blockchain = Blockchain(time: startTimeString, blocks: [_block]);
-
-      // /// TODO: diff logging
-      // _logLineCount += 1;
-      // final logLine2 = BasicLogLine(
-      //   time: startTimeString,
-      //   index: _logLineCount,
-      //   callingFunction:
-      //   "LogManager._createFirstBlock",
-      //   message: "version: $version",
-      // );
-      //
-      // _basicLogLineList.list.add(logLine2);
-      // logger.d('starting with new logs');
-    } catch (e) {
-      print(e);
-    }
-  }
 
   /// create the first block in our chain.
   void _createFirstBlock2() async {

@@ -91,7 +91,9 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     /// add observer for app lifecycle state transitions
     WidgetsBinding.instance.addObserver(this);
 
-    logManager.initialize();
+    // logManager.initialize();
+    logManager.initialize2();
+
 
     settingsManager.initializeLaunchSettings();
     // keyManager.deleteAll();
