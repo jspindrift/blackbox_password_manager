@@ -4,8 +4,7 @@ import 'dart:math';
 import 'package:convert/convert.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:intl/intl.dart';
-import '../helpers/WidgetUtils.dart';
+
 import '../managers/Cryptor.dart';
 import '../managers/Digester.dart';
 import '../managers/LogManager.dart';

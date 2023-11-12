@@ -11,7 +11,6 @@ import '../managers/KeychainManager.dart';
 import '../models/KeyItem.dart';
 import '../models/PasswordItem.dart';
 import '../models/NoteItem.dart';
-
 import '../screens/add_password_screen.dart';
 import '../screens/add_note_screen.dart';
 import '../screens/note_list_screen.dart';

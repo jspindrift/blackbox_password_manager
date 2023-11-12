@@ -20,12 +20,10 @@ import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/Cryptor.dart';
-
 import '../models/GenericItem.dart';
-
 import '../models/QRCodeItem.dart';
-import '../widgets/QRScanView.dart';
 import 'home_tab_screen.dart';
+import '../widgets/QRScanView.dart';
 import '../screens/active_encryption_screen.dart';
 
 

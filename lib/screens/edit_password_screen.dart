@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+
 import 'package:argon2/argon2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -10,10 +11,11 @@ import 'package:password_strength/password_strength.dart';
 import 'package:random_password_generator/random_password_generator.dart';
 import 'package:bip39/bip39.dart' as bip39;
 
-import '../managers/GeolocationManager.dart';
+import '../widgets/qr_code_view.dart';
 import '../models/GeoLockItem.dart';
 import '../helpers/AppConstants.dart';
 import '../helpers/WidgetUtils.dart';
+import '../managers/GeolocationManager.dart';
 import '../managers/Cryptor.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/LogManager.dart';
@@ -23,7 +25,6 @@ import '../models/GenericItem.dart';
 import '../models/QRCodeItem.dart';
 import '../screens/previous_passwords_screen.dart';
 import '../screens/show_bip39_screen.dart';
-import '../widgets/qr_code_view.dart';
 import 'home_tab_screen.dart';
 
 enum PasswordType { random, mnemonic, pin }

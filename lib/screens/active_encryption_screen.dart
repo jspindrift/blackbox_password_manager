@@ -21,7 +21,6 @@ import '../widgets/qr_code_view.dart';
 import 'home_tab_screen.dart';
 
 
-
 /// This is where encryption and decryption of messages with a set key takes place
 ///
 /// Copied from EditEncryptionKeyScreen

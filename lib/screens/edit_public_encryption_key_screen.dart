@@ -1,9 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:argon2/argon2.dart';
-import '../models/KeyItem.dart';
-import '../screens/active_encryption_screen.dart';
-import '../screens/peer_public_key_list_screen.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:enum_to_string/enum_to_string.dart';
@@ -14,14 +11,14 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:intl/intl.dart';
 
+import '../models/KeyItem.dart';
+import '../screens/peer_public_key_list_screen.dart';
 import '../helpers/AppConstants.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/Cryptor.dart';
-
 import '../models/GenericItem.dart';
-
 import '../models/QRCodeItem.dart';
 import '../widgets/qr_code_view.dart';
 import 'home_tab_screen.dart';

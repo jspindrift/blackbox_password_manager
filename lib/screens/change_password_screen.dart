@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
-// import '../helpers/InactivityTimer.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/Cryptor.dart';
 import '../managers/LogManager.dart';

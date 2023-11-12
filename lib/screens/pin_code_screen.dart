@@ -1,13 +1,14 @@
 import 'dart:async';
-import 'dart:io';
-import '../helpers/AppConstants.dart';
+
 import 'package:flutter/material.dart';
-import '../models/PinCodeItem.dart';
 import 'package:pin_code_view/pin_code_view.dart';
+
+import '../models/PinCodeItem.dart';
 import '../managers/Cryptor.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
+import '../helpers/AppConstants.dart';
 
 /// flow determines if user is creating the pin code
 /// or entering the code from the lock screen

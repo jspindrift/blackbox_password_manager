@@ -1,5 +1,5 @@
-import '../screens/show_log_detail2_screen.dart';
 import 'package:flutter/material.dart';
+
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';

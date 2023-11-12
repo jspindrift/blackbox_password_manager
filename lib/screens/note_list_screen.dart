@@ -1,18 +1,12 @@
-import '../helpers/WidgetUtils.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:intl/intl.dart';
-import '../screens/add_note_screen.dart';
-import '../screens/items_by_tag_screen.dart';
 import 'package:flutter/material.dart';
-import '../models/PasswordItem.dart';
-import '../models/NoteItem.dart';
 
+import '../models/NoteItem.dart';
 import '../managers/LogManager.dart';
 import '../managers/Cryptor.dart';
-
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
-import '../screens/settings_screen.dart';
+import '../screens/add_note_screen.dart';
 import 'home_tab_screen.dart';
 
 class NoteListScreen extends StatefulWidget {

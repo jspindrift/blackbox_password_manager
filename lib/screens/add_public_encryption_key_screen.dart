@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:argon2/argon2.dart';
-import '../models/KeyItem.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:enum_to_string/enum_to_string.dart';
@@ -10,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:bip39/bip39.dart' as bip39;
 
+import '../models/KeyItem.dart';
 import '../helpers/AppConstants.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';

@@ -1,22 +1,19 @@
 import 'dart:convert';
 
-import '../screens/add_peer_public_key_screen.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter/material.dart';
-import 'package:bip39/bip39.dart' as bip39;
 
 import '../helpers/AppConstants.dart';
 import '../models/GenericItem.dart';
 import '../models/KeyItem.dart';
-
 import '../managers/LogManager.dart';
 import '../managers/Cryptor.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
+import '../screens/add_peer_public_key_screen.dart';
 
-import 'add_public_encryption_key_screen.dart';
 import 'edit_peer_public_key_screen.dart';
 import 'home_tab_screen.dart';
 

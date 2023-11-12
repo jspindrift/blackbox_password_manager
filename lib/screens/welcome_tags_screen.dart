@@ -12,7 +12,6 @@ import '../models/NoteItem.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
-import 'add_key_item_screen.dart';
 import 'add_note_screen.dart';
 import 'add_password_screen.dart';
 import 'add_public_encryption_key_screen.dart';

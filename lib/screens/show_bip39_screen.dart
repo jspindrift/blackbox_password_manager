@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import 'home_tab_screen.dart';

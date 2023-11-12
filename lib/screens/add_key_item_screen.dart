@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:argon2/argon2.dart';
-import '../models/KeyItem.dart';
 import 'package:convert/convert.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/cupertino.dart';
@@ -17,11 +17,9 @@ import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/Cryptor.dart';
-
+import '../models/KeyItem.dart';
 import '../models/NoteItem.dart';
 import '../models/GenericItem.dart';
-import '../models/KeyItem.dart';
-
 import 'home_tab_screen.dart';
 
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:password_strength/password_strength.dart';
+
 import '../models/PasswordItem.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';

@@ -7,11 +7,11 @@ import 'package:flutter/services.dart';
 import 'package:password_strength/password_strength.dart';
 import 'package:random_password_generator/random_password_generator.dart';
 import 'package:bip39/bip39.dart' as bip39;
+
 import '../helpers/AppConstants.dart';
 import '../managers/GeolocationManager.dart';
 import '../models/PasswordItem.dart';
 import '../models/GenericItem.dart';
-
 import '../managers/Cryptor.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/LogManager.dart';

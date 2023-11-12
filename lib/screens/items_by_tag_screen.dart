@@ -1,7 +1,7 @@
-import '../screens/edit_public_encryption_key_screen.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import "package:bip39/bip39.dart" as bip39;
+
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
@@ -11,6 +11,7 @@ import '../models/PasswordItem.dart';
 import '../models/NoteItem.dart';
 import '../screens/edit_password_screen.dart';
 import '../screens/add_note_screen.dart';
+import '../screens/edit_public_encryption_key_screen.dart';
 import 'home_tab_screen.dart';
 
 class ItemsByTagScreen extends StatefulWidget {

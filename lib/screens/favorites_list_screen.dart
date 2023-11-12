@@ -2,10 +2,8 @@ import '../models/GenericItem.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:intl/intl.dart';
 import "package:bip39/bip39.dart" as bip39;
 
-import '../helpers/WidgetUtils.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
@@ -13,7 +11,6 @@ import '../managers/Cryptor.dart';
 import '../models/KeyItem.dart';
 import '../models/PasswordItem.dart';
 import '../models/NoteItem.dart';
-
 import '../screens/edit_password_screen.dart';
 import '../screens/add_note_screen.dart';
 import 'add_password_screen.dart';

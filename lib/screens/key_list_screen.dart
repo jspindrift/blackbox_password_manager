@@ -1,18 +1,17 @@
 import 'dart:convert';
 
-import '../helpers/AppConstants.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter/material.dart';
-import '../models/KeyItem.dart';
 
+import '../helpers/AppConstants.dart';
+import '../models/KeyItem.dart';
 import '../managers/LogManager.dart';
 import '../managers/Cryptor.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
-
 import 'add_public_encryption_key_screen.dart';
 import 'edit_public_encryption_key_screen.dart';
 import 'home_tab_screen.dart';

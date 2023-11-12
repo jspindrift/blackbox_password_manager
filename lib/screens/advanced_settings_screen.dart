@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 
 import '../managers/PostQuantumManager.dart';
 import '../managers/WOTSManager.dart';
-import '../managers/Cryptor.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
@@ -1005,6 +1004,5 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
       ),
     );
   }
-
 
 }

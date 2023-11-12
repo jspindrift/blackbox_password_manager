@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import '../helpers/HearbeatTimer.dart';
 import '../helpers/InactivityTimer.dart';
 
-import '../managers/GeolocationManager.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/Cryptor.dart';

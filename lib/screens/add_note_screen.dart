@@ -1,15 +1,15 @@
 import 'dart:async';
-import 'dart:convert';
+
 import 'package:argon2/argon2.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+
 import '../helpers/AppConstants.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/Cryptor.dart';
-
 import '../models/NoteItem.dart';
 import '../models/GenericItem.dart';
 import 'home_tab_screen.dart';

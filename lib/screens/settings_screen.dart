@@ -1,13 +1,13 @@
-import '../screens/rekey_auth_screen.dart';
 import 'package:flutter/material.dart';
+
 import '../helpers/InactivityTimer.dart';
-import '../screens/advanced_settings_screen.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/BiometricManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/LogManager.dart';
 import '../managers/Cryptor.dart';
-
+import '../screens/rekey_auth_screen.dart';
+import '../screens/advanced_settings_screen.dart';
 import '../screens/change_password_screen.dart';
 import '../screens/backups_screen.dart';
 import '../screens/pin_code_screen.dart';

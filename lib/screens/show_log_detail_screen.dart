@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../managers/LogManager.dart';
 import '../managers/FileManager.dart';
 import '../managers/SettingsManager.dart';
