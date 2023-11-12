@@ -36,8 +36,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
   final _keyManager = KeychainManager();
-  // final _testCrypto = TestCrypto();
-  final _cryptor = Cryptor();
 
   /// post quantum signing
   final _wotsManager = WOTSManager();
