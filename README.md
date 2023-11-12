@@ -53,8 +53,9 @@ additional encryption layer over all these items.
 
 ## Recovery Mode
 
-Your master password is the only thing that protects you from unauthorized access to your vault.  
-However, we also believe that recovery is a very important property for key management in general.
+Your master password is the only thing that protects you from unauthorized access to your vault and 
+cannot be recovered unless Recovery Mode is activated and the protocol is followed.  
+Recovery is a very important property for key management in general.
 We implemented an optional recovery mode within the password manager
 (Under Settings>Advanced Settings>Recovery Mode).  We use Curve25519 to enable you to share a
 recovery key with other people that use Blackbox Password Manager.  
@@ -73,6 +74,8 @@ THIS APPLICATION IS FOR EXPERIMENTAL PURPOSES AT THE MOMENT.  There may be possi
 within the implementation and should not be used for mission critical data unless you can verify
 the application and implementation yourself.  There is also experimental code as well as unused code 
 within the application that needs to be cleaned up and/or enhanced.
+
+Besides this, there is some cool experimental cryptography being worked with and might be worth looking into.
 
 ## Experimental Geo-Encryption
 
