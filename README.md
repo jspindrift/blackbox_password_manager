@@ -74,6 +74,8 @@ within the implementation and should not be used for mission critical data unles
 the application and implementation yourself.  There is also experimental code as well as unused code 
 within the application that needs to be cleaned up and/or enhanced.
 
+Besides this, there is some cool experimental cryptography being worked with and might be worth looking into.
+
 ## Experimental Geo-Encryption
 
 Saved Passwords and Notes are pretty straightforward.  There is a Geo-Encryption (Geo-Lock) feature 
