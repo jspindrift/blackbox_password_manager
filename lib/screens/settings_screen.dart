@@ -124,13 +124,13 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       case AppLifecycleState.inactive:
         // _logManager.log("SettingsScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: inactive");
-        _logManager.logger.d("AppLifecycleState: inactive - SettingsScreen");
+        // _logManager.logger.d("AppLifecycleState: inactive - SettingsScreen");
 
         break;
       case AppLifecycleState.resumed:
         // _logManager.log("SettingsScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: resumed");
-        _logManager.logger.d("AppLifecycleState: resumed - SettingsScreen");
+        // _logManager.logger.d("AppLifecycleState: resumed - SettingsScreen");
 
         /// check biometrics
         final checkBioAvailability = await _biometricManager.doBiometricCheck();
@@ -155,17 +155,15 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       case AppLifecycleState.paused:
         // _logManager.log("SettingsScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: paused");
-        _logManager.logger.d("AppLifecycleState: paused - SettingsScreen");
-
+        // _logManager.logger.d("AppLifecycleState: paused - SettingsScreen");
         break;
       case AppLifecycleState.detached:
-        _logManager.logger.d("AppLifecycleState: detached - SettingsScreen");
+        // _logManager.logger.d("AppLifecycleState: detached - SettingsScreen");
         // _logManager.log("SettingsScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: detached");
         break;
       case AppLifecycleState.hidden:
-        _logManager.logger.d("AppLifecycleState: hidden - SettingsScreen");
-
+        // _logManager.logger.d("AppLifecycleState: hidden - SettingsScreen");
         break;
     }
   }

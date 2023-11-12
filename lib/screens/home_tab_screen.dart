@@ -219,7 +219,7 @@ class _HomeTabScreenState extends State<HomeTabScreen>
       case AppLifecycleState.resumed:
         // _logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: resumed");
-        _logManager.logger.d("AppLifecycleState: resumed - HomeTabScreen");
+        // _logManager.logger.d("AppLifecycleState: resumed - HomeTabScreen");
 
         /// we want to only clear the clipboard after they have copied from the app and
         /// are coming back into the app, not every time they come back in.
@@ -241,7 +241,7 @@ class _HomeTabScreenState extends State<HomeTabScreen>
       case AppLifecycleState.paused:
         // _logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: paused");
-        _logManager.logger.d("AppLifecycleState: paused - HomeTabScreen");
+        // _logManager.logger.d("AppLifecycleState: paused - HomeTabScreen");
 
         if (_settingsManager.isLockOnExitEnabled &&
             !_isOnLockScreen &&
@@ -281,12 +281,12 @@ class _HomeTabScreenState extends State<HomeTabScreen>
         break;
       case AppLifecycleState.detached:
         _cryptor.clearAllKeys();
-        _logManager.logger.d("AppLifecycleState: detached");
+        // _logManager.logger.d("AppLifecycleState: detached");
         // _logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: detached");
         break;
       case AppLifecycleState.hidden:
-        _logManager.logger.d("AppLifecycleState: hidden - HomeTabScreen");
+        // _logManager.logger.d("AppLifecycleState: hidden - HomeTabScreen");
 
         break;
     }

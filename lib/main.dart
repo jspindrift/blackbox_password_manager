@@ -131,7 +131,7 @@ class MyApp extends StatelessWidget {
           ShowLogDetailScreen.routeName: (ctx) => ShowLogDetailScreen(
                 block: Block(
                   time: '',
-                  logList: LogList(list: []),
+                  logList: BasicLogList(list: []),
                   blockNumber: 0,
                   hash: '',
                   mac: '',

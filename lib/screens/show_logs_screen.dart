@@ -17,11 +17,7 @@ class ShowLogsScreen extends StatefulWidget {
 
 class _ShowLogsScreenState extends State<ShowLogsScreen> {
   List<Block> _blocks = [];
-
-  Blockchain _blockchain = Blockchain(time: 'INIT TIME', blocks: []);
-
   List<String> timeLapses = [];
-
   List<int> sessionTimes = [];
 
   bool _isDarkModeEnabled = false;
@@ -41,36 +37,55 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
   }
 
   void _readLogs() async {
-    final logData = await _fileManager.readLogData();
-    _logManager.logger.wtf("_readLogs: $logData");
-    if (logData != null) {
-      if (logData.isNotEmpty) {
-        setState(() {
-          _blockchain = Blockchain.fromRawJson(logData);
-          _blocks = _blockchain.blocks;
+    final logData = await _fileManager.readLogDataAppend();
+    // _logManager.logger.wtf("_readLogs: $logData");
 
-          _blocks.sort((a, b) {
-            return b.time.compareTo(a.time);
-          });
+    final blockSplit = logData.split("\n");
+    _blocks = [];
 
-          sessionTimes = [];
-          _blocks.forEach((element) {
-            _logManager.logger.wtf("${element.toJson()}");
-            final a = DateTime.parse(element.logList.list.first.time);
-            final b = DateTime.parse(element.logList.list.last.time);
+    try {
+        if (logData != null) {
+          if (logData.isNotEmpty) {
+            for (var iblock in blockSplit) {
+              /// if we reach end of array with no other object, break out
+              if (iblock
+                  .replaceAll(" ", "")
+                  .length == 0) {
+                break;
+              }
 
-            final dt = b.difference(a).inSeconds;
-            sessionTimes.add(dt);
-          });
-        });
+              var block = Block.fromRawJson(iblock);
 
-        await _logManager.verifyLogFile().then((value) {
+              _blocks.add(block);
+            }
 
-        });
+            sessionTimes = [];
+            _blocks.sort((a, b) {
+              return a.time.compareTo(b.time);
+            });
+
+            setState(() {
+              _blocks.forEach((element) {
+                _logManager.logger.wtf("${element.toJson()}");
+                final a = DateTime.parse(element.logList.list.first.time);
+                final b = DateTime.parse(element.logList.list.last.time);
+
+                final dt = b
+                    .difference(a)
+                    .inSeconds;
+                  sessionTimes.add(dt);
+                });
+              });
+
+              await _logManager.verifyLogFile().then((value) {
+            });
+          }
+        }
 
         buildTimeLapse();
+      } catch (e) {
+        _logManager.logger.wtf("blockSplit Error: $e");
       }
-    }
   }
 
   void buildTimeLapse() {
@@ -150,8 +165,6 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
     return Scaffold(
       backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
       appBar: AppBar(
-        // title: Text(
-        //     'Logs: \$$_lifeTimeInSeconds\nsize: ${(_lifeTimeInSeconds / (_logManager.latestLogSizeInBytes / 1024)).toStringAsFixed(2)} \$/KB'),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         leading: BackButton(
@@ -177,7 +190,6 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
             ),
             subtitle: Text(
               timeLapses.length > 0 ? timeLapses[index] : "",
-              // 'session #: ${_blocks[index].blockNumber + 1}',
               style: TextStyle(
                 color: _isDarkModeEnabled ? Colors.white : null,
               ),
@@ -187,7 +199,7 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => ShowLogDetailScreen(
-                    block: _blockchain.blocks[index],
+                    block: _blocks[index],
                   ),
                   fullscreenDialog: true,
                 ),
@@ -200,4 +212,5 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
       ),
     );
   }
+
 }

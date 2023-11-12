@@ -905,7 +905,36 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
       builder: (ctx) => AlertDialog(
         title: Text('Delete Everything'),
         content: Text(
-            'Are you sure you want to delete everything?  This will delete EVERYTHING!'),
+            'Are you sure you want to delete everything?  This will delete everything except backups!'),
+        actions: <Widget>[
+          OutlinedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Cancel'),
+          ),
+          OutlinedButton(
+            style: TextButton.styleFrom(
+              primary: Colors.redAccent,
+            ),
+            onPressed: () async {
+              Navigator.of(context).pop();
+              _showDoubleConfirmDeleteEverythingDialog();
+            },
+            child: Text('Delete Everything'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDoubleConfirmDeleteEverythingDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Confirm Delete Everything?'),
+        content: Text(
+            'Are you sure you want to delete all data?  Backups will not be deleted.'),
         actions: <Widget>[
           OutlinedButton(
             onPressed: () {

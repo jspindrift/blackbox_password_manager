@@ -235,38 +235,38 @@ class FileManager {
 
   /// Log Data ----------------------------------------
   ///
-  Future<File?> writeLogData(String data) async {
-    try {
-      final file = await _localLogFile;
-
-      // Write the file
-      return file.writeAsString(data, mode: FileMode.writeOnly, flush: true);
-    } catch (e) {
-      logger.e("Exception: write log error: $e");
-      return null;
-    }
-  }
-
-  Future<File> clearLogFile() async {
-    // print("clear log file");
-    final file = await _localLogFile;
-
-    // Write the file
-    return file.writeAsString("", mode: FileMode.writeOnly);
-    // return file.writeAsString(data, mode: FileMode.append);
-  }
-
-  Future<String> readLogData() async {
-    // print("readLogData");
-    try {
-      final file = await _localLogFile;
-      final contents = await file.readAsString();
-      // logger.d("read log file: ${contents.length}");
-      return contents;
-    } catch (e) {
-      return '';
-    }
-  }
+  // Future<File?> writeLogData(String data) async {
+  //   try {
+  //     final file = await _localLogFile;
+  //
+  //     // Write the file
+  //     return file.writeAsString(data, mode: FileMode.writeOnly, flush: true);
+  //   } catch (e) {
+  //     logger.e("Exception: write log error: $e");
+  //     return null;
+  //   }
+  // }
+  //
+  // Future<File> clearLogFile() async {
+  //   // print("clear log file");
+  //   final file = await _localLogFile;
+  //
+  //   // Write the file
+  //   return file.writeAsString("", mode: FileMode.writeOnly);
+  //   // return file.writeAsString(data, mode: FileMode.append);
+  // }
+  //
+  // Future<String> readLogData() async {
+  //   // print("readLogData");
+  //   try {
+  //     final file = await _localLogFile;
+  //     final contents = await file.readAsString();
+  //     // logger.d("read log file: ${contents.length}");
+  //     return contents;
+  //   } catch (e) {
+  //     return '';
+  //   }
+  // }
 
   /// Append Only Log Data ----------------------------------------
   ///

@@ -26,29 +26,24 @@ class ShowLogDetail2Screen extends StatefulWidget {
 }
 
 class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
-  TextEditingController _logTextController = TextEditingController();
   ScrollController _logScrollController = ScrollController();
 
   bool _isDarkModeEnabled = false;
-
   bool _logsAreVerifiable = false;
   bool _hasInvalidLogs = false;
 
   int _numberOfSessions = 0;
   int _numberOfLines = 0;
 
-  String _numberKB = ""; //0.0;
-  String _numberMB = ""; //0.0;
+  String _numberKB = "";
+  String _numberMB = "";
   int unit = 0;
   int invalidByteIndex = 0;
 
   String logSizeString = "0 bytes";
+  String _appendedLogs = "";
 
   double _logFontSize = 8.0;
-  bool _logFontDecreaseEnable = true;
-  bool _logFontIncreaseEnable = true;
-
-  String _appendedLogs = "";
 
   final _fileManager = FileManager();
   final _logManager = LogManager();
@@ -64,12 +59,11 @@ class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
 
     _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    // EasyLoading.showProgress(0.1,maskType: EasyLoadingMaskType.black);
-    EasyLoading.showProgress(0.3,
-        maskType: EasyLoadingMaskType.black, status: "Loading...");
-
-    // WidgetUtils.showSnackBarDuration(context, "loading data", Duration(seconds: 5));
-    // WidgetUtils.showToastMessage("loading...", 3);
+    EasyLoading.showProgress(
+        0.3,
+        maskType: EasyLoadingMaskType.black,
+        status: "Loading...",
+    );
 
     Timer(Duration(milliseconds: 100), () async {
       await _readLogs();
@@ -82,144 +76,77 @@ class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
       _numberMB = (value.length / pow(1024, 2)).toStringAsFixed(2);
 
       if (value.length / pow(1024, 2) > 1) {
-        // unit = 2;
         logSizeString = "$_numberMB MB";
       } else if (value.length / 1024 > 1) {
-        // unit = 1;
         logSizeString = "$_numberKB KB";
       }
-      // EasyLoading.showProgress(0.5,maskType: EasyLoadingMaskType.black);
-      EasyLoading.showProgress(0.5,
-          maskType: EasyLoadingMaskType.black, status: "Loading.");
+
+      EasyLoading.showProgress(
+          0.5,
+          maskType: EasyLoadingMaskType.black,
+          status: "Loading...",
+      );
 
       // print("value.length: ${value.length}");
       // print("value.length: ${_numberKB} KB");
       // print("value.length: ${_numberMB} MB");
 
       final parts = value.split("\n");
-      final logHash = _cryptor.sha256(value);
-      // print('logHash: ${logHash}');
-      // print("newlines: ${parts.length}");
-      // print("last line: ${parts.last}");
-
-      /// this wont happen here, for testing
-      // var lastLine;
-      // if (parts.length > 1) {
-      //   lastLine = parts[parts.length-1];
-      // } else {
-      //   lastLine = parts[0];
-      // }
-      // final lastLine = parts[parts.length-1];
-      // print("last line: ${lastLine}");
-
-      // final parts2 = lastLine.split(", ");
-      // final hashline = parts2.first.replaceAll("hash: ", "");
-      // final macline = parts2.last.replaceAll("digest: ", "");
-      // print("hashline line: ${hashline}");
-      // print("macline line: ${macline}");
 
       int index = 0;
       int lineNumber = 0;
-
-      // int numStartups = 0;
       String appendedStringShow = "";
       String appendedStringValidate = "";
 
       invalidByteIndex = 0;
 
       for (var part in parts) {
-        // print("part[$index]: $part");
-
         try {
-          final isLogLine = BasicLogList.fromRawJson(part.trim());
-          if (isLogLine != null) {
-            // print("decoded line: $isLogLine");
-            // invalidByteIndex += 0;//part.length;
+          final isBlock = Block.fromRawJson(part.trim());
+          if (isBlock != null) {
             if (!_hasInvalidLogs) {
               invalidByteIndex += part.length;
             }
-            // appendedStringValidate += part + "\n";
-            appendedStringValidate += isLogLine.toRawJson() + "\n";
+            appendedStringValidate += isBlock.toRawJson() + "\n";
 
             appendedStringShow += part +
                 "\n\n---------------------[$index]--------------------------\n\n";
-            // for (var line in isLogLine.list) {
-            //   appendedStringShow += line.toRawJson() + "\n";
-            //   lineNumber += 1;
-            // }
-            lineNumber += isLogLine.list.length;
+
+            lineNumber += isBlock.logList.list.length;
           }
-          // else {
-          //   print("cant decode line: $part");
-          //
-          //   // final parts2 = part.split(", ");
-          //   // print("parts2 first: ${parts2.first}");
-          //   // print("parts2 last: ${parts2.last}");
-          //   //
-          //   // final hashline = parts2.first.replaceAll("hash: ", "");
-          //   // final macline = parts2.last.replaceAll("digest: ", "");
-          //   // print("hashline line[$index]: ${hashline}");
-          //   // print("macline line[$index]: ${macline}");
-          //   //
-          //   final logHash = hasher.sha256Hash(appendedStringShow);
-          //   print('logHash: ${logHash}');
-          //
-          //   // appendedStringShow += part;
-          //
-          // }
+
         } catch (e) {
           final parts2 = part.split(", ");
           if (parts2.length > 1) {
             _logsAreVerifiable = true;
             lineNumber += 1;
-            // invalidByteIndex += part.length;
             if (!_hasInvalidLogs) {
               invalidByteIndex += part.length;
             }
             _numberOfSessions += 1;
-            // numStartups += 1;
-            // print("parts2 first: ${parts2.first}");
-            // print("parts2 last: ${parts2.last}");
-
             final hashCheck = parts2.first.replaceAll("hash: ", "");
             final macCheck = parts2.last.replaceAll("digest: ", "");
-            // print("hashCheck: ${hashCheck}");
-            // print("macCheck: ${macCheck}");
-
-            // print("macline line[$index]: ${macline}");
-
-            // print("appendedStringValidate: $appendedStringValidate");
+            // _logManager.logger.d("hashCheck: ${hashCheck}");
+            // _logManager.logger.d("macCheck: ${macCheck}");
+            // _logManager.logger.d("appendedStringValidate: $appendedStringValidate");
             final logHash = _cryptor.sha256(appendedStringValidate);
-            // print('logHash: ${logHash}');
-            // print('hashline==logHash: ${logHash == hashline}');
+            // _logManager.logger.d('logHash: ${logHash}');
 
-            // final logKey = base64.encode(_cryptor.logSecretKeyBytes);
-            // var cryptor;
             final logKeyHex = hex.encode(_cryptor.logSecretKeyBytes);
-            // final logMac = await digester.hmac(logHash, logKey);
             final logMac = await _digester.hmac(logHash, logKeyHex);
             final logMacHex = hex.encode(logMac);
-            // final logMacHex2 = hex.encode(logMac2);
 
-            // print('logMac: ${logMacHex}');
-            // print('logMac==MAC: ${logMacHex==macCheck}');
+            // _logManager.logger.d('logMac: ${logMacHex}');
+            // _logManager.logger.d('logMac==MAC: ${logMacHex==macCheck}');
 
             if (logHash != hashCheck || logMacHex != macCheck) {
               setState(() {
                 _hasInvalidLogs = true;
               });
-              // invalidByteIndex = index;
-              // print("! invalidByteIndex: $invalidByteIndex");
 
               _logManager.logger.d(
                   "invalid hash/digest[$index]: $hashCheck, $logHash, $logMacHex");
             }
-            // else {
-            //
-            // }
-            // else {
-            //   print("");
-            // }
 
             if (index == parts.length - 1) {
               appendedStringShow += part;
@@ -266,20 +193,11 @@ class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
 
       setState(() {
         _numberOfLines = lineNumber;
-
-        // _logTextController.text = appendedStringShow;
-
-        // _logTextController.
         if (_hasInvalidLogs) {
-          // _logManager.logger.d("scroll this: ${invalidByteIndex/8}");
-
           _logScrollController.jumpTo(invalidByteIndex.toDouble() / 8);
-          // _logScrollController.jumpTo(invalidByteIndex.toDouble());
-
         } else {
           _logScrollController.jumpTo(value.length.toDouble());
         }
-        // _logScrollController.(100);
       });
 
       EasyLoading.dismiss();
@@ -295,42 +213,13 @@ class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
         centerTitle: true,
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
-        leading: BackButton(
+        leading: CloseButton(
           color: _isDarkModeEnabled ? Colors.greenAccent : null,
           onPressed: () {
             Navigator.of(context).pop();
           },
         ),
-        actions: [
-          // IconButton(onPressed: _logFontIncreaseEnable ? (){
-          //   setState(() {
-          //     if (_logFontSize < 24.0) {
-          //       _logFontSize += 1.0;
-          //       _logFontDecreaseEnable = true;
-          //     } else {
-          //       _logFontIncreaseEnable = false;
-          //     }
-          //   });
-          // } : null,
-          //   icon: Icon(
-          //     Icons.add,
-          //   color: Colors.greenAccent,
-          // ),),
-          // IconButton(onPressed: _logFontDecreaseEnable ? (){
-          //   setState(() {
-          //     if (_logFontSize > 6.0) {
-          //       _logFontSize -= 1.0;
-          //       _logFontIncreaseEnable = true;
-          //     } else {
-          //       _logFontDecreaseEnable = false;
-          //     }
-          //   });
-          // } : null,
-          //   icon: Icon(
-          //   Icons.remove,
-          //   color: Colors.greenAccent,
-          // ),),
-        ],
+        actions: [],
       ),
       body: SingleChildScrollView(
         controller: _logScrollController,
@@ -568,4 +457,5 @@ class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
       // ),
     );
   }
+
 }

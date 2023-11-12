@@ -15,7 +15,6 @@ import 'package:elliptic/elliptic.dart';
 import "../helpers/bip39_dictionary.dart";
 import '../helpers/WidgetUtils.dart';
 import '../helpers/AppConstants.dart';
-import "../helpers/ivHelper.dart";
 import '../models/DecryptedGeoLockItem.dart';
 import '../models/MyDigitalIdentity.dart';
 import '../models/VaultItem.dart';

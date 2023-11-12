@@ -41,7 +41,7 @@ class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
         title: Text('Session #${widget.block.blockNumber + 1}'),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
-        leading: BackButton(
+        leading: CloseButton(
           color: _isDarkModeEnabled ? Colors.greenAccent : null,
           onPressed: () {
             Navigator.of(context).pop();
@@ -181,4 +181,5 @@ class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
       ),
     );
   }
+
 }

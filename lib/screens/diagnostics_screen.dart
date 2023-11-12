@@ -70,9 +70,9 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
       _logFileSize = value;
     });
 
-    _logManager.verifyLogFile().then((value) {
-      _logsAreValid = value!;
-    });
+    // _logManager.verifyLogFile().then((value) {
+    //   _logsAreValid = value!;
+    // });
 
     _numberOfPasswordItems = _keyManager.numberOfPasswordItems;
 
@@ -101,12 +101,10 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
         actions: [
           IconButton(
               onPressed: () {
-                // print("show other logs");
-
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ShowLogDetail2Screen(),
+                    builder: (context) => ShowLogsScreen(),
                   ),
                 );
               },
@@ -151,7 +149,6 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                     });
 
                     _logManager.verifyLogFile().then((value) {
-                      // print("verify: $value");
                       setState(() {
                         _logsAreValid = value!;
                       });
@@ -207,10 +204,6 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           ),
           OutlinedButton(
             style: OutlinedButton.styleFrom(
-              // backgroundColor: Colors.greenAccent,
-              // foregroundColor: Colors.black,
-              // shadowColor: Colors.black,
-              // onSurface: Colors.greenAccent,
               side: _isDarkModeEnabled
                   ? BorderSide(color: Colors.greenAccent)
                   : null,
