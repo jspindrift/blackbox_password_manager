@@ -74,7 +74,7 @@ class BackupManager {
     // logManager.logger.d("cryptor.aesRootSecretKeyBytes: ${hex.encode(_tempRootKey!)}");
 
     final tempBackupItemString = tempVaultItem.toRawJson();
-    logManager.logger.d("tempBackupItemString: $tempBackupItemString");
+    // logManager.logger.d("tempBackupItemString: $tempBackupItemString");
 
     /// backup current vault to temp file
     try {

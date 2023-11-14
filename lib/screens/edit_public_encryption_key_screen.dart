@@ -11,6 +11,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:intl/intl.dart';
 
+import '../models/DigitalIdentityCode.dart';
 import '../models/KeyItem.dart';
 import '../screens/peer_public_key_list_screen.dart';
 import '../helpers/AppConstants.dart';
@@ -70,9 +71,9 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
   List<bool> _selectedTags = [];
   List<String> _filteredTags = [];
 
-  /// used for asymmetric keys
-  List<int> _privKey = [];
-  List<int> _pubKey = [];
+  /// asymmetric keys (key exchange)
+  List<int> _privKeyExchange = [];
+  List<int> _pubKeyExchange = [];
   String _publicKeyMnemonic = "";
 
   /// Used for symmetric keys
@@ -80,7 +81,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
   List<int> Kenc = [];
   List<int> Kauth = [];
 
-  QRCodeKeyItem qrItem = QRCodeKeyItem(key: '', symmetric: false);
+  QRCodeKeyItem _qrItem = QRCodeKeyItem(key: '', symmetric: false);
 
   KeyItem? _keyItem;
 
@@ -122,147 +123,149 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
   }
 
   void _getItem() async {
+
+    _logManager.logger.d("widget.id: ${widget.id}");
+
     /// get the password item and decrypt the data
-    _keyManager.getItem(widget.id).then((value) async {
-      final genericItem = GenericItem.fromRawJson(value);
+   final item = await _keyManager.getItem(widget.id);
+   final genericItem = GenericItem.fromRawJson(item);
+   _logManager.logger.d("genericItem: ${genericItem.toRawJson()}");
 
-      if (genericItem.type == "key") {
-        // print("edit public encryption key: value: $value");
+    if (genericItem.type == "key") {
+      /// must be a PasswordItem type
+      _keyItem = KeyItem.fromRawJson(genericItem.data);
+      _logManager.logger.d("_keyItem: ${_keyItem?.toRawJson()}");
 
-        /// must be a PasswordItem type
-        _keyItem = KeyItem.fromRawJson(genericItem.data);
+      if (_keyItem != null) {
+        var keydata = (_keyItem?.key)!;
 
-        if (_keyItem != null) {
-          var keydata = (_keyItem?.key)!;
+        if (keydata == null) {
+          return;
+        }
+        // print("keydata: ${keydata.length}: ${keydata}");
 
-          if (keydata == null) {
-            return;
-          }
-          // print("keydata: ${keydata.length}: ${keydata}");
+        final keyType = (_keyItem?.keyType)!;
+        // final keyIndex = (_keyItem?.keyIndex)!;
+        // var keyIndex = 0;
+        //
+        // if (_keyItem?.keyIndex != null) {
+        //   keyIndex = (_keyItem?.keyIndex)!;
+        // }
 
-          final keyType = (_keyItem?.keyType)!;
-          // final keyIndex = (_keyItem?.keyIndex)!;
-          // var keyIndex = 0;
-          //
-          // if (_keyItem?.keyIndex != null) {
-          //   keyIndex = (_keyItem?.keyIndex)!;
-          // }
+        /// decrypt root seed and expand
+        final decryptedSeedData = await _cryptor.decrypt(keydata);
+        // print("decryptedSeedData: ${decryptedSeedData}");
 
-          /// decrypt root seed and expand
-          final decryptedSeedData = await _cryptor.decrypt(keydata);
-          // print("decryptedSeedData: ${decryptedSeedData}");
+        /// TODO: switch encoding !
+        // final decodedRootKey = hex.decode(decryptedSeedData);
+        final decodedRootKey = base64.decode(decryptedSeedData);
 
-          /// TODO: switch encoding !
-          // final decodedRootKey = hex.decode(decryptedSeedData);
-          final decodedRootKey = base64.decode(decryptedSeedData);
+        // print("decodedRootKey: ${decodedRootKey.length}: ${decodedRootKey}");
 
-          // print("decodedRootKey: ${decodedRootKey.length}: ${decodedRootKey}");
+        if (keyType == EnumToString.convertToString(EncryptionKeyType.asym)) {
+          setState(() {
+            _isSymmetricKey = false;
+          });
+          final peerPublicKeys = (_keyItem?.peerPublicKeys)!;
 
-          if (keyType == EnumToString.convertToString(EncryptionKeyType.asym)) {
+          if (peerPublicKeys == null) {
             setState(() {
-              _isSymmetricKey = false;
+              _hasPeerPublicKeys = false;
             });
-            final peerPublicKeys = (_keyItem?.peerPublicKeys)!;
-
-            if (peerPublicKeys == null) {
+          } else {
+            if (peerPublicKeys.isEmpty) {
               setState(() {
                 _hasPeerPublicKeys = false;
               });
             } else {
-              if (peerPublicKeys.isEmpty) {
-                setState(() {
-                  _hasPeerPublicKeys = false;
-                });
-              } else {
-                setState(() {
-                  _hasPeerPublicKeys = true;
-                  _peerPublicKeys = peerPublicKeys;
-                });
-              }
-            }
-
-            _generateKeyPair(decryptedSeedData);
-
-          } else {
-            setState(() {
-              _isSymmetricKey = true;
-            });
-
-            final expanded = await _cryptor.expandKey(decodedRootKey);
-
-            setState(() {
-              _seedKey = decodedRootKey;
-              // print("_seedKey: ${_seedKey.length}: ${_seedKey}");
-
-              Kenc = expanded.sublist(0,32);
-              Kauth = expanded.sublist(32,64);
-
-              _keyDataTextController.text = bip39.entropyToMnemonic(decryptedSeedData);
-            });
-          }
-
-
-          var name = (_keyItem?.name)!;
-          var tags = (_keyItem?.tags)!;
-
-          for (var tag in tags) {
-            _selectedTags.add(false);
-          }
-
-          _keyTags = tags;
-
-          var isFavorite = (_keyItem?.favorite)!;
-
-          _isFavorite = isFavorite;
-
-          final notes = (_keyItem?.notes)!;
-
-          final cdate = (_keyItem?.cdate)!;
-          _createdDate = cdate;// DateTime.parse(cdate);
-
-          final mdate = (_keyItem?.mdate)!;
-          _modifiedDate = mdate;//DateTime.parse(mdate);
-
-          // final encryptedPreviousPasswords =
-          // (_keyItem?.previousKeys)!;
-          // _initialEncryptedPreviousPasswords = encryptedPreviousPasswords;
-
-          // final blob = (_passwordItem?.password)!;
-
-          _cryptor.decrypt(name).then((value) {
-            name = value;
-
-            _validateFields();
-          });
-
-          /// decrypt notes
-          _cryptor.decrypt(notes).then((value) {
-            if (value.isNotEmpty) {
               setState(() {
-                // _hasNotes = true;
-                _notesTextController.text = value;
+                _hasPeerPublicKeys = true;
+                _peerPublicKeys = peerPublicKeys;
               });
             }
+          }
 
-            if (_isSymmetricKey) {
-              qrItem = QRCodeKeyItem(key: base64.encode(_seedKey), symmetric: true);
-            } else {
-              qrItem = QRCodeKeyItem(key: base64.encode(_pubKey), symmetric: false);
-            }
+          _generateKeyPair(decryptedSeedData);
 
-            setState(() {
-              _nameTextController.text = name;
-            });
-
-            _validateFields();
+        } else {
+          setState(() {
+            _isSymmetricKey = true;
           });
+
+          final expanded = await _cryptor.expandKey(decodedRootKey);
 
           setState(() {
+            _seedKey = decodedRootKey;
+            // print("_seedKey: ${_seedKey.length}: ${_seedKey}");
 
+            Kenc = expanded.sublist(0,32);
+            Kauth = expanded.sublist(32,64);
+
+            _keyDataTextController.text = bip39.entropyToMnemonic(decryptedSeedData);
           });
         }
+
+
+        var name = (_keyItem?.name)!;
+        var tags = (_keyItem?.tags)!;
+
+        for (var tag in tags) {
+          _selectedTags.add(false);
+        }
+
+        _keyTags = tags;
+
+        var isFavorite = (_keyItem?.favorite)!;
+
+        _isFavorite = isFavorite;
+
+        final notes = (_keyItem?.notes)!;
+
+        final cdate = (_keyItem?.cdate)!;
+        _createdDate = cdate;// DateTime.parse(cdate);
+
+        final mdate = (_keyItem?.mdate)!;
+        _modifiedDate = mdate;//DateTime.parse(mdate);
+
+        // final encryptedPreviousPasswords =
+        // (_keyItem?.previousKeys)!;
+        // _initialEncryptedPreviousPasswords = encryptedPreviousPasswords;
+
+        // final blob = (_passwordItem?.password)!;
+
+        _cryptor.decrypt(name).then((value) {
+          name = value;
+
+          _validateFields();
+        });
+
+        /// decrypt notes
+        _cryptor.decrypt(notes).then((value) {
+          if (value.isNotEmpty) {
+            setState(() {
+              // _hasNotes = true;
+              _notesTextController.text = value;
+            });
+          }
+
+          if (_isSymmetricKey) {
+            _qrItem = QRCodeKeyItem(key: base64.encode(_seedKey), symmetric: true);
+          } else {
+            _qrItem = QRCodeKeyItem(key: base64.encode(_pubKeyExchange), symmetric: false);
+          }
+
+          setState(() {
+            _nameTextController.text = name;
+          });
+
+          _validateFields();
+        });
+
+        setState(() {
+
+        });
       }
-    });
+    }
   }
 
   Future<void> _generateKeyPair(String privateKeyString) async {
@@ -280,10 +283,10 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
     // print("privateExchangeKeySeed: ${privateExchangeKeySeed}");
 
     /// TODO: switch encoding !
-    // _privKey = hex.decode(privateKeyString);
-    _privKey = base64.decode(privateKeyString);
+    // _privKeyExchange = hex.decode(privateKeyString);
+    _privKeyExchange = base64.decode(privateKeyString);
 
-    // print("_privKey: ${_privKey.length}: ${_privKey}");
+    // print("_privKeyExchange: ${_privKeyExchange.length}: ${_privKeyExchange}");
 
     /// OR
     ///
@@ -310,14 +313,14 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
 
 
     setState(() {
-      _pubKey = simplePublicKey.bytes;
-      qrItem = QRCodeKeyItem(key: base64.encode(_pubKey), symmetric: false);
+      _pubKeyExchange = simplePublicKey.bytes;
+      _qrItem = QRCodeKeyItem(key: base64.encode(_pubKeyExchange), symmetric: false);
 
       // print("_publicKey: ${_publicKey}");
       // print("_publicKey: ${_pubKey.length}: ${_pubKey}");
       // print("_publicKey: ${_pubKey.length}: ${hex.encode(_pubKey)}");
 
-      _publicKeyMnemonic = bip39.entropyToMnemonic(hex.encode(_pubKey));
+      _publicKeyMnemonic = bip39.entropyToMnemonic(hex.encode(_pubKeyExchange));
       // print("_publicKeyMnemonic: ${_publicKeyMnemonic}");
 
       _keyDataTextController.text =
@@ -570,7 +573,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                 child:  Padding(
                   padding: EdgeInsets.fromLTRB(24, 8, 24, 16),
                   child: Text(
-                    "Public Key:\n${hex.encode(_pubKey)}",
+                    "Public Key:\n${hex.encode(_pubKeyExchange)}",
                     // "Public Key:\n${hex.encode(_peerPublicKeyData)}\n\nPublic Mnemonic:\n${_publicKeyMnemonic}",
                     style: TextStyle(
                       color: _isDarkModeEnabled ? Colors.white : null,
@@ -591,7 +594,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                       child:  Padding(
                       padding: EdgeInsets.all(16.0),
                       child: Text(
-                        "Public Key:\n${hex.encode(_pubKey)}",
+                        "Public Key:\n${hex.encode(_pubKeyExchange)}",
                         // "Public Key:\n${hex.encode(_peerPublicKeyData)}\n\nPublic Mnemonic:\n${_publicKeyMnemonic}",
                         style: TextStyle(
                           color: _isDarkModeEnabled ? Colors.white : null,
@@ -1192,7 +1195,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
               Padding(
                 padding: EdgeInsets.all(8.0),
                 child: Text(
-                  "id: ${(_keyItem?.id)!}",
+                    _keyItem != null ? "id: ${(_keyItem?.id)!}" : "id: unknown",
                   // "Public Key:\n${hex.encode(_peerPublicKeyData)}\n\nPublic Mnemonic:\n${_publicKeyMnemonic}",
                   style: TextStyle(
                     color: _isDarkModeEnabled ? Colors.white : null,
@@ -1356,7 +1359,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
       return;
     }
 
-    if (_privKey.isEmpty && !_isSymmetricKey) {
+    if (_privKeyExchange.isEmpty && !_isSymmetricKey) {
       setState(() {
         _fieldsAreValid = false;
       });
@@ -1373,7 +1376,17 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
     // var qrItemString = "";
 
     // if (_isSymmetricKey) {
-     final qrItemString = qrItem.toRawJson();
+     final qrItemString = _qrItem.toRawJson();
+
+     // final qrDigitalIdentity = DigitalIdentityCode(
+     //   pubKeySignature: hex.encode(_pubKeyExchange),
+     //   pubKeyExchange: hex.encode(_pubKeyExchange),
+     // );
+
+     final qrDigitalIdentityB64 = DigitalIdentityCode(
+       pubKeySignature: base64.encode(_pubKeyExchange),
+       pubKeyExchange: base64.encode(_pubKeyExchange),
+     );
      // print("qrItemString: ${qrItemString}");
     // } else {
     //   qrItemString = qrPublicItem.toRawJson();
@@ -1389,7 +1402,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
         context,
         MaterialPageRoute(
           builder: (context) => QRCodeView(
-            data: qrItemString,
+            data: qrDigitalIdentityB64.toRawJson(),//qrItemString,
             isDarkModeEnabled: _isDarkModeEnabled,
             isEncrypted: false,
           ),
@@ -1410,12 +1423,12 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
       return;
     }
 
-    if (_privKey == null) {
+    if (_privKeyExchange == null) {
       _showErrorDialog('Could not save the item.');
       return;
     }
 
-    if (_privKey.isEmpty) {
+    if (_privKeyExchange.isEmpty) {
       _showErrorDialog('Could not save the item.');
       return;
     }
@@ -1423,7 +1436,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
     final name = _nameTextController.text;
     final notes = _notesTextController.text;
 
-    final encodedLength = utf8.encode(name).length + utf8.encode(notes).length + utf8.encode(base64.encode(_privKey)).length;
+    final encodedLength = utf8.encode(name).length + utf8.encode(notes).length + utf8.encode(base64.encode(_privKeyExchange)).length;
 
     _settingsManager.doEncryption(encodedLength);
 
@@ -1431,7 +1444,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
     final encryptedName = await _cryptor.encrypt(name);
     final encryptedNotes = await _cryptor.encrypt(notes);
 
-    final encryptedKey = await _cryptor.encrypt(base64.encode(_privKey));
+    final encryptedKey = await _cryptor.encrypt(base64.encode(_privKeyExchange));
 
     var keyItem = KeyItem(
       id: uuid,

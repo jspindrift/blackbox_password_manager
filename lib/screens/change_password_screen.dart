@@ -153,6 +153,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     },
                     onFieldSubmitted: (_) {
                       _validateCurrentField();
+
+                      if (_currentFieldIsValid) {
+                        setState(() {
+                          _isAuthenticating = true;
+                        });
+                        Timer(Duration(milliseconds: 300), () async {
+                          await _confirmCurrentMasterPassword();
+                        });
+                      }
                     },
                     focusNode: _currentPasswordFocusNode,
                     controller: _currentPasswordTextController,
@@ -228,6 +237,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     },
                     onFieldSubmitted: (_) {
                       _validateNewFields();
+                      FocusScope.of(context)
+                          .requestFocus(_confirmPasswordFocusNode);
                     },
                     focusNode: _enterPasswordFocusNode,
                     controller: _enterPasswordTextController,
@@ -294,7 +305,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         },
                       ),
                     ),
-                    textInputAction: TextInputAction.done,
+                    textInputAction: TextInputAction.next,
                     onChanged: (_) {
                       _validateNewFields();
                     },
@@ -303,6 +314,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     },
                     onFieldSubmitted: (_) {
                       _validateNewFields();
+                      FocusScope.of(context)
+                          .requestFocus(_passwordHintFocusNode);
                     },
                     focusNode: _confirmPasswordFocusNode,
                     controller: _confirmPasswordTextController,
@@ -362,6 +375,17 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     },
                     onFieldSubmitted: (_) {
                       _validateNewFields();
+
+                      if (_fieldsAreValid) {
+                        FocusScope.of(context).unfocus();
+
+                        setState(() {
+                          _isAuthenticating = true;
+                        });
+                        Timer(Duration(milliseconds: 300), () async {
+                          await _changeMasterPassword();
+                        });
+                      }
                     },
                     focusNode: _passwordHintFocusNode,
                     controller: _passwordHintTextController,
@@ -541,6 +565,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             _isAuthenticating = false;
             _isConfirmingCurrentPassword = false;
           });
+
+          Timer(Duration(milliseconds: 200), () async {
+            FocusScope.of(context)
+                .requestFocus(_enterPasswordFocusNode);
+          });
+
         } else {
           _wrongPasswordCount += 1;
           setState(() {
@@ -569,22 +599,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     _logManager.log("ChangePasswordScreen", "_changeMasterPassword", "changing");
 
     try {
-      var keyParams = await _cryptor.deriveNewKey(password);
-        if (keyParams != null) {
+      var updatedKeyParams = await _cryptor.deriveNewKey(password, hint);
+        if (updatedKeyParams != null) {
           _enterPasswordTextController.text = "";
           _confirmPasswordTextController.text = "";
           _passwordHintTextController.text = "";
 
-          KeyMaterial updatedKeyParams = KeyMaterial(
-            id: keyParams.id,
-            keyId: keyParams.keyId,
-            salt: keyParams.salt,
-            rounds: keyParams.rounds,
-            key: keyParams.key,
-            hint: hint,
-          );
-
-          // save new password details
+          /// save new encrypted key data
           final saveStatus = await _keyManager.saveMasterPassword(
               updatedKeyParams,
           );
@@ -647,7 +668,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               onPressed: () {
                 Navigator.of(ctx).pop();
 
-                FocusScope.of(context).requestFocus(_confirmPasswordFocusNode);
+                Timer(Duration(milliseconds: 200), () async {
+                  FocusScope.of(context).requestFocus(_currentPasswordFocusNode);
+                });
               },
               child: Text('Okay'))
         ],

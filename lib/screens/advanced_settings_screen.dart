@@ -8,6 +8,7 @@ import '../managers/WOTSManager.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
+import '../models/WOTSSignatureItem.dart';
 import '../screens/show_logs_screen.dart';
 import '../screens/settings_about_screen.dart';
 import '../screens/diagnostics_screen.dart';
@@ -47,6 +48,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     _logManager.log("AdvancedSettingsScreen", "initState", "initState");
 
     _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
+
+    _postQuantumManager.initialize();
   }
 
   void _onItemTapped(int index) {
@@ -733,34 +736,34 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     _signCounter++;
   }
 
-  void _runTestsWithReset() async {
-    _resetTestVariables();
-
-    _runTests();
-  }
-
-  /// timed tests for creating multiple sets of WOTS keys
-  Future<void> _runWOTSTimingTest() async {
-    final startTime = DateTime.now();
-
-    final kek = List.filled(32, 0);
-    final numTests = 32;
-
-    List<String> topHashes = [];
-
-    /// generate keys
-    for (var index = 0; index < numTests; index++) {
-      await _wotsManager.createTopPubKey(kek, index);
-      topHashes.add(_wotsManager.topPublicKey);
-    }
-
-    _logManager.logLongMessage("topHashes: ${topHashes}");
-
-    final endTime = DateTime.now();
-    final timeDiff = endTime.difference(startTime);
-    _logManager.logger.d("_runWOTSTimingTest: time diff: ${timeDiff.inMilliseconds} ms\n"
-        "${timeDiff.inMilliseconds/numTests}");
-  }
+  // void _runTestsWithReset() async {
+  //   _resetTestVariables();
+  //
+  //   _runTests();
+  // }
+  //
+  // /// timed tests for creating multiple sets of WOTS keys
+  // Future<void> _runWOTSTimingTest() async {
+  //   final startTime = DateTime.now();
+  //
+  //   final kek = List.filled(32, 0);
+  //   final numTests = 32;
+  //
+  //   List<String> topHashes = [];
+  //
+  //   /// generate keys
+  //   for (var index = 0; index < numTests; index++) {
+  //     await _wotsManager.createTopPubKey(kek, index);
+  //     topHashes.add(_wotsManager.topPublicKey);
+  //   }
+  //
+  //   _logManager.logLongMessage("topHashes: ${topHashes}");
+  //
+  //   final endTime = DateTime.now();
+  //   final timeDiff = endTime.difference(startTime);
+  //   _logManager.logger.d("_runWOTSTimingTest: time diff: ${timeDiff.inMilliseconds} ms\n"
+  //       "${timeDiff.inMilliseconds/numTests}");
+  // }
 
   /// hybrid asymmetric and WOTS signing
   Future<void> _runPostQuantumIntegrityTest() async {
@@ -776,28 +779,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     _resetTestVariables();
 
     await _runPostQuantumIntegrityTest();
-  }
-
-
-  /// test overlap WOTS signing protocol
-  Future<void> _runSimpleOverlapWOTSTest() async {
-
-    final kek = List.filled(32, 0);
-    final message = "hello world: ${_wotsManager.lastBlockHash}";
-
-    final sigItem = await _wotsManager.signSimpleOverlapMessage(kek, "chain2", "", 2, message);
-    // _logManager.logLongMessage("sigItem: ${sigItem?.toRawJson()}");
-
-    final isValid = await _wotsManager.verifySimpleOverlapSignature(sigItem);
-    _logManager.logger.d("isValid: ${isValid}");
-
-    _signCounter++;
-  }
-
-  Future<void> _runSimpleOverlapWOTSTestWithReset() async {
-    _resetTestVariables();
-
-    await _runSimpleOverlapWOTSTest();
   }
 
 

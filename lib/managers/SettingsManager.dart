@@ -230,6 +230,8 @@ class SettingsManager {
     // logger.d("initializeLaunchSettings-begin: $_initCount2");
     await _readHasLaunched();
 
+    await _readSessionNumber();
+
     // final endTime = DateTime.now();
     // final timeDiff = endTime.difference(startTime);
     // logger.d("initializeLaunchSettings time diff[$_initCount2]: ${timeDiff.inMilliseconds} ms");
@@ -453,7 +455,7 @@ class SettingsManager {
     }
   }
 
-  incrementSessionNumber() async {
+  Future<void> incrementSessionNumber() async {
     _sessionNumber += 1;
 
     await saveSessionNumber(_sessionNumber);
@@ -845,7 +847,8 @@ class SettingsManager {
       // do not remove backup items for android
       // if (EnumToString.convertToString(element) != "backup") {
       if (element != SharedPreferenceKey.backup &&
-          element != SharedPreferenceKey.lockOnExit) {
+          element != SharedPreferenceKey.lockOnExit &&
+          element != SharedPreferenceKey.recoveryMode) {
         await _removeSharedPreference(element);
       }
     }

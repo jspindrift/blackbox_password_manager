@@ -57,9 +57,9 @@ class FileManager {
     return _externalLocalPath;
   }
 
-  /// Local Log File  ----------------------------------------
+  /// Local Log File Appended ----------------------------------------
   ///
-  Future<File> get _localLogFile async {
+  Future<File> get _localLogFileAppend async {
     final path = await _localPath;
 
     try {
@@ -73,34 +73,10 @@ class FileManager {
         return File('${files.last.path}');
       } else {
         Directory("$path/logs/").createSync();
-
         return File('$path/logs/logs.txt');
       }
     } catch (e) {
       return File('$path/logs/logs.txt');
-    }
-  }
-
-  /// Local Log File Appended ----------------------------------------
-  ///
-  Future<File> get _localLogFileAppend async {
-    final path = await _localPath;
-
-    try {
-      final logDirExists = Directory("$path/bbxlogs/").existsSync();
-      // print("logDirExists: $logDirExists");
-
-      if (logDirExists) {
-        final files = Directory("$path/bbxlogs/").listSync();
-        // print("files: ${files.length}: $files");
-
-        return File('${files.last.path}');
-      } else {
-        Directory("$path/bbxlogs/").createSync();
-        return File('$path/bbxlogs/logs.txt');
-      }
-    } catch (e) {
-      return File('$path/bbxlogs/logs.txt');
     }
   }
 

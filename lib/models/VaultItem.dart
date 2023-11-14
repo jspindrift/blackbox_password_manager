@@ -18,16 +18,16 @@ enum EncryptionAlgorithm {
 /// keyId should change for vault after re-keying
 class EncryptedKey {
   String keyId;  // root key identifier
-  String derivationAlgorithm;
-  String? salt;
-  int rounds;
-  int type;
-  int version;
-  int memoryPowerOf2;
-  String encryptionAlgorithm;
-  String keyMaterial;
-  String keyNonce; // encrypted nonce that tracks number of encrypted blocks
-  String mac;
+  String derivationAlgorithm; // pbkdf2 or argon2
+  String? salt; // salt for derivation
+  int rounds; // derivation rounds
+  int type;   // placeholder
+  int version;  // argon2 or placeholder
+  int memoryPowerOf2; // argon2 data
+  String encryptionAlgorithm; // encryption algo used on master root key
+  String keyMaterial; // master root key data
+  String keyNonce; // encrypted nonce that tracks number of encrypted blocks used by master encryption key
+  String mac;  // mac of data model with empty mac string (using own auth key)
 
   EncryptedKey({
     required this.keyId,
@@ -86,21 +86,21 @@ class EncryptedKey {
 
 
 class VaultItem {
-  String id;
-  String version;
-  String name;
-  String deviceId;
-  String? deviceData;
-  EncryptedKey encryptedKey;
+  String id;                  // static vault identifier
+  String version;             // app version
+  String name;                // vault name
+  String deviceId;            // device identifier (id for vendor)
+  String? deviceData;         // device information
+  EncryptedKey encryptedKey;  // master key information
   List<RecoveryKey>?
-      recoveryKeys; // encrypted master keys with recovery keys from identities
-  MyDigitalIdentity? myIdentity; // my key pairs info - encrypted
-  int numItems;
-  String blob; // encrypted GenericItemList JSON string base64 encoded
-  List<DigitalIdentity>? identities; // social public keys - encrypted
-  String mac;
-  String cdate;
-  String mdate;
+      recoveryKeys;           // encrypted master key with recovery keys from identities
+  MyDigitalIdentity? myIdentity; // my key pair info - encrypted
+  int numItems;               // number of passwords, notes, and keys
+  String blob;                // encrypted GenericItemList JSON string base64 encoded
+  List<DigitalIdentity>? identities; // recovery identity public key info - encrypted
+  String mac;                 // mac of VaultItem model with empty string as initial mac value (using auth key)
+  String cdate;               // created date
+  String mdate;               // modified date
 
   VaultItem({
     required this.id,
@@ -205,9 +205,9 @@ class VaultItem {
 }
 
 class RecoveryKey {
-  String id;  // pubKeyHash (hash of peer's public key)
-  String data; // encrypted root vault key using the shared secret key
-  String cdate;
+  String id;    // pubKeyHash (hash of peer identity public key)
+  String data;  // encrypted root vault key using the shared secret key
+  String cdate; // creation date
 
   RecoveryKey({
     required this.id,

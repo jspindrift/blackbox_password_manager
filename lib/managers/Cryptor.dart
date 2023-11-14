@@ -68,6 +68,9 @@ class Cryptor {
   var hmac_algo_256 = Hmac.sha256();
   var hmac_algo_512 = Hmac.sha512();
 
+  /// secure random bytes algorithm
+  final sec_rng = Random.secure();
+
 
   /// root secret key bytes
   List<int> _aesRootSecretKeyBytes = [];
@@ -90,87 +93,88 @@ class Cryptor {
   }
 
   /// secret key for encrypting data - DEK
-  SecretKey? _aesSecretKey;
+  SecretKey? _aesEncryptionKey;
 
-  SecretKey? get aesSecretKey {
-    return _aesSecretKey;
+  SecretKey? get aesEncryptionKey {
+    return _aesEncryptionKey;
   }
 
   /// secret key bytes
-  List<int> _aesSecretKeyBytes = [];
+  List<int> _aesEncryptionKeyBytes = [];
 
-  List<int> get aesSecretKeyBytes {
-    return _aesSecretKeyBytes;
+  List<int> get aesEncryptionKeyBytes {
+    return _aesEncryptionKeyBytes;
   }
 
   /// authentication key for MAC - KAK
-  SecretKey? _authSecretKey;
+  SecretKey? _aesAuthKey;
 
-  SecretKey? get authSecretKey {
-    return _authSecretKey;
+  SecretKey? get aesAuthKey {
+    return _aesAuthKey;
   }
 
   /// authentication key bytes
-  List<int> _authSecretKeyBytes = [];
+  List<int> _aesAuthKeyBytes = [];
 
-  List<int> get authSecretKeyBytes {
-    return _authSecretKeyBytes;
+  List<int> get aesAuthKeyBytes {
+    return _aesAuthKeyBytes;
   }
 
-  SecretKey? _aesGenSecretKey;
+  /// key gen key
+  SecretKey? _aesGenKey;
 
   SecretKey? get aesGenSecretKey {
-    return _aesGenSecretKey;
+    return _aesGenKey;
   }
 
-  /// secret key bytes
-  List<int> _aesGenSecretKeyBytes = [];
+  /// key gen key bytes
+  List<int> _aesGenKeyBytes = [];
 
-  List<int> get aesGenSecretKeyBytes {
-    return _aesGenSecretKeyBytes;
+  List<int> get aesGenKeyBytes {
+    return _aesGenKeyBytes;
   }
 
   /// Temp Encryption Keys...For REKEY
   ///
   /// secret key for encrypting data - DEK
-  SecretKey? _tempAesSecretKey;
+  SecretKey? _tempAesEncryptionKey;
 
-  SecretKey? get tempAesSecretKey {
-    return _tempAesSecretKey;
+  SecretKey? get tempAesEncryptionKey {
+    return _tempAesEncryptionKey;
   }
 
   /// secret key bytes
-  List<int> _tempAesSecretKeyBytes = [];
+  List<int> _tempAesEncryptionKeyBytes = [];
 
-  List<int> get tempAesSecretKeyBytes {
-    return _tempAesSecretKeyBytes;
+  List<int> get tempAesEncryptionKeyBytes {
+    return _tempAesEncryptionKeyBytes;
   }
 
   /// authentication key for MAC - KAK
-  SecretKey? _tempAuthSecretKey;
+  SecretKey? _tempAuthKey;
 
-  SecretKey? get tempAuthSecretKey {
-    return _tempAuthSecretKey;
+  SecretKey? get tempAuthKey {
+    return _tempAuthKey;
   }
 
   /// authentication key bytes
-  List<int> _tempAuthSecretKeyBytes = [];
+  List<int> _tempAuthKeyBytes = [];
 
-  List<int> get tempAuthSecretKeyBytes {
-    return _tempAuthSecretKeyBytes;
+  List<int> get tempAuthKeyBytes {
+    return _tempAuthKeyBytes;
   }
 
-  SecretKey? _tempAesGenSecretKey;
+  SecretKey? _tempAesGenKey;
 
-  SecretKey? get tempAesGenSecretKey {
-    return _tempAesGenSecretKey;
+  SecretKey? get tempAesGenKey {
+    return _tempAesGenKey;
   }
 
   /// secret key bytes
-  List<int> _tempAesGenSecretKeyBytes = [];
+  List<int> _tempAesGenKeyBytes = [];
 
-  List<int> get tempAesGenSecretKeyBytes {
-    return _tempAesGenSecretKeyBytes;
+  List<int> get tempAesGenKeyBytes {
+    return _tempAesGenKeyBytes;
   }
 
 
@@ -208,23 +212,23 @@ class Cryptor {
     logger.d("clearAESKeys: ❌ 🔑");
     _aesRootSecretKeyBytes = [];
 
-    _aesSecretKeyBytes = [];
-    _aesSecretKey = null;
+    _aesEncryptionKeyBytes = [];
+    _aesEncryptionKey = null;
 
-    _authSecretKeyBytes = [];
-    _authSecretKey = null;
+    _aesAuthKeyBytes = [];
+    _aesAuthKey = null;
 
-    _aesGenSecretKeyBytes = [];
-    _aesGenSecretKey = null;
+    _aesGenKeyBytes = [];
+    _aesGenKey = null;
 
-    _tempAesGenSecretKeyBytes = [];
-    _tempAesGenSecretKey = null;
+    _tempAesGenKeyBytes = [];
+    _tempAesGenKey = null;
 
-    _tempAesSecretKeyBytes = [];
-    _tempAesSecretKey = null;
+    _tempAesEncryptionKeyBytes = [];
+    _tempAesEncryptionKey = null;
 
-    _tempAuthSecretKeyBytes = [];
-    _tempAuthSecretKey = null;
+    _tempAuthKeyBytes = [];
+    _tempAuthKey = null;
   }
 
 
@@ -252,38 +256,38 @@ class Cryptor {
 
   void setAesKeyBytes(List<int> bytes) {
     // logger.d("setAesKeyBytes: $bytes");
-    _aesSecretKeyBytes = bytes;
-    _aesSecretKey = SecretKey(bytes);
+    _aesEncryptionKeyBytes = bytes;
+    _aesEncryptionKey = SecretKey(bytes);
   }
 
   void setAuthKeyBytes(List<int> bytes) {
     // logger.d("setAuthKeyBytes: $bytes");
-    _authSecretKeyBytes = bytes;
-    _authSecretKey = SecretKey(bytes);
+    _aesAuthKeyBytes = bytes;
+    _aesAuthKey = SecretKey(bytes);
   }
 
   void switchTempKeysToCurrent() {
-    if (_tempAuthSecretKeyBytes == null || _tempAesGenSecretKeyBytes == null
-    || _tempReKeyRootSecretKeyBytes == null || _tempAesSecretKeyBytes == null
-    || _tempReKeyRootSecretKey == null || _tempAesSecretKey == null
-    || _tempAesGenSecretKey == null || _tempAuthSecretKey == null) {
+    if (_tempAuthKeyBytes == null || _tempAesGenKeyBytes == null
+    || _tempReKeyRootSecretKeyBytes == null || _tempAesEncryptionKeyBytes == null
+    || _tempReKeyRootSecretKey == null || _tempAesEncryptionKey == null
+    || _tempAesGenKey == null || _tempAuthKey == null) {
       return;
     }
 
     _aesRootSecretKeyBytes = _tempReKeyRootSecretKeyBytes;
 
-    _aesSecretKeyBytes = _tempAesSecretKeyBytes;
-    _aesSecretKey = _tempAesSecretKey;
+    _aesEncryptionKeyBytes = _tempAesEncryptionKeyBytes;
+    _aesEncryptionKey = _tempAesEncryptionKey;
 
-    _authSecretKeyBytes = _tempAuthSecretKeyBytes;
-    _authSecretKey = _tempAuthSecretKey;
+    _aesAuthKeyBytes = _tempAuthKeyBytes;
+    _aesAuthKey = _tempAuthKey;
 
-    _aesGenSecretKeyBytes = _tempAesGenSecretKeyBytes;
-    _aesGenSecretKey = _tempAesGenSecretKey;
+    _aesGenKeyBytes = _tempAesGenKeyBytes;
+    _aesGenKey = _tempAesGenKey;
   }
 
   void setLogKeyBytes(List<int> bytes) {
-    // logger.d("setLogKeyBytes: $bytes");
+    logger.d("setLogKeyBytes: $bytes");
     _logSecretKeyBytes = bytes;
     _logSecretKey = SecretKey(bytes);
   }
@@ -326,8 +330,8 @@ class Cryptor {
   }
 
   List<int> getRandomBytes(int nbytes) {
-    final rng = Random.secure();
-    final rand = new List.generate(nbytes, (_) => rng.nextInt(256));
+    // final rng = Random.secure();
+    final rand = new List.generate(nbytes, (_) => sec_rng.nextInt(256));
     return rand;
   }
 
@@ -430,7 +434,6 @@ class Cryptor {
       final secretKey = SecretKey(utf8.encode(password.trim()));
 
       // create a random salt
-      // final rng = Random.secure;
       _salt = getRandomBytes(_saltLength);
 
       // logger.d("random salt: $_salt");
@@ -459,7 +462,7 @@ class Cryptor {
       /// Generate a random 256-bit encryption key
       final _aesRootSecretKey = await algorithm_nomac.newSecretKey();
 
-      // _aesSecretKeyBytes = (await _aesSecretKey?.extractBytes())!;
+      // _aesEncryptionKeyBytes = (await _aesSecretKey?.extractBytes())!;
       _aesRootSecretKeyBytes = (await _aesRootSecretKey?.extractBytes())!;
       // logger.d("_aesRootSecretKeyBytes: $_aesRootSecretKeyBytes");
 
@@ -476,12 +479,12 @@ class Cryptor {
       // final Kc = xor(Uint8List.fromList(Ka), Uint8List.fromList(Kb));
       // logger.d("Kc: $Kc");
 
-      // logger.d("_aesSecretKeyBytes: $_aesSecretKeyBytes");
+      // logger.d("_aesEncryptionKeyBytes: _aesEncryptionKeyBytes");
 
       /// add auth secret key, KAK (Key Authentication Key)
-      // _authSecretKey = await algorithm_nomac.newSecretKey();
-      // _authSecretKeyBytes = (await _authSecretKey?.extractBytes())!;
-      // logger.d("_authSecretKeyBytes: $_authSecretKeyBytes");
+      // _aesAuthKey = await algorithm_nomac.newSecretKey();
+      // _aesAuthKeyBytes = (await _aesAuthKey?.extractBytes())!;
+      // logger.d("_aesAuthKeyBytes: $_aesAuthKeyBytes");
 
       /// create log key
       /// if we already have one, dont create it.
@@ -498,8 +501,8 @@ class Cryptor {
       final iv = algorithm_nomac.newNonce();
       // logger.d("deriveKey encryption nonce: $nonce");
 
-      // final appendedKeys = _aesSecretKeyBytes + _authSecretKeyBytes;
-      // final appendedKeys = _aesRootSecretKeyBytes;// + _authSecretKeyBytes;
+      // final appendedKeys = _aesSecretKeyBytes + _aesAuthKeyBytes;
+      // final appendedKeys = _aesRootSecretKeyBytes;// + _aesAuthKeyBytes;
 
       // logger.d("appendedKeys: $appendedKeys");
 
@@ -609,7 +612,7 @@ class Cryptor {
     final Ka = derivedSecretKeyBytes.sublist(0, 32);
     final Kb = derivedSecretKeyBytes.sublist(32, 64);
     // logger.d("_aesSecretKeyBytes Ka: $Ka");
-    // logger.d("_aesGenSecretKeyBytes Kb: $Kb");
+    // logger.d("_aesGenKeyBytes Kb: $Kb");
 
     // final wa = bip39.entropyToMnemonic(hex.encode(Ka));
     // final wb = bip39.entropyToMnemonic(hex.encode(Kb));
@@ -617,23 +620,23 @@ class Cryptor {
     // logger.d("Kb words: ${wb}");
 
     final Kc = xor(Uint8List.fromList(Ka), Uint8List.fromList(Kb));
-    // logger.d("_authSecretKeyBytes Kc: $Kc");
+    // logger.d("_aesAuthKeyBytes Kc: $Kc");
 
     // final wc = bip39.entropyToMnemonic(hex.encode(Kc));
     // logger.d("Kc words: ${wc}");
 
-    _aesSecretKeyBytes = Ka;
-    _aesGenSecretKeyBytes = Kb;
-    _authSecretKeyBytes = Kc;
+    _aesEncryptionKeyBytes = Ka;
+    _aesGenKeyBytes = Kb;
+    _aesAuthKeyBytes = Kc;
 
-    _aesSecretKey = SecretKey(Ka);
-    _aesGenSecretKey = SecretKey(Kb);
-    _authSecretKey = SecretKey(Kc);
+    _aesEncryptionKey = SecretKey(Ka);
+    _aesGenKey = SecretKey(Kb);
+    _aesAuthKey = SecretKey(Kc);
 
     if (AppConstants.debugKeyData){
-      logger.d("skey: $skey\n_aesSecretKeyBytes: ${_aesSecretKeyBytes}\n"
-          "_aesGenSecretKeyBytes: ${_aesGenSecretKeyBytes}\n"
-          "_authSecretKeyBytes: ${_authSecretKeyBytes}");
+      logger.d("skey: $skey\n_aesEncryptionKeyBytes: ${_aesEncryptionKeyBytes}\n"
+          "_aesGenKeyBytes: ${_aesGenKeyBytes}\n"
+          "_aesAuthKeyBytes: ${_aesAuthKeyBytes}");
     }
 
     return;
@@ -675,8 +678,8 @@ class Cryptor {
     // logger.d("derivedSecretKey: $derivedSecretKeyBytes");
     final Ka = derivedSecretKeyBytes.sublist(0, 32);
     final Kb = derivedSecretKeyBytes.sublist(32, 64);
-    // logger.d("_aesSecretKeyBytes Ka: $Ka");
-    // logger.d("_aesGenSecretKeyBytes Kb: $Kb");
+    // logger.d("_aesEncryptionKeyBytes Ka: $Ka");
+    // logger.d("_aesGenKeyBytes Kb: $Kb");
 
     // final wa = bip39.entropyToMnemonic(hex.encode(Ka));
     // final wb = bip39.entropyToMnemonic(hex.encode(Kb));
@@ -684,23 +687,23 @@ class Cryptor {
     // logger.d("Kb words: ${wb}");
 
     final Kc = xor(Uint8List.fromList(Ka), Uint8List.fromList(Kb));
-    // logger.d("_authSecretKeyBytes Kc: $Kc");
+    // logger.d("_aesAuthKeyBytes Kc: $Kc");
 
     // final wc = bip39.entropyToMnemonic(hex.encode(Kc));
     // logger.d("Kc words: ${wc}");
 
-    _tempAesSecretKeyBytes = Ka;
-    _tempAesGenSecretKeyBytes = Kb;
-    _tempAuthSecretKeyBytes = Kc;
+    _tempAesEncryptionKeyBytes = Ka;
+    _tempAesGenKeyBytes = Kb;
+    _tempAuthKeyBytes = Kc;
 
-    _tempAesGenSecretKey = SecretKey(Kb);
-    _tempAesSecretKey = SecretKey(Ka);
-    _tempAuthSecretKey = SecretKey(Kc);
+    _tempAesGenKey = SecretKey(Kb);
+    _tempAesEncryptionKey = SecretKey(Ka);
+    _tempAuthKey = SecretKey(Kc);
 
     if (AppConstants.debugKeyData){
-      logger.d("_tempAesSecretKeyBytes: ${_tempAesSecretKeyBytes}\n"
-          "_tempAesGenSecretKeyBytes: ${_tempAesGenSecretKeyBytes}\n"
-          "_tempAuthSecretKeyBytes: ${_tempAuthSecretKeyBytes}");
+      logger.d("_tempAesEncryptionKeyBytes: ${_tempAesEncryptionKeyBytes}\n"
+          "_tempAesGenKeyBytes: ${_tempAesGenKeyBytes}\n"
+          "_tempAuthKeyBytes: ${_tempAuthKeyBytes}");
     }
 
     return;
@@ -964,7 +967,7 @@ class Cryptor {
           secretKey: secretKy,
         );
 
-        // final secretBoxMac = xor(Uint8List.fromList(_authSecretKeyBytes), Uint8List.fromList(macCheck.bytes));
+        // final secretBoxMac = xor(Uint8List.fromList(_aesAuthKeyBytes), Uint8List.fromList(macCheck.bytes));
 
         final encodedMac = base64.encode(mac);
         final encodedMacCheck = base64.encode(macCheck.bytes);
@@ -1153,8 +1156,8 @@ class Cryptor {
 
   /// deriveNewKey - Derive new key on a master password change
   ///
-  Future<KeyMaterial?> deriveNewKey(String password) async {
-    // logger.d("PBKDF2 - deriving new key");
+  Future<KeyMaterial?> deriveNewKey(String password, String hint) async {
+    // logger.d("deriveNewKey");
     final currentKeyParams = _currentKeyMaterial;
     if (currentKeyParams == null) {
       return null;
@@ -1175,11 +1178,10 @@ class Cryptor {
       // password we want to hash
       final secretKey = SecretKey(utf8.encode(password.trim()));
 
-      final rng = Random.secure();
-      _salt = List.generate(_saltLength, (_) => rng.nextInt(256));
+      /// generate new salt
+      _salt = List.generate(_saltLength, (_) => sec_rng.nextInt(256));
       // logger.d("new salt: ${hex.encode(_salt)}\n");
 
-      // Calculate a hash that can be stored in the database
       final derivedSecretKey = await pbkdf2.deriveKey(
         secretKey: secretKey,
         nonce: _salt,
@@ -1197,18 +1199,16 @@ class Cryptor {
             "Ky: ${Ky}\n");
       }
 
-      if (_aesRootSecretKeyBytes.isNotEmpty || _aesRootSecretKeyBytes == null) {
-        // Generate a random 128-bit nonce.
+      if (_aesRootSecretKeyBytes.isNotEmpty) {
         final iv_new = algorithm_nomac.newNonce();
-        final rootKey = _aesRootSecretKeyBytes;
 
         if (AppConstants.debugKeyData){
-          logger.d("rootKey: ${hex.encode(rootKey)}\n");
+          logger.d("rootKey: ${hex.encode(_aesRootSecretKeyBytes)}\n");
         }
 
-        /// Encrypt
+        /// Encrypt root key
         final secretBox = await algorithm_nomac.encrypt(
-          rootKey,
+          _aesRootSecretKeyBytes,
           secretKey: secretKx,
           nonce: iv_new,
         );
@@ -1216,29 +1216,25 @@ class Cryptor {
         /// compute mac
         final blob = iv_new + secretBox.cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-        // logger.d("hashedBlob: ${hashedBlob}");
 
+        /// compute mac
         final mac = await hmac_algo_256.calculateMac(
           hashedBlob,
           secretKey: secretKy,
         );
 
         final macPhrase = bip39.entropyToMnemonic(hex.encode(mac.bytes));
-
         final macWordList = macPhrase.split(" ");
 
-        // var confirmMacPhrase = macWordList[0] + " " + macWordList[1] + " " + macWordList[2] + " " + macWordList.last;
         // var confirmMacPhrase = macWordList[0] + " " + macWordList[1] + " " + macWordList.last;
         var confirmMacPhrase = macWordList[0] + " " + macWordList.last;
-
+        logger.d("confirmMacPhrase: $confirmMacPhrase");
         // for (var mword in macWordList) {
         //   confirmMacPhrase = confirmMacPhrase + " " + mword;
         // }
+
         if (AppConstants.debugKeyData) {
           logger.d("confirmMacPhrase: $confirmMacPhrase");
-        }
-
-        if (AppConstants.debugKeyData){
           logger.d("mac: ${mac}\n");
         }
 
@@ -1250,7 +1246,7 @@ class Cryptor {
           salt: base64.encode(_salt),
           rounds: currentKeyParams.rounds,
           key: base64.encode(keyMaterial),
-          hint: "",
+          hint: hint,
         );
 
         return newKeyMaterial;
@@ -1287,39 +1283,32 @@ class Cryptor {
       // double strength = estimatePasswordStrength(password.trim());
       // logger.d("master pwd strength: ${strength.toStringAsFixed(3)}");
 
-      // password we want to hash
       // final secretKey = SecretKey(password.codeUnits);
       final secretKey = SecretKey(utf8.encode(password.trim()));
 
-      // use same salt (secret salt)
-      // final sameSalt = _salt;
-
-      // Calculate a hash that can be stored in the database
       final derivedSecretKey = await pbkdf2.deriveKey(
         secretKey: secretKey,
         nonce: newSalt,
       );
 
       // final endTime = DateTime.now();
-
       // final timeDiff = endTime.difference(startTime);
       // logger.d("pbkdf2 time diff: ${timeDiff.inMilliseconds} ms");
 
       final derivedSecretKeyBytes = await derivedSecretKey.extractBytes();
       final Kx = derivedSecretKeyBytes.sublist(0,32);
       final Ky = derivedSecretKeyBytes.sublist(32,64);
-      // logger.d("Kx: $Kx");
-      // logger.d("Ky: $Ky");
+      // logger.d("Kx: $Kx\nKy: $Ky");
+
       final secretKx = SecretKey(Kx);
       final secretKy = SecretKey(Ky);
+
       if (AppConstants.debugKeyData){
         logger.d("deriveNewKeySchedule\nKx: ${Kx}\n"
             "Ky: ${Ky}\n");
       }
 
-      // logger.d("encrypting _aesKeyBytes: $_aesSecretKeyBytes");
       if (_aesRootSecretKeyBytes.isNotEmpty) {
-
         /// generate new root secret
         final newRootSecret = getRandomBytes(32);
         // logger.d("newRootSecret: ${newRootSecret}");
@@ -1333,11 +1322,9 @@ class Cryptor {
         _tempReKeyRootSecretKey = SecretKey(_tempReKeyRootSecretKeyBytes);
 
         var kid = getUUID();
-
         KeychainManager().setNewReKeyId(kid);
 
         await expandSecretTempRootKey(_tempReKeyRootSecretKeyBytes);
-        // Generate a random 128-bit nonce.
         final iv_new = algorithm_nomac.newNonce();
         // logger.d("ctr new nonce: ${newNonce.length}, $newNonce");
 
@@ -1348,10 +1335,9 @@ class Cryptor {
           nonce: iv_new,
         );
 
-        /// compute mac
         final blob = iv_new + secretBox.cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-        logger.d("hashedBlob: ${hashedBlob}");
+        // logger.d("hashedBlob: ${hashedBlob}");
 
         final mac = await hmac_algo_256.calculateMac(
           hashedBlob,
@@ -1368,7 +1354,6 @@ class Cryptor {
 
         final zeroBlock = List<int>.filled(16, 0);
         final iv_keyNonce = algorithm_nomac.newNonce();
-        // logger.d("ctr new nonce: ${newNonce.length}, $newNonce");
 
         /// Encrypt
         final secretBoxKeyNonce = await algorithm_nomac.encrypt(
@@ -1379,10 +1364,10 @@ class Cryptor {
 
         /// Key nonce
         final blob_keyNoncei = iv_keyNonce + secretBoxKeyNonce.cipherText;
-        logger.d("blob_keyNoncei: ${blob_keyNoncei}");
+        // logger.d("blob_keyNoncei: ${blob_keyNoncei}");
 
         final hashedBlob_keyNonce = hex.decode(sha256(base64.encode(blob_keyNoncei)));
-        logger.d("hashedBlob_keyNonce: ${hashedBlob_keyNonce}");
+        // logger.d("hashedBlob_keyNonce: ${hashedBlob_keyNonce}");
 
 
         final mac_keyNonce = await hmac_algo_256.calculateMac(
@@ -1391,8 +1376,7 @@ class Cryptor {
         );
 
         final blob_keyNonce = iv_keyNonce + mac_keyNonce.bytes + secretBoxKeyNonce.cipherText;
-        logger.d("blob_keyNonce: ${blob_keyNonce}");
-
+        // logger.d("blob_keyNonce: ${blob_keyNonce}");
 
         var encryptedKey = EncryptedKey(
             keyId: kid,
@@ -1417,14 +1401,13 @@ class Cryptor {
 
         encryptedKey.mac = hex.encode(keyParamsMac.bytes);
 
-
         if (AppConstants.debugKeyData){
           logger.d("ek.json: ${encryptedKey.toJson()}\n");
         }
 
         return encryptedKey;
       } else {
-        logger.w("_aesSecretKeyBytes was empty!!!");
+        logger.w("_aesEncryptionKeyBytes was empty!!!");
         return null;
       }
     } catch (e) {
@@ -1466,26 +1449,21 @@ class Cryptor {
       final secretKey = SecretKey(utf8.encode(pin.trim()));
 
       // create a random salt
-      final rng = Random.secure();
-      final salt = List.generate(_saltLength, (_) => rng.nextInt(256));
+      // final rng = Random.secure();
+      final salt = List.generate(_saltLength, (_) => sec_rng.nextInt(256));
 
       // Calculate a hash that can be stored in the database
       final derivedSecretKey = await pbkdf2.deriveKey(
         secretKey: secretKey,
         nonce: salt,
       );
-      // final derivedSecretKeyBytes = await derivedSecretKey.extractBytes();
-      // logger.d("derivedSecretKeyBytes pin: ${derivedSecretKeyBytes}");
 
       // final endTime = DateTime.now();
-
       // final timeDiff = endTime.difference(startTime);
       // logger.d("pbkdf2 time diff: ${timeDiff.inMilliseconds} ms");
 
-      // Generate a random 128-bit nonce.
       final iv = algorithm_nomac.newNonce();
 
-      /// append keys together
       final rootKey = _aesRootSecretKeyBytes;
       if (rootKey == null || rootKey.isEmpty) {
         logger.wtf("derivePinKey: rootKey is NULL");
@@ -1501,7 +1479,6 @@ class Cryptor {
 
       final blob = iv + secretBox.cipherText;
       final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-      // logger.d("hashedBlob: ${hashedBlob}");
 
       final mac = await hmac_algo_256.calculateMac(
         hashedBlob,
@@ -1551,15 +1528,9 @@ class Cryptor {
       );
 
       // password we want to hash
-      // final secretKey = SecretKey(pin.codeUnits);
       final secretKey = SecretKey(utf8.encode(pin.trim()));
-
-      // create a random salt
       final decodedSalt = base64.decode(encodedSalt);
 
-      // logger.d("salt: $_salt");
-
-      // Calculate a hash that can be stored in the database
       final derivedSecretKey = await pbkdf2.deriveKey(
         secretKey: secretKey,
         nonce: decodedSalt,
@@ -1572,7 +1543,6 @@ class Cryptor {
       // logger.d("pbkdf2 time diff: ${timeDiff.inMilliseconds} ms");
 
       var decodedKeyMaterial = base64.decode(encryptedKeyMaterial);
-
       // logger.d("decodedKeyMaterial length: ${decodedKeyMaterial.length}");
 
       if (decodedKeyMaterial.length == 16+32+32) {
@@ -1584,7 +1554,6 @@ class Cryptor {
         /// check mac
         final blob = iv + cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-        // logger.d("hashedBlob: ${hashedBlob}");
 
         final macCheck = await hmac_algo_256.calculateMac(
           hashedBlob,
@@ -1640,8 +1609,8 @@ class Cryptor {
       logger.d("UTF8 pwd: $argonPassword2");
       // var salt = "somesalt".toBytesLatin1();
       // create a random salt
-      final rng = Random.secure();
-      _salt = List.generate(_saltLength, (_) => rng.nextInt(256));
+      // final rng = Random.secure();
+      _salt = List.generate(_saltLength, (_) => sec_rng.nextInt(256));
 
       logger.d("argon2: starting time");
       final uint8Salt = Uint8List.fromList(_salt);
@@ -1684,10 +1653,10 @@ class Cryptor {
       final algorithm = AesCtr.with256bits(macAlgorithm: hmac_algo_256);
 
       // Generate a random 256-bit secret key
-      _aesSecretKey = await algorithm.newSecretKey();
+      _aesEncryptionKey = await algorithm.newSecretKey();
 
-      _aesSecretKeyBytes = (await _aesSecretKey?.extractBytes())!;
-      // logger.d("_aesKeyBytes: $_aesSecretKeyBytes");
+      _aesEncryptionKeyBytes = (await _aesEncryptionKey?.extractBytes())!;
+      // logger.d("_aesEncryptionKeyBytes: $_aesEncryptionKeyBytes");
 
       // Generate a random 128-bit nonce.
       final nonce = algorithm.newNonce();
@@ -1697,7 +1666,7 @@ class Cryptor {
 
       /// Encrypt
       final secretBox = await algorithm.encrypt(
-        _aesSecretKeyBytes,
+        _aesEncryptionKeyBytes,
         secretKey: argon2SecretKey,
         nonce: nonce,
       );
@@ -1723,31 +1692,24 @@ class Cryptor {
   Future<String> encrypt(String plaintext) async {
     // logger.d("encrypt");
     try {
-      if (_aesSecretKey != null && _authSecretKey != null) {
-        // Generate a random 128-bit nonce.
+      if (_aesEncryptionKey != null && _aesAuthKey != null) {
         final iv = algorithm_nomac.newNonce();
-        // logger.d("ctr new nonce: ${nonce.length}, nonce");
-
         final encodedPlaintext = utf8.encode(plaintext);
-        // logger.d("encoded password: $encodedPlaintext");
 
         /// Encrypt
         final secretBox = await algorithm_nomac.encrypt(
           encodedPlaintext,
-          secretKey: _aesSecretKey!,
+          secretKey: _aesEncryptionKey!,
           nonce: iv,
         );
 
-        /// encrypt-then-mac with added KAK and nonce
-        ///
         final blob = iv + secretBox.cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-        // logger.d("hashedBlob: ${hashedBlob}");
 
         /// check mac
         final mac = await hmac_algo_256.calculateMac(
           hashedBlob,
-          secretKey: _authSecretKey!,
+          secretKey: _aesAuthKey!,
         );
 
         // if (AppConstants.debugKeyData){
@@ -1755,9 +1717,7 @@ class Cryptor {
         //       "mac: ${mac}\n");
         // }
 
-        /// TODO: add in
         var encyptedMaterial = iv + mac.bytes + secretBox.cipherText;
-
         return base64.encode(encyptedMaterial);
       } else {
         return "";
@@ -1772,15 +1732,13 @@ class Cryptor {
   /// intakes the currently encrypted item with current key
   /// and decrypts with current key, then re-encrypts with new temp root key
   Future<String> reKeyEncryption(bool ishex, String ciphertext) async {
-    // logger.d("encrypt: tempindex[$_tempKeyIndex]");
+    logger.d("reKeyEncryption");
     try {
-      if (_aesSecretKey != null
-          && _authSecretKey != null
+      if (_aesEncryptionKey != null
+          && _aesAuthKey != null
           && _tempReKeyRootSecretKey != null) {
 
         final decryptedData = await decrypt(ciphertext);
-
-        // Generate a random 128-bit nonce.
         final iv = algorithm_nomac.newNonce();
 
         var encodedPlaintext = utf8.encode(decryptedData);
@@ -1788,30 +1746,23 @@ class Cryptor {
         /// Encrypt
         final secretBox = await algorithm_nomac.encrypt(
           encodedPlaintext,
-          secretKey: _tempAesSecretKey!,
+          secretKey: _tempAesEncryptionKey!,
           nonce: iv,
         );
 
-        /// encrypt-then-mac with added KAK and nonce
-        ///
         final blob = iv + secretBox.cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-        // logger.d("hashedBlob: ${hashedBlob}");
 
-        /// check mac
+        /// compute mac
         final mac = await hmac_algo_256.calculateMac(
           hashedBlob,
-          secretKey: _tempAuthSecretKey!,
+          secretKey: _tempAuthKey!,
         );
-
-        /// append our nonce, masked MAC and ciphertext
-        // var encyptedMaterialIndexed = iv + macIndexed.bytes + secretBoxIndexed.cipherText;
 
         /// TODO: count encryption blocks for new key
         // await settingsManager.saveEncryptionCount(settingsManager.numEncryptions);
         // await settingsManager.saveNumBytesEncrypted(settingsManager.numBytesEncrypted);
 
-        /// TODO: add in
         var encyptedMaterial = iv + mac.bytes + secretBox.cipherText;
 
         if (AppConstants.debugKeyData){
@@ -1820,8 +1771,8 @@ class Cryptor {
               "blob: ${hex.encode(blob)}"
               "mac: ${hex.encode(mac.bytes)}\nencyptedMaterial: $encyptedMaterial");
         }
-        // logger.d("encyptedMaterial2: ${encyptedMaterial2.length} : $encyptedMaterial2");
 
+        // logger.d("encyptedMaterial: ${encyptedMaterial.length} : $encyptedMaterial");
         return base64.encode(encyptedMaterial);
       } else {
         return "";
@@ -1838,17 +1789,8 @@ class Cryptor {
     logger.d("encryptWithKey");
     try {
       if (Kenc != null && Kenc.length == 32 && Kauth != null && Kauth.length == 32) {
-
-        // Generate a random 128-bit nonce.
         final iv = algorithm_nomac.newNonce();
-        // logger.d("ctr new nonce: ${nonce.length}, nonce");
-
         final encodedPlaintext = utf8.encode(plaintext);
-        // logger.d("encoded password: $encodedPlaintext");
-
-        /// TODO: implement this outside of this function
-        // final keyIndex = settingsManager.doEncryption(encodedPlaintext.length);
-        // logger.d("keyIndex: $keyIndex");
 
         final Skenc = SecretKey(Kenc);
         final Skauth = SecretKey(Kauth);
@@ -1860,11 +1802,8 @@ class Cryptor {
           nonce: iv,
         );
 
-        /// encrypt-then-mac with added KAK and nonce
-        ///
         final blob = iv + secretBox.cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-        // logger.d("hashedBlob: ${hashedBlob}");
 
         /// check mac
         final mac = await hmac_algo_256.calculateMac(
@@ -1879,11 +1818,9 @@ class Cryptor {
               "mac: ${hex.encode(mac.bytes)}");
         }
 
-        /// TODO: add in
-        var encyptedMaterial2 = iv + mac.bytes + secretBox.cipherText;
-        // logger.d("encyptedMaterial2: ${encyptedMaterial2.length} : $encyptedMaterial2");
-
-        return base64.encode(encyptedMaterial2);
+        var encyptedMaterial = iv + mac.bytes + secretBox.cipherText;
+        // logger.d("encyptedMaterial: ${encyptedMaterial.length} : $encyptedMaterial");
+        return base64.encode(encyptedMaterial);
       } else {
         return "";
       }
@@ -1899,13 +1836,8 @@ class Cryptor {
     logger.d("encryptWithKeyNoMac");
     try {
       if (Kenc != null && Kenc.length == 32) {
-
-        // Generate a random 128-bit nonce.
         final iv = algorithm_nomac.newNonce();
-        // logger.d("ctr new nonce: ${nonce.length}, nonce");
-
         final encodedPlaintext = utf8.encode(plaintext);
-        // logger.d("encoded password: $encodedPlaintext");
 
         final key = SecretKey(Kenc);
 
@@ -1938,30 +1870,26 @@ class Cryptor {
   Future<String> encryptBackupVault(String plaintext, String id) async {
     // logger.d("encryptBackupVault");
     try {
-      if (_aesSecretKey != null && _authSecretKey != null) {
-        // Generate a random 128-bit nonce.
+      if (_aesEncryptionKey != null && _aesAuthKey != null) {
         final iv = algorithm_nomac.newNonce();
         final encodedPlaintext = utf8.encode(plaintext);
-        // logger.d("encoded password: $encodedPlaintext");
 
         /// Encrypt
         final secretBox = await algorithm_nomac.encrypt(
           encodedPlaintext,
-          secretKey: _aesSecretKey!,
+          secretKey: _aesEncryptionKey!,
           nonce: iv,
         );
 
         /// encrypt-then-mac with added KAK and nonce
         final blob = iv + secretBox.cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-        // logger.d("hashedBlob: ${sha256(base64.encode(blob))}");
-
         final idHashBytes = hex.decode(sha256(id));
         // logger.d("idHashBytes: ${sha256(id)}");
 
         final Kmeta = await hmac_algo_256.calculateMac(
           idHashBytes,
-          secretKey: _authSecretKey!,
+          secretKey: _aesAuthKey!,
         );
 
         final Kmeta_key = SecretKey(Kmeta.bytes);
@@ -1981,7 +1909,6 @@ class Cryptor {
 
         var encyptedMaterial = iv + mac_meta.bytes + secretBox.cipherText;
         // logger.d("encyptedMaterial: ${encyptedMaterial.length} : encyptedMaterial");
-
         return base64.encode(encyptedMaterial);
       } else {
         return "";
@@ -1997,10 +1924,8 @@ class Cryptor {
   ///
   Future<String> encryptRecoveryKey(SecretKey key, List<int> data) async {
     logger.d("encryptRecoveryKey");
-    
     try {
       if (key != null && data.isNotEmpty) {
-        // Generate a random 128-bit nonce.
         final iv = algorithm_nomac.newNonce();
 
         /// Encrypt
@@ -2010,16 +1935,18 @@ class Cryptor {
           nonce: iv,
         );
 
-        /// encrypt-then-mac with added KAK and nonce
-        ///
         final blob = iv + secretBox.cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-        // logger.d("hashedBlob: ${hashedBlob}");
 
-        /// check mac
+        /// extract bytes and hash key for mac
+        final keyBytes = await key.extractBytes();
+        final hashedKeyBytes = sha256(base64.encode(keyBytes));
+        final hashedKey = SecretKey(hex.decode(hashedKeyBytes));
+
+        /// compute mac
         final mac = await hmac_algo_256.calculateMac(
           hashedBlob,
-          secretKey: key,
+          secretKey: hashedKey,
         );
 
         if (AppConstants.debugKeyData){
@@ -2030,9 +1957,7 @@ class Cryptor {
         }
 
         final encyptedMaterial = iv + mac.bytes + secretBox.cipherText;
-
-        // logger.d("encyptedMaterial2: ${encyptedMaterial2.length} : $encyptedMaterial2");
-
+        // logger.d("encyptedMaterial: ${encyptedMaterial.length} : $encyptedMaterial");
         return base64.encode(encyptedMaterial);
       } else {
         return "";
@@ -2312,7 +2237,6 @@ class Cryptor {
     }
 
     // logger.d("xorInverseList[${xorInverseList.length}]: ${xorInverseList}");
-
     return xorInverseList;
   }
 
@@ -2321,35 +2245,27 @@ class Cryptor {
   ///
   Future<String> decrypt(String blob) async {
     // logger.d("decrypt");
-
     try {
       var keyMaterial = base64.decode(blob);
-      if (_aesSecretKey != null && _authSecretKey != null) {
+      if (_aesEncryptionKey != null && _aesAuthKey != null) {
         final iv = keyMaterial.sublist(0, 16);
-        // this is the xor'd mac result
         final mac = keyMaterial.sublist(16, 48);
         final cipherText = keyMaterial.sublist(48, keyMaterial.length);
 
-        /// compute macs and verify
         final cipherBlob = iv + cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(cipherBlob)));
-        // logger.d("hashedBlob: ${hashedBlob}");
 
         final checkMac = await hmac_algo_256.calculateMac(
           hashedBlob,
-          secretKey: _authSecretKey!,
+          secretKey: _aesAuthKey!,
         );
 
         final encodedMac = base64.encode(mac);
         final encodedMacCheck = base64.encode(checkMac.bytes);
-        // logger.d("$blob:\ncheck mac: ${encodedMac == encodedMacCheck}\nencodedMac: $encodedMac\nencodedMacCheck: $encodedMacCheck");
-        // if (AppConstants.debugKeyData){
-        //   logger.d("check mac: ${encodedMac == encodedMacCheck}"
-        //       " blob: ${blob}\nmac: $mac");
-        // }
         if (encodedMac != encodedMacCheck) {
           logger.w("$blob:\ncheck mac: ${encodedMac == encodedMacCheck}\nencodedMac: $encodedMac\nencodedMacCheck: $encodedMacCheck");
         }
+
         if (encodedMac == encodedMacCheck) {
           List<int> empty_mac = [];
 
@@ -2359,11 +2275,10 @@ class Cryptor {
           /// Decrypt
           final plainTextBytes = await algorithm_nomac.decrypt(
             secretBox,
-            secretKey: _aesSecretKey!,
+            secretKey: _aesEncryptionKey!,
           );
 
           final plainText = utf8.decode(plainTextBytes);
-          // logger.d("decrypt plaintext: $plainText");
           return plainText;
         }
         else {
@@ -2381,27 +2296,26 @@ class Cryptor {
   /// Used for Recovery Key decryption
   Future<List<int>> decryptRecoveryKey(SecretKey key, String data) async {
     logger.d("decryptRecoveryKey");
-
     try {
       if (key != null && data.isNotEmpty) {
-
-        // final encodedPlaintext = utf8.encode(plaintext);
         final encodedBlob = base64.decode(data);
 
         final iv = encodedBlob.sublist(0, 16);
         final mac = encodedBlob.sublist(16, 16+32);
         final ciphertext = encodedBlob.sublist(16+32, encodedBlob.length);
 
-        // logger.d("encoded password: $encodedPlaintext");
-
         final blob = iv + ciphertext;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-        // logger.d("hashedBlob: ${hashedBlob}");
+
+        /// extract bytes and hash key for mac
+        final keyBytes = await key.extractBytes();
+        final hashedKeyBytes = sha256(base64.encode(keyBytes));
+        final hashedKey = SecretKey(hex.decode(hashedKeyBytes));
 
         /// check mac
         final macCheck = await hmac_algo_256.calculateMac(
           hashedBlob,
-          secretKey: key,
+          secretKey: hashedKey,
         );
 
         final encodedMac = base64.encode(mac);
@@ -2412,23 +2326,19 @@ class Cryptor {
         }
 
         if (encodedMac == encodedMacCheck) {
-          // logger.d("decryptRecoveryKey: MAC CHECK SUCCESS");
-
           final secretBox = SecretBox(ciphertext, nonce: iv, mac: Mac([]));
 
-          /// Encrypt
+          /// decrypt
           final decryptedData = await algorithm_nomac.decrypt(
             secretBox,
             secretKey: key,
           );
 
           return decryptedData;
-
         } else {
           logger.w("mac check failed");
           return [];
         }
-
       } else {
         return [];
       }
@@ -2557,14 +2467,12 @@ class Cryptor {
 
 
   Future<EncryptedGeoLockItem?> geoEncrypt(double lat, double long, String plaintext) async {
+    logger.d("geoEncrypt............");
     final algorithm2 = AesCtr.with256bits(macAlgorithm: hmac_algo_256);
 
     try {
-      if (_aesSecretKey != null && _authSecretKey != null) {
-        // Generate a random 128-bit nonce.
+      if (_aesEncryptionKey != null && _aesAuthKey != null) {
         final nonce = algorithm_nomac.newNonce();
-        logger.d("Geo Encrypt............");
-
         logger.d("nonce: $nonce");
 
 
@@ -2632,7 +2540,6 @@ class Cryptor {
         }
 
         final array = await geoConvertCoords(lat_min, long_min, nonce);
-
         if (array.length != 2) {
           return null;
         }
@@ -2669,13 +2576,11 @@ class Cryptor {
 
         /// create a list of both keys, 16x16
         List<int> Ka_tokens = [];
-        // for (var tok in nonce) {
         for (var i = 0; i<32; i++) {
           Ka_tokens.addAll(Ka);
         }
 
         List<int> Kb_tokens = [];
-        // for (var tok in nonce) {
         for (var i = 0; i<32; i++) {
           Kb_tokens.addAll(Kb);
         }
@@ -2713,7 +2618,6 @@ class Cryptor {
         );
 
         return encryptedGeoLockItem;
-        // return [geoEncryptedData, owner_lat_tokens, owner_long_tokens];
       }
 
       return null;
@@ -2732,15 +2636,13 @@ class Cryptor {
       List<int> owner_long_tokens,
       String ciphertext,
       ) async {
-
-    logger.d("Geo Decrypt............");
+    logger.d("geoDecrypt............");
 
     // logger.d("decrypt lat: $lat");
     // logger.d("decrypt long: $long");
+    // logger.d("ciphertext: $ciphertext");
 
     final algorithm2 = AesCtr.with256bits(macAlgorithm: hmac_algo_256);
-
-    // logger.d("ciphertext: $ciphertext");
 
     final decodedCiphertext = base64.decode(ciphertext);
     // logger.d("decodedCiphertext: $decodedCiphertext");
@@ -2748,17 +2650,14 @@ class Cryptor {
     final iv = decodedCiphertext.sublist(0, 16);
     final mac = decodedCiphertext.sublist(16, 48);
     final ciphertext2 = decodedCiphertext.sublist(48, decodedCiphertext.length);
-    // logger.d("ciphertext2: $ciphertext2");
 
     final arr = await geoConvertCoords(lat, long, iv);
-
     if (arr.length != 2) {
       return null;
     }
 
     final iv_lat = arr[0];
     final iv_long = arr[1];
-
     // logger.d("iv lat: $iv_lat");
     // logger.d("iv long: $iv_long");
 
@@ -2776,11 +2675,9 @@ class Cryptor {
     final Dkb_blob = base64.decode(Dkb);
     // logger.d("Dkb_blob decoded: ${Dkb_blob.length} : ${Dkb_blob}");
 
-
     /// compute the token to xor with our token lists
     final user_lat_token = Dka_blob.sublist(48, Dka_blob.length);
     // logger.d("user_lat_token: ${user_lat_token.length} : $user_lat_token");
-
     final user_long_token = Dkb_blob.sublist(48, Dkb_blob.length);
     // logger.d("user_long_token: ${user_long_token.length} : $user_long_token");
 
@@ -2803,7 +2700,6 @@ class Cryptor {
       convertedLongTokens.add(xorTok);
     }
     // logger.d("convertedLongTokens: ${convertedLongTokens.length} : $convertedLongTokens");
-
 
     DecryptedGeoLockItem? dItem;
     var foundKeys = false;
@@ -2850,7 +2746,7 @@ class Cryptor {
 
           // j++;
         } catch (e) {
-          // logger.d(e);
+          logger.e(e);
           continue;
         }
 
@@ -2862,41 +2758,35 @@ class Cryptor {
     }
 
     WidgetUtils.showToastMessage("Out Of Range!!!", 1);
-
     return null;
   }
 
   /// Used for GEO Token encryption
   Future<String> encryptGeoToken(String plaintext, List<int> iv) async {
-    // logger.d("encrypt3: $iv");
+    // logger.d("encryptGeoToken: $iv");
     try {
-      if (_aesSecretKey != null && _authSecretKey != null) {
+      if (_aesEncryptionKey != null && _aesAuthKey != null) {
 
         final decodedPlaintext = base64.decode(plaintext);
 
         /// Encrypt
         final secretBox = await algorithm_nomac.encrypt(
           decodedPlaintext,
-          secretKey: _aesSecretKey!,
+          secretKey: _aesEncryptionKey!,
           nonce: iv,
         );
 
-        /// encrypt-then-mac with added KAK and nonce
-        ///
         final blob = iv + secretBox.cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-        // logger.d("hashedBlob: ${hashedBlob}");
 
         /// check mac
         final mac = await hmac_algo_256.calculateMac(
           hashedBlob,
-          secretKey: _authSecretKey!,
+          secretKey: _aesAuthKey!,
         );
 
-        /// append our nonce, masked MAC and ciphertext
         var encyptedMaterial = iv + mac.bytes + secretBox.cipherText;
-        // logger.d("encyptedMaterial2: ${encyptedMaterial2.length} : $encyptedMaterial2");
-
+        // logger.d("encyptedMaterial: ${encyptedMaterial.length} : $encyptedMaterial");
         return base64.encode(encyptedMaterial);
       } else {
         return "";
@@ -2909,42 +2799,34 @@ class Cryptor {
 
   /// Used for Token decryption
   Future<String> decryptGeoData(String data) async {
-    // logger.d("decrypt3");
+    // logger.d("decryptGeoData");
     try {
-      if (_aesSecretKey != null && _authSecretKey != null) {
-
-        // final encodedPlaintext = utf8.encode(plaintext);
+      if (_aesEncryptionKey != null && _aesAuthKey != null) {
         final encodedBlob = base64.decode(data);
 
         final iv = encodedBlob.sublist(0, 16);
         final mac = encodedBlob.sublist(16, 16+32);
         final ciphertext = encodedBlob.sublist(16+32, encodedBlob.length);
 
-        // logger.d("encoded password: $encodedPlaintext");
-
         final blob = iv + ciphertext;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-        // logger.d("hashedBlob: ${hashedBlob}");
 
         /// check mac
         final macCheck = await hmac_algo_256.calculateMac(
           hashedBlob,
-          secretKey: _authSecretKey!,
+          secretKey: _aesAuthKey!,
         );
 
         final encodedMac = base64.encode(mac);
         final encodedMacCheck = base64.encode(macCheck.bytes);
 
-
         if (encodedMac == encodedMacCheck) {
-          // logger.d("mac check success");
-
           final secretBox = SecretBox(ciphertext, nonce: iv, mac: Mac([]));
 
-          /// Encrypt
+          /// decrypt
           final decryptedData = await algorithm_nomac.decrypt(
             secretBox,
-            secretKey: _aesSecretKey!,
+            secretKey: _aesEncryptionKey!,
           );
 
           return utf8.decode(decryptedData);
@@ -2968,7 +2850,6 @@ class Cryptor {
   ///
   Future<String> decryptWithKey(List<int> Kenc, List<int> Kauth, String blob) async {
     logger.d("decryptWithKey");
-
     try {
       var keyMaterial = base64.decode(blob);
       if (Kenc != null && Kenc.length == 32
@@ -2992,11 +2873,13 @@ class Cryptor {
         final encodedMac = base64.encode(mac);
         final encodedMacCheck = base64.encode(checkMac.bytes);
         // logger.d("check mac: ${encodedMac == encodedMacCheck}\nencodedMac: $encodedMac\nencodedMacCheck: $encodedMacCheck");
+
         if (AppConstants.debugKeyData){
           logger.d("Kenc: $Kenc\nKeauth: $Kauth"
               "\ncheck mac: ${encodedMac == encodedMacCheck}"
               "\nblob: ${hex.encode(blob)}\nmac: ${hex.encode(mac)}");
         }
+
         if (encodedMac == encodedMacCheck) {
           List<int> empty_mac = [];
 
@@ -3008,12 +2891,8 @@ class Cryptor {
             secretBox,
             secretKey: Skenc,
           );
-          // logger.d("plainTextBytes: ${hex.encode(plainTextBytes)}\nKauthi: ${hex.encode(mac)}");
 
           final plainText = utf8.decode(plainTextBytes);
-          // logger.d("decrypted plainText: $plainText");
-          // logger.d("decrypted: valid");
-
           return plainText;
         }
         else {
@@ -3033,22 +2912,18 @@ class Cryptor {
     logger.d("decryptReturnData");
     try {
       var keyMaterial = base64.decode(blob);
-      if (_aesSecretKey != null && _authSecretKey != null) {
-        // logger.d("settings.numDecryptions: ${settingsManager.numDecryptions}");
-
+      if (_aesEncryptionKey != null && _aesAuthKey != null) {
         final iv = keyMaterial.sublist(0, 16);
-        // this is the xor'd mac result
         final mac = keyMaterial.sublist(16, 48);
         final cipherText = keyMaterial.sublist(48, keyMaterial.length);
 
         /// compute macs and verify
         final blob = iv + cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-        // logger.d("hashedBlob: ${hashedBlob}");
 
         final checkMac = await hmac_algo_256.calculateMac(
           hashedBlob,
-          secretKey: _authSecretKey!,
+          secretKey: _aesAuthKey!,
         );
 
         final encodedMac = base64.encode(mac);
@@ -3064,11 +2939,9 @@ class Cryptor {
           /// Decrypt
           final plainTextBytes = await algorithm_nomac.decrypt(
             secretBox,
-            secretKey: _aesSecretKey!,
+            secretKey: _aesEncryptionKey!,
           );
 
-          // final plainText = utf8.decode(plainTextBytes);
-          // logger.d("decrypt plaintext: $plainTextBytes");
           return plainTextBytes;
         }
         else {
@@ -3086,10 +2959,9 @@ class Cryptor {
   ///
   Future<String> decryptBackupVault(String blob, String id) async {
     logger.d("decryptBackupVault");
-
     try {
       var keyMaterial = base64.decode(blob);
-      if (_aesSecretKey != null && _authSecretKey != null) {
+      if (_aesEncryptionKey != null && _aesAuthKey != null) {
         final iv = keyMaterial.sublist(0, 16);
 
         // this is the xor_mac result
@@ -3102,7 +2974,7 @@ class Cryptor {
 
         final Kmeta1 = await hmac_algo_256.calculateMac(
           idHashBytes,
-          secretKey: _authSecretKey!,
+          secretKey: _aesAuthKey!,
         );
 
         final Kmeta1_key = SecretKey(Kmeta1.bytes);
@@ -3118,26 +2990,16 @@ class Cryptor {
         );
         // logger.d("mac_meta: ${hex.encode(mac_meta.bytes)}");
 
-        // final weakMac = await hmac.calculateMac(
-        //   cipherText,
-        //   secretKey: _aesSecretKey!,
-        // );
-        // logger.d("weak_mac: ${weakMac.bytes}");
-
-        /// xor the 2 macs to unmask the base mac
-        // final secretBoxMac =
-        //     xor(Uint8List.fromList(mac_meta.bytes), Uint8List.fromList(mac));
-
         final encodedMac = base64.encode(mac);
         final encodedMacCheck = base64.encode(mac_meta.bytes);
 
         // logger.d("check mac: ${encodedMac == encodedMacCheck}\nnonce: $iv\nmac: $mac\nciphertext: $cipherText");
         if (AppConstants.debugKeyData){
-          logger.d("_aesSecretKeyBytes: $_aesSecretKeyBytes\n_authSecretKeyBytes: $_authSecretKeyBytes"
+          logger.d("_aesEncryptionKeyBytes: $_aesEncryptionKeyBytes\n_aesAuthKeyBytes: $_aesAuthKeyBytes"
               "\ncheck mac: ${encodedMac == encodedMacCheck}"
               "\nblob: ${hex.encode(blob)}\nmac: $mac");
         }
-        // logger.d("_aesSecretKeyBytes: $_aesSecretKeyBytes\n_authSecretKeyBytes: $_authSecretKeyBytes\n"
+        // logger.d("_aesEncryptionKeyBytes: $_aesEncryptionKeyBytes\n_aesAuthKeyBytes: $_aesAuthKeyBytes\n"
         //     "check mac: ${encodedMac == encodedMacCheck}"
         //     "blob: ${blob}\nmac: $mac");
 
@@ -3150,14 +3012,10 @@ class Cryptor {
           /// Decrypt
           final plainTextBytes = await algorithm_nomac.decrypt(
             secretBox,
-            secretKey: _aesSecretKey!,
+            secretKey: _aesEncryptionKey!,
           );
 
-          // await settingsManager.saveDecryptionCount(settingsManager.numDecryptions);
-          // await settingsManager.saveNumBytesDecrypted(settingsManager.numBytesDecrypted);
-
           final plainText = utf8.decode(plainTextBytes);
-          // logger.d("decrypt2: plaintext: $plainText");
           return plainText;
         }
 
@@ -3186,14 +3044,14 @@ class Cryptor {
       return "";
     }
 
-    if (_authSecretKey == null) {
+    if (_aesAuthKey == null) {
       return "";
     }
 
     try {
       final mac = await hmac_algo_256.calculateMac(
         hex.decode(sha256(message)),
-        secretKey: _authSecretKey!,
+        secretKey: _aesAuthKey!,
       );
       return hex.encode(mac.bytes);
     } catch(e) {
@@ -3208,7 +3066,7 @@ class Cryptor {
       return "";
     }
 
-    if (_authSecretKey == null) {
+    if (_aesAuthKey == null) {
       return "";
     }
 
@@ -3229,7 +3087,7 @@ class Cryptor {
       return "";
     }
 
-    if (_authSecretKey == null) {
+    if (_aesAuthKey == null) {
       return "";
     }
 
@@ -3253,14 +3111,14 @@ class Cryptor {
       return "";
     }
 
-    if (_tempAuthSecretKey == null) {
+    if (_tempAuthKey == null) {
       return "";
     }
 
     try {
       final mac = await hmac_algo_256.calculateMac(
         hex.decode(sha256(message)),
-        secretKey: _tempAuthSecretKey!,
+        secretKey: _tempAuthKey!,
       );
       return hex.encode(mac.bytes);
     } catch(e) {

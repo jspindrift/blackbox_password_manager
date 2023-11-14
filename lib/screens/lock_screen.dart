@@ -195,6 +195,7 @@ class _LockScreenState extends State<LockScreen> {
                             setState(
                                 () => _hidePasswordField = !_hidePasswordField);
                           },
+
                         ),
                       ),
                       textInputAction: TextInputAction.done,
@@ -207,6 +208,12 @@ class _LockScreenState extends State<LockScreen> {
                       },
                       onFieldSubmitted: (_) {
                         _validateField();
+                      },
+                      onEditingComplete: () async {
+                        // _logManager.logger.d("onEditingComplete");
+                        Timer(const Duration(milliseconds: 200), () async {
+                          await _logIn();
+                        });
                       },
                       controller: _passwordTextController,
                     ),
@@ -228,14 +235,13 @@ class _LockScreenState extends State<LockScreen> {
                         ),
                       ),
                       onPressed: _isFieldValid
-                          ? () {
+                          ? () async {
                               setState(() {
                                 _isAuthenticating = true;
                               });
-                              const duration =
-                                  const Duration(milliseconds: 200);
-                              Timer(duration, () {
-                                _logIn();
+
+                              Timer(const Duration(milliseconds: 200), () async {
+                                await _logIn();
                               });
                             }
                           : null,
@@ -310,7 +316,7 @@ class _LockScreenState extends State<LockScreen> {
   }
 
   /// log user in using master password
-  void _logIn() async {
+  Future<void> _logIn() async {
     setState(() {
       _isAuthenticating = true;
     });

@@ -672,6 +672,19 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                         }
                         _validateFields();
                       },
+                      onEditingComplete: () async {
+                        if (!_isSigningUp) {
+                          FocusScope.of(context).unfocus();
+
+                          setState(() {
+                            _isAuthenticating = true;
+                          });
+                          // _logManager.logger.d("onEditingComplete");
+                          Timer(const Duration(milliseconds: 200), () async {
+                            await _logIn();
+                          });
+                        }
+                      },
                       focusNode: _enterPasswordFocusNode,
                       controller: _enterPasswordTextController,
                     ),
@@ -851,9 +864,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                                 setState(() {
                                   _isAuthenticating = true;
                                 });
-                                const duration =
-                                    const Duration(milliseconds: 300);
-                                Timer(duration, () async {
+
+                                Timer(const Duration(milliseconds: 300), () async {
                                   await _logIn();
                                 });
                               }
@@ -1134,7 +1146,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       // String encodedSalt = newKeyParams.salt;
       // String encodedEncryptedKey = newKeyParams.key;//base64.encode(newKeyParams.key);
 
-      final deviceId = "simulator";
+      // final deviceId = "simulator";
+      final deviceId = await deviceManager.getDeviceId();
 
       /// create secret salt
       if (deviceId != null) {
@@ -1186,6 +1199,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
           _computeLogoutValues();
         });
+      } else {
+        _showErrorDialog('An error occurred. No deviceId available');
       }
     } catch (e) {
       logManager.logger.d(e);
@@ -1237,9 +1252,9 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         logManager.saveLogs();
 
         if (_wrongPasswordCount % 3 == 0 && keyManager.hint.isNotEmpty) {
-          _showErrorDialog('Invalid password.\n\nhint: ${keyManager.hint}');
+          _showInvalidPasswordDialog('Invalid password.\n\nhint: ${keyManager.hint}');
         } else {
-          _showErrorDialog('Invalid password.');
+          _showInvalidPasswordDialog('Invalid password.');
         }
       }
 
@@ -1444,7 +1459,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
     final keyId = key.id;
     final keyData = key.key;
-    // logManager.logger.d("keyId: ${keyId}");
+    logManager.logger.d("vaultId: ${keyManager.vaultId}");
     // logManager.logger.d("keyData: ${keyData}");
 
     final recoveryItem = await keyManager.getRecoveryKeyItem(keyId);
@@ -1499,6 +1514,28 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           ElevatedButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
+              },
+              child: Text('Okay'))
+        ],
+      ),
+    );
+  }
+
+  void _showInvalidPasswordDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Error'),
+        content: Text(message),
+        actions: <Widget>[
+          ElevatedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+
+                Timer(Duration(milliseconds: 200), () async {
+                  FocusScope.of(context)
+                      .requestFocus(_enterPasswordFocusNode);
+                });
               },
               child: Text('Okay'))
         ],

@@ -294,12 +294,14 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
       );
 
       final sharedSecretBytes = await sharedSecret.extractBytes();
-
-      // print('Shared secret: $sharedSecretBytes');
-      // print('Shared secret hex: ${hex.encode(sharedSecretBytes)}');
+      print('Shared secret hex: ${hex.encode(sharedSecretBytes)}');
 
       final sharedSecretKeyHash = await _cryptor.sha256(
-          hex.encode(sharedSecretBytes));
+          base64.encode(sharedSecretBytes),
+      );
+
+      _logManager.logger.d('sharedSecretKeyHash: ${sharedSecretKeyHash}');
+
     } catch (e) {
       _logManager.logger.w("$e");
     }

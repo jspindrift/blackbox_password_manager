@@ -157,11 +157,6 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
       }
     }
 
-    // var keyIndex = 0;//(widget.keyItem.keyIndex)!;
-    // if (widget.keyItem.keyIndex != null) {
-    //   keyIndex = (widget.keyItem.keyIndex)!;
-    // }
-
     /// decrypt root seed and expand
     cryptor.decrypt(widget.keyItem.key).then((value) {
       final decryptedSeedData = value;
@@ -170,7 +165,6 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
       /// TODO: switch encoding !
       // final decodedRootKey = hex.decode(decryptedSeedData);
       final decodedMainPrivateKey = base64.decode(decryptedSeedData);
-
       // print("decodedMainPrivateKey: ${decodedMainPrivateKey}");
 
       algorithm_exchange
@@ -184,7 +178,6 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
           //   print("privkeyseed check: ${value}");
           //   print("privkeyseed check hex: ${hex.encode(value)}");
           // });
-
 
           if (mounted) {
             setState(() {
@@ -328,7 +321,6 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
 
     _validateFields();
-
   }
 
   Future<void> _refreshKeyData() async {
@@ -1318,6 +1310,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
                             id: widget.peerId,
                             keyItem: widget.keyItem,
                           ),
+                          fullscreenDialog: true,
                         ),
                       );
                     },

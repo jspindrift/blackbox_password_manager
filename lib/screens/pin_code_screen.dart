@@ -42,7 +42,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
   bool _isCheckingPinCode = false;
 
   int _pinCodeAttemptsLeft = 3;
-  // int _pinCodeLength = 4;
+  int _pinCodeLength = 4;
 
   final _cryptor = Cryptor();
   final _keyManager = KeychainManager();
@@ -63,7 +63,8 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
           _pinCodeAttemptsLeft = 3 - value!.attempts;
         });
       });
-    } else {
+    }
+    else {
       Timer(Duration(milliseconds: 300), () {
         _showChoosePinCodeLength();
       });
@@ -104,11 +105,11 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
                         ? Colors.greenAccent
                         : Colors.grey[200])
                     : (_shouldObscurePin ? Colors.white : Colors.grey[200]),
-              ))
+              ),
+          ),
         ],
       ),
       body: PinCode(
-
         backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
         obscurePin: _shouldObscurePin,
         codeLength: _settingsManager.pinCodeLength,
@@ -123,6 +124,8 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
                         : "")
                     : "",
         onChange: (String code) async {
+          _logManager.logger.d("$code");
+
           if (widget.flow == PinCodeFlow.create) {
             if (_isConfirmingPinCode) {
               if (_initialPinCode == code) {
@@ -145,6 +148,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
                 });
               }
             } else {
+              _logManager.logger.d("$code");
               setState(() {
                 _initialPinCode = code;
                 _isConfirmingPinCode = true;

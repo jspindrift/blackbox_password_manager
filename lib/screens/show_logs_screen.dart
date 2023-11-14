@@ -16,7 +16,7 @@ class ShowLogsScreen extends StatefulWidget {
   State<ShowLogsScreen> createState() => _ShowLogsScreenState();
 }
 
-class _ShowLogsScreenState extends State<ShowLogsScreen> {
+class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObserver {
   List<Block> _blocks = [];
   List<String> timeLapses = [];
   List<int> sessionTimes = [];
@@ -30,6 +30,10 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
   @override
   void initState() {
     super.initState();
+
+    /// add observer for app lifecycle state transitions
+    WidgetsBinding.instance.addObserver(this);
+
     _logManager.log("ShowLogsScreen", "initState", "initState");
 
     _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
@@ -37,7 +41,7 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
     _readLogs();
   }
 
-  void _readLogs() async {
+  Future<void> _readLogs() async {
     final logData = await _fileManager.readLogDataAppend();
     // _logManager.logger.wtf("_readLogs: $logData");
 
@@ -159,7 +163,45 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
       currentTimeLapseString = '';
       timeLapseIndex = 0;
     }
+
+    setState(() {});
   }
+
+  /// track the lifecycle of the app
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.inactive:
+      // _logManager.log("ShowLogsScreen", "didChangeAppLifecycleState",
+      //     "AppLifecycleState: inactive");
+        break;
+      case AppLifecycleState.resumed:
+      // _logManager.log("ShowLogsScreen", "didChangeAppLifecycleState",
+      //     "AppLifecycleState: resumed");
+        await _readLogs();
+        break;
+      case AppLifecycleState.paused:
+      // _logManager.log("ShowLogsScreen", "didChangeAppLifecycleState",
+      //     "AppLifecycleState: paused");
+        break;
+      case AppLifecycleState.detached:
+      // _logManager.log("ShowLogsScreen", "didChangeAppLifecycleState",
+      //     "AppLifecycleState: detached");
+        break;
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -184,7 +226,9 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> {
           return ListTile(
             isThreeLine: true,
             title: Text(
-              '${DateFormat('yyyy-MM-dd  hh:mm a').format(DateTime.parse(_blocks[index].time))}\nsession #: ${_blocks[index].blockNumber + 1} | ${sessionTimes[index]} seconds',
+              '${index + 1}: ${DateFormat('yyyy-MM-dd  hh:mm a').format(DateTime.parse(_blocks[index].time))}\n'
+                  'session #: ${_blocks[index].blockNumber + 1} | ${sessionTimes[index]} seconds\n'
+                  'size: ${_blocks[index].toRawJson().length/1024} KB',
               style: TextStyle(
                 color: _isDarkModeEnabled ? Colors.white : null,
               ),

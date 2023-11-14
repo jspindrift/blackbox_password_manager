@@ -814,8 +814,20 @@ class KeychainManager {
         }
       }
 
-      cryptor.setLogKeyBytes(decodedLogKeyMaterial);
-      logManager.log("KeychainManager", "readLogKey", "success");
+      if (_encodedLogKeyMaterial == null || _encodedLogKeyMaterial.isEmpty) {
+        logger.wtf("_encodedLogKeyMaterial empty!!!!!");
+        final newLogKey = cryptor.getRandomBytes(32);
+
+        cryptor.setLogKeyBytes(newLogKey);
+
+      } else {
+        final decodedLogKey = base64.decode(_encodedLogKeyMaterial);
+        logger.d("readLogKey: $decodedLogKey");
+
+        cryptor.setLogKeyBytes(decodedLogKey);
+        logManager.log("KeychainManager", "readLogKey", "success");
+      }
+
 
       return _encodedLogKeyMaterial;
     } catch (e) {
@@ -1028,11 +1040,11 @@ class KeychainManager {
   Future<bool> saveBiometricKey() async {
     logger.d("saveBiometricKey");
 
-    if (cryptor.aesSecretKeyBytes.isNotEmpty &&
-        cryptor.authSecretKeyBytes.isNotEmpty) {
+    if (cryptor.aesEncryptionKeyBytes.isNotEmpty &&
+        cryptor.aesAuthKeyBytes.isNotEmpty) {
       /// append our encryption and authentication key together and save in keychain
       final keys =
-          base64.encode(cryptor.aesSecretKeyBytes + cryptor.authSecretKeyBytes);
+          base64.encode(cryptor.aesEncryptionKeyBytes + cryptor.aesAuthKeyBytes);
       final key = base64.encode(cryptor.aesRootSecretKeyBytes);
       try {
         if (Platform.isIOS || Platform.isMacOS) {
@@ -1721,11 +1733,11 @@ class KeychainManager {
         aOptions: _getAndroidOptionsKey(),
         mOptions: _getMacOptionsKey(),
       );
-      await _storage.deleteAll(
-        iOptions: _getIOSOptionsLogKey(),
-        aOptions: _getAndroidOptionsLogKey(),
-        mOptions: _getMacOptionsLogKey(),
-      );
+      // await _storage.deleteAll(
+      //   iOptions: _getIOSOptionsLogKey(),
+      //   aOptions: _getAndroidOptionsLogKey(),
+      //   mOptions: _getMacOptionsLogKey(),
+      // );
       await _storage.deleteAll(
         iOptions: _getIOSOptionsMyIdentity(),
         aOptions: _getAndroidOptionsMyIdentity(),

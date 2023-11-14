@@ -96,15 +96,15 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         final privateHexS = await _cryptor.decrypt(value.privKeySignature);
         _pubExchangeKeySeed = await _cryptor.decrypt(value.privKeyExchange);
 
-        var privS = PrivateKey(ec, BigInt.parse(privateHexS, radix: 16));
+        var privateSigningKey = PrivateKey(ec, BigInt.parse(privateHexS, radix: 16));
         final privSeedPair = await algorithm_exchange
             .newKeyPairFromSeed(hex.decode(_pubExchangeKeySeed));
 
-        var pubE = await privSeedPair.extractPublicKey();
+        var pubExchange = await privSeedPair.extractPublicKey();
 
         setState(() {
-          _pubSigningKey = privS.publicKey.toHex();
-          _pubExchangeKeyPublic = hex.encode(pubE.bytes);
+          _pubSigningKey = base64.encode(hex.decode(privateSigningKey.publicKey.toCompressedHex()));
+          _pubExchangeKeyPublic = base64.encode(pubExchange.bytes);
           _pubExchangeKeyAddress = _cryptor.sha256(_pubExchangeKeyPublic).substring(0,32);
 
           _myCode = DigitalIdentityCode(
@@ -221,15 +221,15 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
               await _scanQR(context);
             },
           ),
-          Visibility(
-            visible: false,
-            child: IconButton(
-            icon: Icon(Icons.import_export),
-            color: _isDarkModeEnabled ? Colors.greenAccent : null,
-            onPressed: () async {
-              _showModalImportPublicKeyView();
-            },
-          ),),
+          // Visibility(
+          //   visible: false,
+          //   child: IconButton(
+          //   icon: Icon(Icons.import_export),
+          //   color: _isDarkModeEnabled ? Colors.greenAccent : null,
+          //   onPressed: () async {
+          //     _showModalImportPublicKeyView();
+          //   },
+          // ),),
         ],
       ),
       body: ListView.separated(
@@ -541,7 +541,9 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     final algorithm = X25519();
 
     // print("bob pubKeyExchange: $bobPubKey");
-    final pubBytes = hex.decode(identity.pubKeyExchange);
+    // final pubBytes = hex.decode(identity.pubKeyExchange);
+    final pubBytes = base64.decode(identity.pubKeyExchange);
+
     // print("bob pubBytes: $pubBytes");
 
     final bobPublicKey = SimplePublicKey(pubBytes, type: KeyPairType.x25519);
@@ -553,7 +555,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     final privSeedPair = await algorithm.newKeyPairFromSeed(seedBytes);
 
     final mypublicKeyExchange = await privSeedPair.extractPublicKey();
-    final ahash = _cryptor.sha256(hex.encode(mypublicKeyExchange.bytes));
+    final ahash = _cryptor.sha256(base64.encode(mypublicKeyExchange.bytes));
 
     // We can now calculate a shared secret.
     final sharedSecret = await algorithm.sharedSecretKey(
@@ -589,254 +591,254 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     );
   }
 
-  _showModalImportPublicKeyView() async {
-    showModalBottomSheet(
-        backgroundColor: _isDarkModeEnabled ? Colors.blueGrey : null,
-        elevation: 8,
-        context: context,
-        isScrollControlled: true,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(20),
-          ),
-        ),
-        builder: (context) {
-          return StatefulBuilder(
-              builder: (BuildContext context, StateSetter state) {
-            return Center(
-              child: Column(
-                children: <Widget>[
-                  SizedBox(
-                    height: 64,
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(32),
-                    child: ElevatedButton(
-                      style: ButtonStyle(
-                        backgroundColor: _isDarkModeEnabled
-                            ? MaterialStateProperty.all<Color>(
-                                Colors.greenAccent)
-                            : null,
-                      ),
-                      child: Text(
-                        "Close",
-                        style: TextStyle(
-                          color:
-                              _isDarkModeEnabled ? Colors.black : Colors.white,
-                        ),
-                      ),
-                      onPressed: () async {
-                        FocusScope.of(context).unfocus();
-                        state(() {
-                          _importPublicKeyDataTextFieldController.text = "";
-                          _importPublicKeyNameTextFieldController.text = "";
-                        });
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: TextFormField(
-                      cursorColor:
-                          _isDarkModeEnabled ? Colors.greenAccent : null,
-                      autocorrect: false,
-                      obscureText: false,
-                      minLines: 1,
-                      // maxLines: _hidePasscodeField ? 1 : 8,
-                      decoration: InputDecoration(
-                        labelText: 'Name',
-                        hintStyle: TextStyle(
-                          fontSize: 18.0,
-                          color: _isDarkModeEnabled ? Colors.white : null,
-                        ),
-                        labelStyle: TextStyle(
-                          fontSize: 18.0,
-                          color: _isDarkModeEnabled ? Colors.white : null,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: _isDarkModeEnabled
-                                ? Colors.greenAccent
-                                : Colors.grey,
-                            width: 0.0,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: _isDarkModeEnabled
-                                ? Colors.greenAccent
-                                : Colors.grey,
-                            width: 0.0,
-                          ),
-                        ),
-                      ),
-                      style: TextStyle(
-                        fontSize: 18.0,
-                        color: _isDarkModeEnabled ? Colors.white : null,
-                      ),
-                      onChanged: (pwd) {
-                        _validateField(state);
-                      },
-                      onTap: () {
-                        _validateField(state);
-                      },
-                      onFieldSubmitted: (_) {
-                        _validateField(state);
-                      },
-                      keyboardType: TextInputType.visiblePassword,
-                      textInputAction: TextInputAction.done,
-                      controller: _importPublicKeyNameTextFieldController,
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: TextFormField(
-                      cursorColor:
-                          _isDarkModeEnabled ? Colors.greenAccent : null,
-                      autocorrect: false,
-                      obscureText: false,
-                      minLines: 1,
-                      // maxLines: _hidePasscodeField ? 1 : 8,
-                      decoration: InputDecoration(
-                        labelText: 'Public Key (Hex)',
-                        hintStyle: TextStyle(
-                          fontSize: 18.0,
-                          color: _isDarkModeEnabled ? Colors.white : null,
-                        ),
-                        labelStyle: TextStyle(
-                          fontSize: 18.0,
-                          color: _isDarkModeEnabled ? Colors.white : null,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: _isDarkModeEnabled
-                                ? Colors.greenAccent
-                                : Colors.grey,
-                            width: 0.0,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: _isDarkModeEnabled
-                                ? Colors.greenAccent
-                                : Colors.grey,
-                            width: 0.0,
-                          ),
-                        ),
-                        // prefixIcon: Icon(
-                        //   Icons.security,
-                        //   color: _isDarkModeEnabled ? Colors.grey : null,
-                        // ),
-                        // suffixIcon: IconButton(
-                        //   icon: Icon(
-                        //     Icons.remove_red_eye,
-                        //     color: _hidePasscodeField
-                        //         ? Colors.grey
-                        //         : _isDarkModeEnabled
-                        //         ? Colors.greenAccent
-                        //         : Colors.blueAccent,
-                        //   ),
-                        //   onPressed: () {
-                        //     setState(
-                        //             () => _hidePasscodeField = !_hidePasscodeField);
-                        //   },
-                        // ),
-                      ),
-                      style: TextStyle(
-                        fontSize: 18.0,
-                        color: _isDarkModeEnabled ? Colors.white : null,
-                      ),
-                      onChanged: (pwd) {
-                        _validateField(state);
-                      },
-                      onTap: () {
-                        _validateField(state);
-                      },
-                      onFieldSubmitted: (_) {
-                        _validateField(state);
-                      },
-                      keyboardType: TextInputType.text,
-                      textInputAction: TextInputAction.done,
-                      // focusNode: _passwordFocusNode,
-                      controller: _importPublicKeyDataTextFieldController,
-                    ),
-                  ),
-                  Visibility(
-                    visible: _hasImportWarningMessage,
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text(
-                        "Invalid Format",
-                        style: TextStyle(
-                          color:
-                              _isDarkModeEnabled ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(16),
-                    child: ElevatedButton(
-                      style: ButtonStyle(
-                        backgroundColor: _isDarkModeEnabled
-                            ? MaterialStateProperty.all<Color>(
-                                Colors.greenAccent)
-                            : null,
-                      ),
-                      child: Text(
-                        "Import",
-                        style: TextStyle(
-                          color:
-                              _isDarkModeEnabled ? Colors.black : Colors.white,
-                        ),
-                      ),
-                      onPressed: _importFieldIsValid
-                          ? () async {
-                              FocusScope.of(context).unfocus();
+  // _showModalImportPublicKeyView() async {
+  //   showModalBottomSheet(
+  //       backgroundColor: _isDarkModeEnabled ? Colors.blueGrey : null,
+  //       elevation: 8,
+  //       context: context,
+  //       isScrollControlled: true,
+  //       shape: RoundedRectangleBorder(
+  //         borderRadius: BorderRadius.vertical(
+  //           top: Radius.circular(20),
+  //         ),
+  //       ),
+  //       builder: (context) {
+  //         return StatefulBuilder(
+  //             builder: (BuildContext context, StateSetter state) {
+  //           return Center(
+  //             child: Column(
+  //               children: <Widget>[
+  //                 SizedBox(
+  //                   height: 64,
+  //                 ),
+  //                 Padding(
+  //                   padding: EdgeInsets.all(32),
+  //                   child: ElevatedButton(
+  //                     style: ButtonStyle(
+  //                       backgroundColor: _isDarkModeEnabled
+  //                           ? MaterialStateProperty.all<Color>(
+  //                               Colors.greenAccent)
+  //                           : null,
+  //                     ),
+  //                     child: Text(
+  //                       "Close",
+  //                       style: TextStyle(
+  //                         color:
+  //                             _isDarkModeEnabled ? Colors.black : Colors.white,
+  //                       ),
+  //                     ),
+  //                     onPressed: () async {
+  //                       FocusScope.of(context).unfocus();
+  //                       state(() {
+  //                         _importPublicKeyDataTextFieldController.text = "";
+  //                         _importPublicKeyNameTextFieldController.text = "";
+  //                       });
+  //                       Navigator.of(context).pop();
+  //                     },
+  //                   ),
+  //                 ),
+  //                 Padding(
+  //                   padding: EdgeInsets.all(16.0),
+  //                   child: TextFormField(
+  //                     cursorColor:
+  //                         _isDarkModeEnabled ? Colors.greenAccent : null,
+  //                     autocorrect: false,
+  //                     obscureText: false,
+  //                     minLines: 1,
+  //                     // maxLines: _hidePasscodeField ? 1 : 8,
+  //                     decoration: InputDecoration(
+  //                       labelText: 'Name',
+  //                       hintStyle: TextStyle(
+  //                         fontSize: 18.0,
+  //                         color: _isDarkModeEnabled ? Colors.white : null,
+  //                       ),
+  //                       labelStyle: TextStyle(
+  //                         fontSize: 18.0,
+  //                         color: _isDarkModeEnabled ? Colors.white : null,
+  //                       ),
+  //                       enabledBorder: OutlineInputBorder(
+  //                         borderSide: BorderSide(
+  //                           color: _isDarkModeEnabled
+  //                               ? Colors.greenAccent
+  //                               : Colors.grey,
+  //                           width: 0.0,
+  //                         ),
+  //                       ),
+  //                       focusedBorder: OutlineInputBorder(
+  //                         borderSide: BorderSide(
+  //                           color: _isDarkModeEnabled
+  //                               ? Colors.greenAccent
+  //                               : Colors.grey,
+  //                           width: 0.0,
+  //                         ),
+  //                       ),
+  //                     ),
+  //                     style: TextStyle(
+  //                       fontSize: 18.0,
+  //                       color: _isDarkModeEnabled ? Colors.white : null,
+  //                     ),
+  //                     onChanged: (pwd) {
+  //                       _validateField(state);
+  //                     },
+  //                     onTap: () {
+  //                       _validateField(state);
+  //                     },
+  //                     onFieldSubmitted: (_) {
+  //                       _validateField(state);
+  //                     },
+  //                     keyboardType: TextInputType.visiblePassword,
+  //                     textInputAction: TextInputAction.done,
+  //                     controller: _importPublicKeyNameTextFieldController,
+  //                   ),
+  //                 ),
+  //                 Padding(
+  //                   padding: EdgeInsets.all(16.0),
+  //                   child: TextFormField(
+  //                     cursorColor:
+  //                         _isDarkModeEnabled ? Colors.greenAccent : null,
+  //                     autocorrect: false,
+  //                     obscureText: false,
+  //                     minLines: 1,
+  //                     // maxLines: _hidePasscodeField ? 1 : 8,
+  //                     decoration: InputDecoration(
+  //                       labelText: 'Public Key (Hex)',
+  //                       hintStyle: TextStyle(
+  //                         fontSize: 18.0,
+  //                         color: _isDarkModeEnabled ? Colors.white : null,
+  //                       ),
+  //                       labelStyle: TextStyle(
+  //                         fontSize: 18.0,
+  //                         color: _isDarkModeEnabled ? Colors.white : null,
+  //                       ),
+  //                       enabledBorder: OutlineInputBorder(
+  //                         borderSide: BorderSide(
+  //                           color: _isDarkModeEnabled
+  //                               ? Colors.greenAccent
+  //                               : Colors.grey,
+  //                           width: 0.0,
+  //                         ),
+  //                       ),
+  //                       focusedBorder: OutlineInputBorder(
+  //                         borderSide: BorderSide(
+  //                           color: _isDarkModeEnabled
+  //                               ? Colors.greenAccent
+  //                               : Colors.grey,
+  //                           width: 0.0,
+  //                         ),
+  //                       ),
+  //                       // prefixIcon: Icon(
+  //                       //   Icons.security,
+  //                       //   color: _isDarkModeEnabled ? Colors.grey : null,
+  //                       // ),
+  //                       // suffixIcon: IconButton(
+  //                       //   icon: Icon(
+  //                       //     Icons.remove_red_eye,
+  //                       //     color: _hidePasscodeField
+  //                       //         ? Colors.grey
+  //                       //         : _isDarkModeEnabled
+  //                       //         ? Colors.greenAccent
+  //                       //         : Colors.blueAccent,
+  //                       //   ),
+  //                       //   onPressed: () {
+  //                       //     setState(
+  //                       //             () => _hidePasscodeField = !_hidePasscodeField);
+  //                       //   },
+  //                       // ),
+  //                     ),
+  //                     style: TextStyle(
+  //                       fontSize: 18.0,
+  //                       color: _isDarkModeEnabled ? Colors.white : null,
+  //                     ),
+  //                     onChanged: (pwd) {
+  //                       _validateField(state);
+  //                     },
+  //                     onTap: () {
+  //                       _validateField(state);
+  //                     },
+  //                     onFieldSubmitted: (_) {
+  //                       _validateField(state);
+  //                     },
+  //                     keyboardType: TextInputType.text,
+  //                     textInputAction: TextInputAction.done,
+  //                     // focusNode: _passwordFocusNode,
+  //                     controller: _importPublicKeyDataTextFieldController,
+  //                   ),
+  //                 ),
+  //                 Visibility(
+  //                   visible: _hasImportWarningMessage,
+  //                   child: Padding(
+  //                     padding: EdgeInsets.all(16),
+  //                     child: Text(
+  //                       "Invalid Format",
+  //                       style: TextStyle(
+  //                         color:
+  //                             _isDarkModeEnabled ? Colors.white : Colors.black,
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 Padding(
+  //                   padding: EdgeInsets.all(16),
+  //                   child: ElevatedButton(
+  //                     style: ButtonStyle(
+  //                       backgroundColor: _isDarkModeEnabled
+  //                           ? MaterialStateProperty.all<Color>(
+  //                               Colors.greenAccent)
+  //                           : null,
+  //                     ),
+  //                     child: Text(
+  //                       "Import",
+  //                       style: TextStyle(
+  //                         color:
+  //                             _isDarkModeEnabled ? Colors.black : Colors.white,
+  //                       ),
+  //                     ),
+  //                     onPressed: _importFieldIsValid
+  //                         ? () async {
+  //                             FocusScope.of(context).unfocus();
+  //
+  //                             // print("import identity");
+  //
+  //                             DigitalIdentityCode code = DigitalIdentityCode(
+  //                               pubKeyExchange:
+  //                                   _importPublicKeyDataTextFieldController
+  //                                       .text,
+  //                               pubKeySignature: "",
+  //                             );
+  //
+  //                             await _saveScannedIdentity(code,
+  //                                 _importPublicKeyNameTextFieldController.text);
+  //
+  //                             state(() {
+  //                               _importPublicKeyDataTextFieldController.text =
+  //                                   "";
+  //                               _importPublicKeyNameTextFieldController.text =
+  //                                   "";
+  //                             });
+  //
+  //                             Navigator.of(context).pop();
+  //                           }
+  //                         : null,
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           );
+  //         });
+  //       });
+  // }
 
-                              // print("import identity");
-
-                              DigitalIdentityCode code = DigitalIdentityCode(
-                                pubKeyExchange:
-                                    _importPublicKeyDataTextFieldController
-                                        .text,
-                                pubKeySignature: "",
-                              );
-
-                              await _saveScannedIdentity(code,
-                                  _importPublicKeyNameTextFieldController.text);
-
-                              state(() {
-                                _importPublicKeyDataTextFieldController.text =
-                                    "";
-                                _importPublicKeyNameTextFieldController.text =
-                                    "";
-                              });
-
-                              Navigator.of(context).pop();
-                            }
-                          : null,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          });
-        });
-  }
-
-  void _validateField(StateSetter state) {
-    state(() {
-      _importFieldIsValid = _importPublicKeyNameTextFieldController
-              .text.isNotEmpty &&
-          _importPublicKeyDataTextFieldController.text.isNotEmpty &&
-          _importPublicKeyDataTextFieldController.text.length == 64 &&
-          _importPublicKeyDataTextFieldController.text != _pubExchangeKeyPublic;
-
-      _hasImportWarningMessage = !_importFieldIsValid;
-    });
-  }
+  // void _validateField(StateSetter state) {
+  //   state(() {
+  //     _importFieldIsValid = _importPublicKeyNameTextFieldController
+  //             .text.isNotEmpty &&
+  //         _importPublicKeyDataTextFieldController.text.isNotEmpty &&
+  //         _importPublicKeyDataTextFieldController.text.length == 64 &&
+  //         _importPublicKeyDataTextFieldController.text != _pubExchangeKeyPublic;
+  //
+  //     _hasImportWarningMessage = !_importFieldIsValid;
+  //   });
+  // }
 
   void _displayMyIdentityInfo() async {
     /// show modal bottom sheet
@@ -908,7 +910,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                             : BorderSide(color: Colors.blueAccent),
                       ),
                       onPressed: () {
-                        // print("press: $_myCode");
+                        print("_myCode: ${_myCode?.toRawJson()}");
                         Navigator.of(context).pop();
 
                         if (_myCode != null) {
@@ -1038,6 +1040,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                       onPressed: () {
                         Navigator.of(context).pop();
 
+                        _logManager.logger.d("pubE: $pubE");
                         final identity = DigitalIdentityCode(
                             pubKeyExchange: pubE,
                             pubKeySignature: pubS,
@@ -1213,7 +1216,9 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
   Future<void> _createRecoveryKey(String pubKeyExchange, int keyIndex) async {
     final algorithm = X25519();
 
-    final pubBytes = hex.decode(pubKeyExchange);
+    // final pubBytes = hex.decode(pubKeyExchange);
+    final pubBytes = base64.decode(pubKeyExchange);
+
     // print("pubBytes: $pubBytes");
 
     final bobPublicKey = SimplePublicKey(pubBytes, type: KeyPairType.x25519);

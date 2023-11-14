@@ -1,12 +1,12 @@
 import "dart:typed_data";
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import "package:blackbox_password_manager/helpers/ivHelper.dart";
-import "package:blackbox_password_manager/managers/Cryptor.dart";
 import "package:cryptography/cryptography.dart";
 import "package:convert/convert.dart";
 import 'package:logger/logger.dart';
 
-import "../merkle/merkle_example.dart";
+import "../helpers/ivHelper.dart";
+import "../managers/Cryptor.dart";
 import "../models/WOTSSignatureItem.dart";
 
 import "LogManager.dart";
@@ -46,20 +46,14 @@ class WOTSManager {
 
   String _lastBlockHash = "";
 
+
   WOTSBasicSignatureChain _wotsChain = WOTSBasicSignatureChain(blocks: []);
 
-  List<String> _topJoinLeaves = [];
-  List<String> _bottomJoinLeaves = [];
-  List<String> _topJoinLeavesHalf = [];
-  List<String> _bottomJoinLeavesHalf = [];
-  String _topMerkle = "";
-  String _bottomMerkle = "";
+  // WOTSOverlapSignatureChain _wotsJoinChain = WOTSOverlapSignatureChain(blocks: []);
 
-  WOTSOverlapSignatureChain _wotsJoinChain = WOTSOverlapSignatureChain(blocks: []);
+  GigaWOTSSignatureChain _wotsSimpleJoinChain = GigaWOTSSignatureChain(chainId: "main", blocks: []);
 
-  WOTSSimpleOverlapSignatureChain _wotsSimpleJoinChain = WOTSSimpleOverlapSignatureChain(chainId: "main",blocks: []);
-
-  WOTSSimpleSignatureDictionary _wotsSimpleChainDictionary = WOTSSimpleSignatureDictionary(chains: []);
+  GigaWOTSSignatureDictionary _wotsSimpleChainDictionary = GigaWOTSSignatureDictionary(chains: []);
 
   int get messageIndex {
     return _messageIndex;
@@ -77,6 +71,10 @@ class WOTSManager {
     return _topPublicKey;
   }
 
+  String get nextTopPublicKey {
+    return _nextTopPublicKey;
+  }
+
   String get lastBlockHash {
     return _lastBlockHash;
   }
@@ -90,30 +88,34 @@ class WOTSManager {
 
   WOTSManager._internal();
 
+  initialize() async {
+    logger.d("Initialize WOTSManager");
+    await dotenv.load(fileName: "assets/.env",);
+
+    // final envW = dotenv.env.toString();
+
+    // logger.wtf("dotenv map wots: ${envW}");
+  }
 
   reset() {
     _pubLeaves = [];
     _privLeaves = [];
-
-    _topJoinLeaves = [];
-    _bottomJoinLeaves = [];
-    _topJoinLeavesHalf = [];
-    _bottomJoinLeavesHalf = [];
 
     _privChecksumLeaf = "";
     _lastBlockHash = "";
 
     _messageIndex = 1;
 
-    _wotsChain = WOTSBasicSignatureChain(blocks: []);
-    _wotsJoinChain = WOTSOverlapSignatureChain(blocks: []);
+    // _wotsChain = WOTSBasicSignatureChain(blocks: []);
+    // _wotsJoinChain = WOTSOverlapSignatureChain(blocks: []);
 
-    _wotsSimpleJoinChain = WOTSSimpleOverlapSignatureChain(chainId: "",blocks: []);
-    _wotsSimpleChainDictionary = WOTSSimpleSignatureDictionary(chains: []);
+    _wotsSimpleJoinChain = GigaWOTSSignatureChain(chainId: "",blocks: []);
+    _wotsSimpleChainDictionary = GigaWOTSSignatureDictionary(chains: []);
   }
 
-  setSignatureChainObject(WOTSSimpleOverlapSignatureChain chain) {
+  setSignatureChainObject(GigaWOTSSignatureChain chain) {
     _wotsSimpleJoinChain = chain;
+    _wotsSimpleChainDictionary.chains = [chain];
   }
 
   /// BEGIN - Basic WOTS implementation ----------------------------------------
@@ -363,10 +365,13 @@ class WOTSManager {
 
   /// BEGIN - WOTS Simple Overlapping Chain (next top public key)
   ///
+  Future<void> createGigaWotTopPubKey(List<int> rootKey, int msgIndex) async {
+      await _createGigaWotTopPubKey(rootKey, msgIndex);
+  }
 
-  /// create private and public values for signing and verifying
-  Future<void> _createSimpleOverlapTopPubKey(List<int> rootKey, int msgIndex) async {
-    logger.d("\n\t\t--------------------------_createSimpleOverlapTopPubKey START - [${msgIndex}]--------------------------");
+    /// create private and public values for signing and verifying
+  Future<void> _createGigaWotTopPubKey(List<int> rootKey, int msgIndex) async {
+    logger.d("\n\t\t--------------------------_createGigaWotTopPubKey START - [${msgIndex}]--------------------------");
     final startTime = DateTime.now();
 
     _pubLeaves = [];
@@ -433,26 +438,27 @@ class WOTSManager {
     publicPad.addAll(hex.decode(pubChecksumLeaf));
     // _pubLeaves.add(pubChecksumLeaf);
 
+    // _logManager.logLongMessage("\nmessageIndex: $msgIndex\n"
+    //     "_privLeaves: $_privLeaves\n\n"
+    //     "_pubLeaves: $_pubLeaves");
     _logManager.logLongMessage("\nmessageIndex: $msgIndex\n"
-        "_privLeaves: $_privLeaves\n\n"
         "_pubLeaves: $_pubLeaves");
-
     /// hash public leaf values with checksum to get top pub hash
     _topPublicKey = _cryptor.sha256(hex.encode(publicPad));
     logger.d("_topPublicKey: ${_topPublicKey}");
 
-    _nextTopPublicKey = await _createNextSimpleOverlapTopPubKey(rootKey, msgIndex);
+    _nextTopPublicKey = await _createNextGigaWotTopPubKey(rootKey, msgIndex);
 
     final endTime = DateTime.now();
     final timeDiff = endTime.difference(startTime);
     logger.d("createPubKeyWOTS: time diff: ${timeDiff.inMilliseconds} ms");
 
-    logger.d("\n\t\t--------------------------_createSimpleOverlapTopPubKey END - [${msgIndex}]--------------------------");
+    logger.d("\n\t\t--------------------------_createGigaWotTopPubKey END - [${msgIndex}]--------------------------");
   }
 
   /// get the next top public key to add to current signature
-  Future<String> _createNextSimpleOverlapTopPubKey(List<int> rootKey, int msgIndex) async {
-    logger.d("\n\t\t--------------------------_createNextSimpleOverlapTopPubKey START - [${msgIndex}]--------------------------");
+  Future<String> _createNextGigaWotTopPubKey(List<int> rootKey, int msgIndex) async {
+    logger.d("\n\t\t--------------------------_createNextGigaWotTopPubKey START - [${msgIndex}]--------------------------");
     final startTime = DateTime.now();
 
     var pubLeaves = [];
@@ -514,14 +520,15 @@ class WOTSManager {
     for (var i = 0; i < _checksumSize-1; i++) {
       pubChecksumLeaf = _cryptor.sha256(pubChecksumLeaf);
     }
-    logger.d("pubChecksumLeaf: $pubChecksumLeaf");
+    // logger.d("pubChecksumLeaf: $pubChecksumLeaf");
 
     /// add checksum public leaf value to public leaf array
     publicPad.addAll(hex.decode(pubChecksumLeaf));
-    // _pubLeaves.add(pubChecksumLeaf);
 
-    _logManager.logLongMessage("\nnextMessageIndex: $nextMessageIndex\n"
-        "privLeaves: $privLeaves\n\n"
+    // _logManager.logLongMessage("\nnextMessageIndex: $nextMessageIndex\n"
+    //     "privLeaves: $privLeaves\n\n"
+    //     "pubLeaves: $pubLeaves");
+    _logManager.logLongMessage("\nmessageIndex: $msgIndex\n"
         "pubLeaves: $pubLeaves");
 
     /// hash public leaf values with checksum to get top pub hash
@@ -532,18 +539,24 @@ class WOTSManager {
     final timeDiff = endTime.difference(startTime);
     logger.d("createPubKeyWOTS: time diff: ${timeDiff.inMilliseconds} ms");
 
-    logger.d("\n\t\t--------------------------_createNextSimpleOverlapTopPubKey END - [${msgIndex}]--------------------------");
+    logger.d("\n\t\t--------------------------_createNextGigaWotTopPubKey END - [${msgIndex}]--------------------------");
 
     return nextTopPublicKey;
   }
 
   /// create WOTS signature for a message
-  Future<WOTSSimpleOverlapSignatureItem?> signSimpleOverlapMessage(List<int> key, String chainId, String inputLastBlockHash, int msgIndex, String message) async {
-    logger.d("\n\t\t--------------------------START: signSimpleOverlapMessage--------------------------");
-    logger.d("signMessage[$msgIndex]: ${message}");
+  Future<GigaWOTSSignatureItem?> signGigaWotMessage(
+      List<int> key,
+      String chainId,
+      String inputLastBlockHash,
+      int msgIndex,
+      WOTSMessageData message,
+      ) async {
+    logger.d("\n\t\t--------------------------START: signGigaWotMessage--------------------------");
+    logger.d("signMessage[$msgIndex]: ${message.toRawJson()}");
 
     final startTime = DateTime.now();
-    final timestamp = startTime.toIso8601String();
+    // final timestamp = startTime.toIso8601String();
 
     // if (msgIndex <= _wotsSimpleJoinChain.blocks.length) {
     //   msgIndex = _wotsSimpleJoinChain.blocks.length + 1;
@@ -554,30 +567,29 @@ class WOTSManager {
     }
 
     /// create private/public key leaves
-    await _createSimpleOverlapTopPubKey(key, msgIndex);
+    await _createGigaWotTopPubKey(key, msgIndex);
 
-    var messageItem;
-    try {
-      messageItem = BasicMessageData.fromRawJson(message);
-      if (messageItem == null) {
-        messageItem = BasicMessageData(
-          time: timestamp,
-          message: message,
-          signature: "",
-        );
-      }
-    } catch (e) {
-      logger.e("error json format");
-      messageItem = BasicMessageData(
-        time: timestamp,
-        message: message,
-        signature: "",
-      );
-    }
+    message.nextPublicKey = _nextTopPublicKey;
 
-    // _logManager.logLongMessage("message to hash 1: ${messageItem.toRawJson()}");
+    // // var messageItem;
+    // try {
+    //   // messageItem = BasicMessageData.fromRawJson(message);
+    //   // messageItem = message;//WOTSMessageData.fromRawJson(message.toRawJson());
+    //
+    //   message.nextPublicKey = _nextTopPublicKey;
+    //
+    //   // logger.wtf("got here");
+    //
+    // } catch (e) {
+    //   logger.e("error json format: $e");
+    //   return null;
+    // }
 
-    final messageHash = _cryptor.sha256(messageItem.toRawJson());
+    // messageItem
+
+    _logManager.logLongMessage("message to hash 1: ${message.toRawJson()}");
+
+    final messageHash = _cryptor.sha256(message.toRawJson());
     final messageHashBytes = hex.decode(messageHash);
     // logger.d("messageHashHex: $messageHash");
 
@@ -605,61 +617,36 @@ class WOTSManager {
     // logger.d("checksumHash leaf: ${checksumHash}");
 
     /// create WOTS signature object
-    WOTSSimpleOverlapSignatureItem wotsItem = WOTSSimpleOverlapSignatureItem(
+    GigaWOTSSignatureItem wotsItem = GigaWOTSSignatureItem(
       id: chainId,
-      index: msgIndex,
-      publicKey: _topPublicKey,
-      nextPublicKey: _nextTopPublicKey,
-      previousHash: _lastBlockHash,
       signature: signature,
       checksum: checksumHash,
-      message: messageItem,
+      message: message,
     );
 
     // _logManager.logLongMessage("wotsItem: ${wotsItem.toRawJson()}");
 
 
-    WOTSSimpleOverlapSignatureChain currentChain = WOTSSimpleOverlapSignatureChain(chainId: chainId, blocks: []);
+    GigaWOTSSignatureChain currentChain = GigaWOTSSignatureChain(chainId: chainId, blocks: []);
     // _wotsSimpleJoinChain.blocks.add(wotsItem);
 
-    // if (_wotsSimpleChainDictionary.chains.length == 0) {
-    //   currentChain.chainId = wotsItem.id;
-    //   currentChain.blocks.add(wotsItem);
-    //
-    //   _wotsSimpleJoinChain.chainId = wotsItem.id;
-    //   _wotsSimpleJoinChain.blocks.add(wotsItem);
-    //   _wotsSimpleJoinChain = currentChain;
-    //   _wotsSimpleChainDictionary.chains.add(_wotsSimpleJoinChain);
-    // } else {
-    //   try {
-    //     final thisChain = _wotsSimpleChainDictionary.chains.firstWhere((
-    //         element) => element.chainId == chainId);
-    //     _wotsSimpleJoinChain = thisChain;
-    //     _wotsSimpleJoinChain.chainId = chainId;
-    //     _wotsSimpleJoinChain.blocks.add(wotsItem);
-    //     _wotsSimpleChainDictionary.chains.add(currentChain);
-    //
-    //   } catch (e) {
-    //     currentChain.chainId = wotsItem.id;
-    //     currentChain.blocks.add(wotsItem);
-    //     _wotsSimpleJoinChain.chainId = chainId;
-    //     _wotsSimpleJoinChain.blocks.add(wotsItem);
-    //     _wotsSimpleChainDictionary.chains.add(currentChain);
-    //   }
-    // }
-
-    if (_wotsSimpleJoinChain.blocks.length == 0) {
+    if (_wotsSimpleChainDictionary.chains.length == 0) {
       currentChain.chainId = wotsItem.id;
       currentChain.blocks.add(wotsItem);
 
       _wotsSimpleJoinChain.chainId = wotsItem.id;
       _wotsSimpleJoinChain.blocks.add(wotsItem);
       _wotsSimpleJoinChain = currentChain;
+      _wotsSimpleChainDictionary.chains.add(_wotsSimpleJoinChain);
     } else {
       try {
+        final thisChain = _wotsSimpleChainDictionary.chains.firstWhere((
+            element) => element.chainId == chainId);
+        _wotsSimpleJoinChain = thisChain;
         _wotsSimpleJoinChain.chainId = chainId;
         _wotsSimpleJoinChain.blocks.add(wotsItem);
         _wotsSimpleChainDictionary.chains.add(currentChain);
+
       } catch (e) {
         currentChain.chainId = wotsItem.id;
         currentChain.blocks.add(wotsItem);
@@ -669,12 +656,33 @@ class WOTSManager {
       }
     }
 
-    _logManager.logLongMessage("_wotsSimpleJoinChain: ${_wotsSimpleJoinChain.toRawJson()}");
+    // if (_wotsSimpleJoinChain.blocks.length == 0) {
+    //   currentChain.chainId = wotsItem.id;
+    //   currentChain.blocks.add(wotsItem);
+    //
+    //   _wotsSimpleJoinChain.chainId = wotsItem.id;
+    //   _wotsSimpleJoinChain.blocks.add(wotsItem);
+    //   _wotsSimpleJoinChain = currentChain;
+    // } else {
+    //   try {
+    //     _wotsSimpleJoinChain.chainId = chainId;
+    //     _wotsSimpleJoinChain.blocks.add(wotsItem);
+    //     _wotsSimpleChainDictionary.chains.add(currentChain);
+    //   } catch (e) {
+    //     currentChain.chainId = wotsItem.id;
+    //     currentChain.blocks.add(wotsItem);
+    //     _wotsSimpleJoinChain.chainId = chainId;
+    //     _wotsSimpleJoinChain.blocks.add(wotsItem);
+    //     _wotsSimpleChainDictionary.chains.add(currentChain);
+    //   }
+    // }
+
     // _logManager.logLongMessage("test _wotsSimpleChainDictionary: ${_wotsSimpleChainDictionary.toRawJson()}");
 
 
     /// sort blocks in the chain by index
-    _wotsSimpleJoinChain.blocks.sort((a, b) => a.index.compareTo(b.index));
+    _wotsSimpleJoinChain.blocks.sort((a, b) => a.message.messageIndex.compareTo(b.message.messageIndex));
+    _logManager.logLongMessage("_wotsSimpleJoinChain: ${_wotsSimpleJoinChain.toRawJson()}");
 
     // _logManager.logLongMessage("WOTSManager.signMessage:\n_wotsChain[${_wotsSimpleJoinChain.blocks.length}]\n"
     //     "[${_wotsSimpleJoinChain.toRawJson().length} bytes] | [${(_wotsSimpleJoinChain.toRawJson().length/1024).toStringAsFixed(2)} KB]\n"
@@ -688,14 +696,14 @@ class WOTSManager {
     final timeDiff = endTime.difference(startTime);
     logger.d("signMessage: time diff: ${timeDiff.inMilliseconds} ms");
 
-    logger.d("\n\t\t--------------------------END: signSimpleOverlapMessage--------------------------");
+    logger.d("\n\t\t--------------------------END: signGigaWotMessage--------------------------");
 
     return wotsItem;
   }
 
   /// verify WOTS signature for a message
-  Future<bool> verifySimpleOverlapSignature(WOTSSimpleOverlapSignatureItem? item) async {
-    logger.d("\n\t\t--------------------------START: verifySimpleOverlapSignature--------------------------");
+  Future<bool> verifyGigaWotSignature(GigaWOTSSignatureItem? item) async {
+    logger.d("\n\t\t--------------------------START: verifyGigaWotSignature--------------------------");
 
     if (item == null) {
       return false;
@@ -704,28 +712,31 @@ class WOTSManager {
     final startTime = DateTime.now();
 
     final chainIdentifier = item.id;
-    final messageIndex = item.index;
-    final topPublicKey = item.publicKey;
+    final topPublicKey = item.message.publicKey;
+    final messageIndex = item.message.messageIndex;
+    // final topPublicKey2 = item.publicKey;
 
     var previousPublicKey = "";
 
     try {
       var thisChain = _wotsSimpleChainDictionary.chains.firstWhere((
           element) => element.chainId == chainIdentifier);
-      thisChain.blocks.sort((a, b) => a.index.compareTo(b.index));
-
+      thisChain.blocks.sort((a, b) => a.message.messageIndex.compareTo(b.message.messageIndex));
 
       if (thisChain.blocks.length > 1) {
-        previousPublicKey = thisChain.blocks[messageIndex-2].nextPublicKey;
-        logger.e("ERROR: previousPublicKey: ${previousPublicKey} != topPublicKey: ${topPublicKey}");
+        /// we start message index increment at 1, but is 0-indexed
+        previousPublicKey = thisChain.blocks[messageIndex-2].message.nextPublicKey;
 
         if (previousPublicKey != topPublicKey) {
-          logger.e("ERROR: previousPublicKey != topPublicKey");
+          logger.e("ERROR: previousPublicKey: ${previousPublicKey} != topPublicKey: ${topPublicKey}");
           return false;
+        } else {
+          logger.wtf("SUCCESS: previousPublicKey == topPublicKey: $topPublicKey");
+
         }
       }
     } catch (e) {
-      logger.e("error occurred");
+      logger.e("exception occurred: $e");
     }
 
 
@@ -759,7 +770,7 @@ class WOTSManager {
     for (var i = 0; i < checksum; i++) {
       checksig = _cryptor.sha256(checksig);
     }
-    logger.d("checksig: ${checksig}");
+    // logger.d("checksig: ${checksig}");
 
     /// add checksum hash to the public leaves
     checkPublicLeaves.addAll(hex.decode(checksig));
@@ -772,7 +783,7 @@ class WOTSManager {
     final timeDiff = endTime.difference(startTime);
     logger.d("verifySignature: time diff: ${timeDiff.inMilliseconds} ms");
 
-    logger.d("\n\t\t--------------------------END: verifySimpleOverlapSignature--------------------------");
+    logger.d("\n\t\t--------------------------END: verifyGigaWotSignature--------------------------");
 
     return checkTopPubHash == topPublicKey;
   }

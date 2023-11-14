@@ -67,8 +67,12 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
   List<bool> _selectedTags = [];
   List<String> _filteredTags = [];
 
-  List<int> _privKey = [];
-  List<int> _publicKey = [];
+  List<int> _privKeyExchange = [];
+  List<int> _pubKeyExchange = [];
+
+  List<int> _privKeySigning = [];
+  List<int> _pubKeySigning = [];
+
   String _publicKeyMnemonic = "";
 
   // List<int> _seedKey = [];
@@ -128,8 +132,8 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     // // final privKeyHex = hex.decode(privateExchangeKeySeed);
     // // print("privKeyHex: ${privKeyHex.length}: ${privKeyHex}");
     //
-    // _privKey = base64.decode(privateExchangeKeySeed);
-    // print("_privKey64: ${_privKey.length}: ${_privKey}");
+    // _privKeyExchange = base64.decode(privateExchangeKeySeed);
+    // print("_privKeyExchange64: ${_privKeyExchange.length}: ${_privKeyExchange}");
 
     /// OR
     ///
@@ -149,7 +153,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     final privkeyseed2 = await privSeedPair2.extractPrivateKeyBytes();
     // print("privkeyseed2 check: ${privkeyseed2}");
 
-    _privKey = privkeyseed2;
+    _privKeyExchange = privkeyseed2;
 
     // final privSeedPairChecker = await algorithm_exchange
     //     .newKeyPairFromSeed(privkeyseed2);
@@ -164,18 +168,18 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
 
     final simplePublicKey = await privSeedPair2.extractPublicKey();
 
-    _publicKey = simplePublicKey.bytes;
-    // print("_publicKey: ${_publicKey}");
+    _pubKeyExchange = simplePublicKey.bytes;
+    // print("_pubKeyExchange: ${_pubKeyExchange}");
 
     // final expanded = await _cryptor.expandKey(_seedKey);
 
     setState(() {
-      _publicKey = simplePublicKey.bytes;
-      // print("_publicKey: ${_publicKey}");
-      // print("_publicKey: ${_publicKey.length}: ${_publicKey}");
-      // print("main publicKey: ${_publicKey.length}: ${hex.encode(_publicKey)}");
+      _pubKeyExchange = simplePublicKey.bytes;
+      // print("_pubKeyExchange: ${_pubKeyExchange}");
+      // print("_pubKeyExchange: ${_pubKeyExchange.length}: ${_pubKeyExchange}");
+      // print("main publicKey: ${_pubKeyExchange.length}: ${hex.encode(_pubKeyExchange)}");
 
-      _publicKeyMnemonic = bip39.entropyToMnemonic(hex.encode(_publicKey));
+      _publicKeyMnemonic = bip39.entropyToMnemonic(hex.encode(_pubKeyExchange));
       // print("_publicKeyMnemonic: ${_publicKeyMnemonic}");
 
       _keyDataTextController.text =
@@ -383,9 +387,9 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
               Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Text(
-                  "Public Key:\n${hex.encode(_publicKey)}",
+                  "Public Key:\n${hex.encode(_pubKeyExchange)}",
 
-                  // "Public Key:\n${hex.encode(_publicKey)}\n\nPublic Mnemonic:\n${_publicKeyMnemonic}",
+                  // "Public Key:\n${hex.encode(_pubKeyExchange)}\n\nPublic Mnemonic:\n${_publicKeyMnemonic}",
                   style: TextStyle(
                     color: _isDarkModeEnabled ? Colors.white : null,
                     fontSize: 16,
@@ -947,7 +951,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
       return;
     }
 
-    if (_publicKey.isEmpty) {
+    if (_pubKeyExchange.isEmpty) {
       setState(() {
         _fieldsAreValid = false;
       });
@@ -969,12 +973,12 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
 
   _pressedSaveKeyItem() async {
 
-    if (_privKey == null) {
+    if (_privKeyExchange == null) {
       _showErrorDialog('Could not save the item.');
       return;
     }
 
-    if (_privKey.isEmpty) {
+    if (_privKeyExchange.isEmpty) {
       _showErrorDialog('Could not save the item.');
       return;
     }
@@ -984,12 +988,12 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     final name = _nameTextController.text;
     final notes = _notesTextController.text;
 
-    final encodedLength = utf8.encode(name).length + utf8.encode(notes).length + utf8.encode(base64.encode(_privKey)).length;
+    final encodedLength = utf8.encode(name).length + utf8.encode(notes).length + utf8.encode(base64.encode(_privKeyExchange)).length;
 
     _settingsManager.doEncryption(encodedLength);
 
     if (AppConstants.debugKeyData) {
-      _logManager.logger.d("_privKey: $_privKey");
+      _logManager.logger.d("_privKeyExchange: $_privKeyExchange");
     }
 
 
@@ -1000,8 +1004,8 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     final encryptedNotes = await _cryptor.encrypt(notes);
 
     /// TODO: switch encoding !
-    // final encryptedKey = await _cryptor.encrypt(hex.encode(_privKey));
-    final encryptedKey = await _cryptor.encrypt(base64.encode(_privKey));
+    // final encryptedKey = await _cryptor.encrypt(hex.encode(_privKeyExchange));
+    final encryptedKey = await _cryptor.encrypt(base64.encode(_privKeyExchange));
 
     var keyItem = KeyItem(
       id: uuid,

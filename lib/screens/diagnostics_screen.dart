@@ -16,7 +16,7 @@ class DiagnosticsScreen extends StatefulWidget {
   State<DiagnosticsScreen> createState() => _DiagnosticsScreenState();
 }
 
-class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
+class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindingObserver {
   bool _isDarkModeEnabled = false;
   bool _logsAreValid = false;
 
@@ -36,6 +36,9 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
   @override
   void initState() {
     super.initState();
+
+    /// add observer for app lifecycle state transitions
+    WidgetsBinding.instance.addObserver(this);
 
     _logManager.log("DiagnosticsScreen", "initState", "initState");
 
@@ -57,6 +60,47 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     _selectedIndex = _settingsManager.currentTabIndex;
   }
 
+  /// track the lifecycle of the app
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.inactive:
+      // _logManager.log("DiagnosticsScreen", "didChangeAppLifecycleState",
+      //     "AppLifecycleState: inactive");
+        break;
+      case AppLifecycleState.resumed:
+      // _logManager.log("DiagnosticsScreen", "didChangeAppLifecycleState",
+      //     "AppLifecycleState: resumed");
+        final fsize = await _logManager.getLogFileSize();
+        final isValid = await _logManager.verifyLogFile();
+        setState(() {
+          _logFileSize = fsize;
+          _logsAreValid = isValid!;
+        });
+
+        break;
+      case AppLifecycleState.paused:
+      // _logManager.log("DiagnosticsScreen", "didChangeAppLifecycleState",
+      //     "AppLifecycleState: paused");
+        break;
+      case AppLifecycleState.detached:
+      // _logManager.log("DiagnosticsScreen", "didChangeAppLifecycleState",
+      //     "AppLifecycleState: detached");
+        break;
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
   @override
   Widget build(BuildContext context) {
     // final seconds = _logManager.lifeTimeInSeconds;
@@ -69,10 +113,6 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     _logManager.getLogFileSize().then((value) {
       _logFileSize = value;
     });
-
-    // _logManager.verifyLogFile().then((value) {
-    //   _logsAreValid = value!;
-    // });
 
     _numberOfPasswordItems = _keyManager.numberOfPasswordItems;
 
@@ -99,7 +139,9 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           },
         ),
         actions: [
-          IconButton(
+          Visibility(
+            visible: false,
+            child: IconButton(
               onPressed: () {
                 Navigator.push(
                   context,
@@ -111,7 +153,9 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
               icon: Icon(
                 Icons.list_alt,
                 color: _isDarkModeEnabled ? Colors.greenAccent : null,
-              ))
+              ),
+            ),
+          ),
         ],
       ),
       body: Column(

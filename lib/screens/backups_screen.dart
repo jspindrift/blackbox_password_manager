@@ -880,7 +880,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
                       ),
                       onPressed: () async {
                         if (_localVaultItem != null) {
-                          // WidgetUtils.showSnackBarDuration(context, "Backing Up Vault...", Duration(seconds: 2));
+                          WidgetUtils.showSnackBarDuration(context, "Backing Up Vault...", Duration(seconds: 2));
 
                           if ((_localVaultItem?.id)! == _keyManager.vaultId &&
                               _hasMatchingLocalVaultKeyData) {
@@ -897,10 +897,10 @@ class _BackupsScreenState extends State<BackupsScreen> {
                               _showErrorDialog("Could not backup vault.");
                             }
                           } else {
-                            _displayCreateBackupDialog(context, true);
+                            _displayCreateBackupDialog(context, true, true);
                           }
                         } else {
-                          _displayCreateBackupDialog(context, true);
+                          _displayCreateBackupDialog(context, true, false);
                         }
                       },
                     ),
@@ -1160,12 +1160,14 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
   _decryptWithScannedRecoveryItem(String recoveryItem) async {
     EasyLoading.show(status: "Decrypting...");
-    print("_decryptWithScannedRecoveryItem");
+    print("_decryptWithScannedRecoveryItem: $recoveryItem");
 
     try {
       RecoveryKeyCode key = RecoveryKeyCode.fromRawJson(recoveryItem);
       if (key != null && _localVaultRecoveryKeys != null) {
         for (var rkey in _localVaultRecoveryKeys!) {
+          print("rkey: ${rkey.toRawJson()}");
+
           if (rkey.id == key.id) {
             SecretKey skey = SecretKey(base64.decode(key.key));
             final decryptedRootKey = await _cryptor.decryptRecoveryKey(skey, rkey.data);
@@ -1182,8 +1184,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
               if (status) {
                 if (_loginScreenFlow) {
                   _settingsManager.setIsRecoveredSession(true);
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pop();
+                  // Navigator.of(context).pop();
+                  Navigator.of(context).popUntil((route) => route.isFirst);
                 }
               } else {
                 _showErrorDialog("could not decrypt vault");
@@ -1191,13 +1193,15 @@ class _BackupsScreenState extends State<BackupsScreen> {
             } else {
               _showErrorDialog("could not decrypt vault");
             }
+          } else {
+            logger.d("nothing");
           }
         }
       } else {
         _showErrorDialog("Invalid code format");
       }
     } catch (e) {
-      print("Exception: $e");
+      logger.d("Exception: $e");
       _settingsManager.setIsScanningQRCode(false);
     }
 
@@ -1273,7 +1277,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
     }
 
     try {
-      if (_cryptor.aesSecretKeyBytes.isNotEmpty && _cryptor.authSecretKeyBytes.isNotEmpty) {
+      if (_cryptor.aesEncryptionKeyBytes.isNotEmpty && _cryptor.aesAuthKeyBytes.isNotEmpty) {
         _logManager.log("BackupsScreen", "_createBackup", "create backup");
         _logManager.logger.d("BackupsScreen-create backup");
 
@@ -1320,7 +1324,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         final recoveryKeys = await _keyManager.getRecoveryKeyItems();
 
         final deviceDataString = _settingsManager.deviceManager.deviceData.toString();
-        // _logManager.logger.d("deviceDataString: $deviceDataString");
+        _logManager.logger.d("deviceDataString: $deviceDataString");
         // _logManager.logLongMessage("deviceDataString: $deviceDataString");
         // _logManager.logger.d("deviceData[utsname.version:]: ${_settingsManager._deviceManager.deviceData["utsname.version:"]}");
 
@@ -1440,7 +1444,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
     }
 
     try {
-      if (_cryptor.aesSecretKeyBytes.isNotEmpty && _cryptor.authSecretKeyBytes.isNotEmpty) {
+      if (_cryptor.aesEncryptionKeyBytes.isNotEmpty && _cryptor.aesAuthKeyBytes.isNotEmpty) {
         _logManager.log("BackupsScreen", "_createBackup", "create backup");
         _logManager.logger.d("BackupsScreen-create backup external");
 
@@ -2170,13 +2174,14 @@ class _BackupsScreenState extends State<BackupsScreen> {
   }
 
 
-  _displayCreateBackupDialog(BuildContext context, bool isLocal) async {
+  _displayCreateBackupDialog(BuildContext context, bool isLocal, bool willOverwrite) async {
     return showDialog(
         context: context,
         builder: (context) {
           return StatefulBuilder(builder: (context, setState) {
             return AlertDialog(
               title: Text('Create Backup'),
+              // content: willOverwrite ? Text("Warning: This will overwrite your existing backup!") : null,
               actions: <Widget>[
                 OutlinedButton(
                   onPressed: () {
@@ -2207,7 +2212,36 @@ class _BackupsScreenState extends State<BackupsScreen> {
                   child: Text('Save'),
                 ),
               ],
-              content: TextField(
+              content: willOverwrite ?
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                  children:[
+                Padding(
+                  padding: EdgeInsets.fromLTRB(0, 8, 0, 16),
+                  child: Text(
+                    "Warning: This will overwrite your existing backup!",
+                    style: TextStyle(
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+                TextField(
+                  // "Warning: This will overwrite your existing backup!",
+                onChanged: (value) {
+                  if (value.isNotEmpty) {
+                    setState(() {
+                      _enableBackupNameOkayButton = true;
+                    });
+                  } else {
+                    setState(() {
+                      _enableBackupNameOkayButton = false;
+                    });
+                  }
+                },
+                controller: _dialogTextFieldController,
+                focusNode: _dialogTextFieldFocusNode,
+                decoration: InputDecoration(hintText: "Backup Name"),
+              )]) : TextField(
                 onChanged: (value) {
                   if (value.isNotEmpty) {
                     setState(() {

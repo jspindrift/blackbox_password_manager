@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:blackbox_password_manager/managers/WOTSManager.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/cupertino.dart';
@@ -17,6 +18,7 @@ import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/Cryptor.dart';
+import '../models/WOTSSignatureItem.dart';
 import '../widgets/qr_code_view.dart';
 import 'home_tab_screen.dart';
 
@@ -49,6 +51,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
   final _messageFocusNode = FocusNode();
 
+  final _debugTestWots = false;
+
   int _selectedIndex = 1;
 
   bool _isDarkModeEnabled = false;
@@ -60,6 +64,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
   bool _didDecryptSuccessfully = false;
   bool _showShareMessageAsQRCode = false;
   bool _hasEmbeddedMessageObject = false;
+
+  bool _isUsingWOTS = false;
 
   List<int> _mainPrivateKey = [];
   List<int> _mainPublicKey = [];
@@ -83,6 +89,10 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
   List<int> _Kenc_rec = [];
   List<int> _Kauth_rec = [];
 
+  List<int> _Kwots = [];
+  List<int> _Kwots_send = [];
+  int _wotsSigningCounter = 0;
+
   KeyItem? _keyItem;
 
   QRCodeEncryptedMessageItem? _qrMessageItem;
@@ -91,6 +101,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
   final _settingsManager = SettingsManager();
   final _keyManager = KeychainManager();
   final _cryptor = Cryptor();
+
+  final _wotsManager = WOTSManager();
 
   @override
   void initState() {
@@ -107,6 +119,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
     _selectedIndex = _settingsManager.currentTabIndex;
 
+    _wotsManager.reset();
+
     _validateFields();
   }
 
@@ -115,12 +129,9 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     if (widget.keyItem == null) {
       _isRootSymmetric = true;
       /// get the password item and decrypt the data
-      _keyManager.getItem(widget.id).then((value) async {
-        final genericItem = GenericItem.fromRawJson(value);
-
+      final item = await _keyManager.getItem(widget.id);//.then((value) async {
+        final genericItem = GenericItem.fromRawJson(item);
         if (genericItem.type == "key") {
-          // print("edit password: value: $value");
-
           /// must be a PasswordItem type
           _keyItem = KeyItem.fromRawJson(genericItem.data);
 
@@ -142,6 +153,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
 
             _seedKey = decodedSeedData;
+            _logManager.logger.d("_seedKey: ${hex.encode(_seedKey)}");
 
             final expanded = await _cryptor.expandKey(_seedKey);
             if (AppConstants.debugKeyData) {
@@ -160,15 +172,22 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
             var name = (_keyItem?.name)!;
 
+            _logManager.logger.d("_Kenc: ${hex.encode(_Kenc)}\n"
+                "_Kauth: ${hex.encode(_Kauth)}");
 
             _cryptor.decrypt(name).then((value) {
               name = value;
 
               _validateFields();
             });
+
+            _Kwots = _cryptor.aesGenKeyBytes;
+            if (_Kwots != null && _Kwots.isNotEmpty) {
+              _logManager.logger.d("got a wots key: ${hex.encode(_Kwots)}");
+            }
           }
         }
-      });
+      // });
     } else {
       _isRootSymmetric = false;
 
@@ -234,8 +253,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
   }
 
   Future<void> _generatePeerKeyPair() async {
-    // print("active_encryption_key: _generatePeerKeyPair");
-
     if (_mainPrivateKey == null) {
       return;
     }
@@ -318,6 +335,11 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       secretKey: bobPubSecretKey!,
     );
 
+    final Kwots_send = await hmac.calculateMac(
+      _Kwots,
+      secretKey: bobPubSecretKey!,
+    );
+
     _Kenc_rec = mac_e_receive.bytes;
     _Kenc_send = mac_e_send.bytes;
 
@@ -334,6 +356,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
     _Kauth_rec = mac_auth_receive.bytes;
     _Kauth_send = mac_auth_send.bytes;
+    _Kwots_send = Kwots_send.bytes;
+    // _logManager.logger.d("_Kwots_send: ${hex.encode(_Kwots_send)}");
 
     final toAddr = _cryptor.sha256(hex.encode(_peerPublicKey)).substring(0, 40);
     final fromAddr = _cryptor.sha256(hex.encode(_mainPublicKey)).substring(0,40);
@@ -343,6 +367,12 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       _fromAddr = fromAddr;
       _toAddr = toAddr;
     });
+
+    /// Generate WOTS private and pub keys
+    ///
+    if (_debugTestWots) {
+      // await _wotsManager.createSimpleOverlapTopPubKey(_Kwots_send, 1);
+    }
 
     if (AppConstants.debugKeyData) {
       _logManager.logger.d('secret _Kenc_recec: ${hex.encode(_Kenc_rec)}');
@@ -360,82 +390,13 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
         title: Text('Message Encryption'),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
-        leading: BackButton(
+        leading: CloseButton(
           color: _isDarkModeEnabled ? Colors.greenAccent : null,
           onPressed: () {
             Navigator.of(context).pop();
           },
         ),
-        actions: [
-          // Visibility(
-          //   visible: _isEditing,
-          //   child:
-          //   TextButton(
-          //     child: Text(
-          //       "Save",
-          //       style: TextStyle(
-          //         color: _isDarkModeEnabled
-          //             ? (_fieldsAreValid ? Colors.greenAccent : Colors.grey)
-          //             : (_fieldsAreValid ? Colors.white : Colors.grey[400]),
-          //         fontSize: 18,
-          //       ),
-          //     ),
-          //     style: ButtonStyle(
-          //         foregroundColor: _isDarkModeEnabled
-          //             ? (_fieldsAreValid
-          //             ? MaterialStateProperty.all<Color>(Colors.greenAccent)
-          //             : MaterialStateProperty.all<Color>(Colors.grey))
-          //             : null),
-          //     onPressed: () async {
-          //       // print("pressed done");
-          //       // await _pressedSaveKeyItem();
-          //
-          //       setState(() {
-          //         _isEditing = !_isEditing;
-          //       });
-          //
-          //       if (!_isNewKey) {
-          //         Timer(Duration(milliseconds: 100), () {
-          //           FocusScope.of(context).unfocus();
-          //         });
-          //       }
-          //     },
-          //   ),),
-          // Visibility(
-          //   visible: !_isEditing,
-          //   child:
-          //   TextButton(
-          //     child: Text(
-          //       "Edit",
-          //       style: TextStyle(
-          //         color: _isDarkModeEnabled
-          //             ? (_fieldsAreValid ? Colors.greenAccent : Colors.grey)
-          //             : (_fieldsAreValid ? Colors.white : Colors.grey[400]),
-          //         fontSize: 18,
-          //       ),
-          //     ),
-          //     style: ButtonStyle(
-          //         foregroundColor: _isDarkModeEnabled
-          //             ? (_fieldsAreValid
-          //             ? MaterialStateProperty.all<Color>(Colors.greenAccent)
-          //             : MaterialStateProperty.all<Color>(Colors.grey))
-          //             : null),
-          //     onPressed: () async {
-          //       // print("pressed done");
-          //       // await _pressedSaveKeyItem();
-          //
-          //       setState(() {
-          //         _isEditing = !_isEditing;
-          //       });
-          //
-          //       Timer(Duration(milliseconds: 100), () {
-          //         FocusScope.of(context).unfocus();
-          //         /// TODO: re-enable fields for editing
-          //         ///
-          //       });
-          //     },
-          //   ),),
-        ],
+        actions: [],
       ),
       body: SingleChildScrollView(
         child: Container(
@@ -533,7 +494,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                           enabled: true,
                           readOnly: false,
                           minLines: 4,
-                          maxLines: 20,
+                          maxLines: 10,
                           decoration: InputDecoration(
                             labelText: 'Message',
                             hintStyle: TextStyle(
@@ -589,7 +550,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                         ),
                       ),
                     ),
-                    //
                   ],
                 ),),
               Row(
@@ -616,21 +576,18 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                           Colors.blueGrey)
                   ),
                   onPressed: _fieldsAreValid ? () {
-
                     setState((){
                       _isDecrypting = false;
                     });
 
-                    /// TODO: encrypt
                     _encryptMessage();
-
                   } : null,
-                ),),
-                  Spacer(),
-                  Visibility(
+                  ),
+                ),
+                Spacer(),
+                Visibility(
                 visible: true,
-                child:
-                ElevatedButton(
+                child: ElevatedButton(
                   child: Text(
                     "Decrypt",
                   ),
@@ -648,18 +605,75 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                           Colors.blueGrey)
                   ),
                   onPressed: _fieldsAreValid ? () {
-
                     setState((){
                       _isDecrypting = true;
                     });
-                    /// TODO: decrypt
+
                     _decryptMessage();
-
                   } : null,
-                ),),
-                  Spacer(),
+                  ),
+                ),
+                Spacer(),
+              ],),
 
+              Visibility(
+                visible: _debugTestWots,
+                child:  Divider(
+                color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
+              ),),
+              Visibility(
+                visible: _debugTestWots,
+                child: Row(children: [
+                  Spacer(),
+                  RadioMenuButton(
+                    value: true,
+                    groupValue: _isUsingWOTS,
+                    toggleable: true,
+                    closeOnActivate: true,
+                    trailingIcon: Icon(
+                        Icons.sign_language,
+                      color: _isDarkModeEnabled ? (_isUsingWOTS ? Colors.greenAccent : Colors.grey) : (_isUsingWOTS ? Colors.blueAccent : Colors.grey),
+                      size: 30,
+                    ),
+                    style: ButtonStyle(
+                      // backgroundColor: _isUsingWOTS ? MaterialStatePropertyAll<Color>(Colors.black54)
+                      //     : MaterialStatePropertyAll<Color>(Colors.transparent),
+                      // foregroundColor: _isUsingWOTS ? MaterialStatePropertyAll<Color>(Colors.black)
+                      //     : MaterialStatePropertyAll<Color>(Colors.white),
+                      iconColor: _isDarkModeEnabled ? MaterialStatePropertyAll<Color>(Colors.greenAccent)
+                          : MaterialStatePropertyAll<Color>(Colors.blueAccent),
+                      // surfaceTintColor: _isDarkModeEnabled ? MaterialStatePropertyAll<Color>(Colors.greenAccent)
+                      //     : MaterialStatePropertyAll<Color>(Colors.blueAccent),
+                      animationDuration: Duration(milliseconds: 300),
+                      // iconColor:
+                    ),
+                    onChanged: (value){
+                      setState(() {
+                        _isUsingWOTS = !_isUsingWOTS;
+                      });
+
+                      _logManager.logger.d("_isUsingWOTS: $_isUsingWOTS");
+                    },
+                    child: Text(
+                      "Use WOTS Signing",
+                      style: TextStyle(
+                        color: _isDarkModeEnabled ? Colors.white : Colors.black,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  Spacer(),
+                  Padding(
+                    padding: EdgeInsets.all(8), child: Text(
+                    "signature: $_wotsSigningCounter",
+                    style: TextStyle(
+                      color: _isDarkModeEnabled ? Colors.white : Colors.black,
+                      fontSize: 16,
+                    ),
+                  ),),
+                  Spacer(),
                 ],),
+              ),
 
               Visibility(
                 visible: _isDecrypting,
@@ -849,9 +863,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
               ),
               Spacer(),
               ],),
-
               Visibility(
-                visible: false, //!_isRootSymmetric && _didEncrypt,
+                visible: false,
                 child:  Padding(
                   padding: EdgeInsets.all(8.0),
                   child: Row(
@@ -860,7 +873,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                       IconButton(
                         onPressed: _fieldsAreValid
                             ? () async {
-
 
                           EasyLoading.showToast('Message Saved',
                               duration: Duration(milliseconds: 500));
@@ -903,9 +915,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                   ),
                 ),
               ),
-
               Visibility(
-                visible: false, //!_isRootSymmetric && _didDecryptSuccessfully,
+                visible: false,
                 child:  Padding(
                   padding: EdgeInsets.all(8.0),
                   child: Row(
@@ -948,11 +959,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                         ),
                         onPressed: _fieldsAreValid
                             ? () async {
-                          // await Clipboard.setData(ClipboardData(
-                          //     text: _messageTextController.text));
-                          //
-                          // _settingsManager.setDidCopyToClipboard(true);
-
                           EasyLoading.showToast('Message Saved',
                               duration: Duration(milliseconds: 500));
                         } : null,
@@ -1179,12 +1185,10 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     // _logManager.logger.d("mac: ${hex.encode(mac)}");
     // _logManager.logger.d("blob: ${hex.encode(blob)}");
 
-
     final toAddr = _cryptor.sha256(hex.encode(_peerPublicKey)).substring(0, 40);
     final fromAddr = _cryptor.sha256(hex.encode(_mainPublicKey)).substring(0,40);
 
-    final appendedMessage = "to:" + toAddr + ":" + encryptedMessage;
-    // print("appendedMessage: ${appendedMessage.length}: $appendedMessage");
+    // final appendedMessage = "to:" + toAddr + ":" + encryptedMessage;
 
     final timestamp = DateTime.now().toIso8601String();
 
@@ -1197,11 +1201,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       jmac: "",
     );
 
-    // print("message_send_plain json: ${message_send_plain.toRawJson().length}: ${message_send_plain.toJson()}");
-
     final msg_hash = _cryptor.sha256(message_send_plain.toRawJson());
-    // print("msg_hash: ${msg_hash.length}: ${msg_hash}");
-
     final msgHashKey = SecretKey(hex.decode(msg_hash));
 
     final hmac = Hmac.sha256();
@@ -1209,7 +1209,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       _Kauth_send,
       secretKey: msgHashKey!,
     );
-    // print("mac_msg: ${mac_msg}");
 
 
     EncryptedPeerMessage message_send_mac = EncryptedPeerMessage(
@@ -1220,28 +1219,72 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       time: timestamp,
       jmac: base64.encode(mac_msg.bytes),
     );
-    // print("message_send_mac json: ${message_send_mac.toRawJson().length}: ${message_send_mac.toJson()}");
 
-    // final mac_time = await hmac.calculateMac(
-    //   _Kauth_send,
-    //   secretKey: timeKey!,
+    /// TODO: get kek, lastBlockHash, thisSigatureIndex, and msgObject
+    // final msg = BasicMessageData(
+    //     time: timestamp,
+    //     message: message_send_mac.toRawJson(),
+    //     signature: "",
     // );
 
-    // print("pubKeyHash: ${base64.encode(hex.decode(kid)).length}: ${base64.encode(hex.decode(kid))}");
+    final msgObject = WOTSMessageData(
+      messageIndex: _wotsSigningCounter,
+      previousHash: _wotsManager.lastBlockHash,
+      publicKey: _wotsManager.topPublicKey,
+      nextPublicKey: _wotsManager.nextTopPublicKey,
+      time: timestamp,
+      data: message_send_mac.toRawJson(),
+    );
+
+    GigaWOTSSignatureItem? wotsSignature1 = GigaWOTSSignatureItem(
+      id: "",
+      signature:[],
+      checksum: "",
+      message: msgObject,
+    );
+
+    if (_isUsingWOTS && _debugTestWots) {
+      _wotsSigningCounter++;
+      // final kek = List.filled(32, 0);
+
+      wotsSignature1 = await _wotsManager.signGigaWotMessage(
+          _Kwots_send,
+          "main",
+          "lastBlockHash",
+          _wotsSigningCounter,
+          msgObject,
+      );
+
+      _logManager.logger.d("wotsSignature1: ${wotsSignature1?.toRawJson()}");
+    }
+
 
     setState(() {
       _didEncrypt = true;
       _didDecryptSuccessfully = false;
+      // if (_isUsingWOTS && wotsSignature1 != null) {
+      //   _messageTextController.text = wotsSignature1.toRawJson();
+      // } else {
+      //   _messageTextController.text = message_send_mac.toRawJson();
+      // }
+
       _messageTextController.text = message_send_mac.toRawJson();
     });
 
-    _qrMessageItem = QRCodeEncryptedMessageItem(
+    if (_isUsingWOTS && wotsSignature1 != null) {
+      _qrMessageItem = QRCodeEncryptedMessageItem(
+        keyId: base64.encode(hex.decode(toAddr)),
+        message: wotsSignature1!.toRawJson(),
+      );
+    } else {
+      _qrMessageItem = QRCodeEncryptedMessageItem(
         keyId: base64.encode(hex.decode(toAddr)),
         message: message_send_mac.toRawJson(),
-    );
+      );
+    }
 
     final qrItemString = _qrMessageItem?.toRawJson();
-    if (qrItemString != null) {
+    if (qrItemString != null && !_isUsingWOTS) {
       // _logManager.logger.d("qrItemString length: ${qrItemString.length}");
 
       /// limit ability to show code for messages within code limit
@@ -1249,8 +1292,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
         setState((){
           _showShareMessageAsQRCode = false;
         });
-        // print("too much data");
-        // _showErrorDialog("Too much data for QR code.\n\nLimit is 1286 bytes.");
+        _logManager.logger.wtf("too much data");
+        _showErrorDialog("Too much data for QR code.\n\nLimit is 1286 bytes.");
       } else {
         setState((){
           _showShareMessageAsQRCode = true;
@@ -1261,7 +1304,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
         _showShareMessageAsQRCode = false;
       });
     }
-
 
   }
 
@@ -1455,3 +1497,4 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     );
   }
 }
+

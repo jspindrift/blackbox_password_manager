@@ -106,25 +106,25 @@ class BasicMessageData {
   }
 }
 
-class AdressableMessageData {
+class AddressableMessageData {
   String time;
   String sender;
   String reciever;
   String data;
 
-  AdressableMessageData({
+  AddressableMessageData({
     required this.time,
     required this.sender,
     required this.reciever,
     required this.data,
   });
 
-  factory AdressableMessageData.fromRawJson(String str) => AdressableMessageData.fromJson(json.decode(str));
+  factory AddressableMessageData.fromRawJson(String str) => AddressableMessageData.fromJson(json.decode(str));
 
   String toRawJson() => json.encode(toJson());
 
-  factory AdressableMessageData.fromJson(Map<String, dynamic> json) {
-    return AdressableMessageData(
+  factory AddressableMessageData.fromJson(Map<String, dynamic> json) {
+    return AddressableMessageData(
       time: json['time'],
       sender: json['sender'],
       reciever: json['reciever'],
@@ -145,225 +145,22 @@ class AdressableMessageData {
 }
 
 
-// class WOTSSignatureChain {
-//   List<WOTSSignatureItem> blocks; // lamport pub key leaves
-//
-//   WOTSSignatureChain({
-//     required this.blocks,
-//   });
-//
-//   factory WOTSSignatureChain.fromRawJson(String str) =>
-//       WOTSSignatureChain.fromJson(json.decode(str));
-//
-//   String toRawJson() => json.encode(toJson());
-//
-//   factory WOTSSignatureChain.fromJson(Map<String, dynamic> json) {
-//     return WOTSSignatureChain(
-//       blocks: List<WOTSSignatureItem>.from(
-//           json["blocks"].map((x) => WOTSSignatureItem.fromJson(x))),
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     Map<String, dynamic> jsonMap = {
-//       "blocks": blocks,
-//     };
-//
-//     return jsonMap;
-//   }
-// }
+class GigaWOTSSignatureDictionary {
+  List<GigaWOTSSignatureChain> chains;
 
-// class WOTSSignatureItem {
-//   int id;
-//   String publicKey;
-//   List<String> signature;
-//   String checksum;
-//   MessageData message;
-//
-//   WOTSSignatureItem({
-//     required this.id,
-//     required this.publicKey,
-//     required this.signature,
-//     required this.checksum,
-//     required this.message,
-//   });
-//
-//   factory WOTSSignatureItem.fromRawJson(String str) =>
-//       WOTSSignatureItem.fromJson(json.decode(str));
-//
-//   String toRawJson() => json.encode(toJson());
-//
-//   factory WOTSSignatureItem.fromJson(Map<String, dynamic> json) {
-//     return WOTSSignatureItem(
-//       id: json['id'],
-//       publicKey: json['publicKey'],
-//       signature: json['signature'],
-//       checksum: json['checksum'],
-//       message: MessageData.fromRawJson(json['message']),
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     Map<String, dynamic> jsonMap = {
-//       "id": id,
-//       "publicKey": publicKey,
-//       "signature": signature,
-//       "checksum": checksum,
-//       "message": message,
-//     };
-//
-//     return jsonMap;
-//   }
-// }
-
-// class MessageData {
-//   String time;
-//   String prevHash;
-//   String nextTopPubHash;
-//   String data;
-//
-//   MessageData({
-//     required this.time,
-//     required this.prevHash,
-//     required this.nextTopPubHash,
-//     required this.data,
-//   });
-//
-//   factory MessageData.fromRawJson(String str) => MessageData.fromJson(json.decode(str));
-//
-//   String toRawJson() => json.encode(toJson());
-//
-//   factory MessageData.fromJson(Map<String, dynamic> json) {
-//     return MessageData(
-//       time: json['time'],
-//       prevHash: json['prevHash'],
-//       nextTopPubHash: json['nextTopPubHash'],
-//       data: json['data'],
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     Map<String, dynamic> jsonMap = {
-//       "time": time,
-//       "prevHash": prevHash,
-//       "nextTopPubHash": nextTopPubHash,
-//       "data": data,
-//     };
-//
-//     return jsonMap;
-//   }
-// }
-
-
-class WOTSOverlapSignatureChain {
-  List<WOTSOverlapSignatureItem> blocks;
-
-  WOTSOverlapSignatureChain({
-    required this.blocks,
-  });
-
-  factory WOTSOverlapSignatureChain.fromRawJson(String str) =>
-      WOTSOverlapSignatureChain.fromJson(json.decode(str));
-
-  String toRawJson() => json.encode(toJson());
-
-  factory WOTSOverlapSignatureChain.fromJson(Map<String, dynamic> json) {
-    return WOTSOverlapSignatureChain(
-      blocks: List<WOTSOverlapSignatureItem>.from(
-          json["blocks"].map((x) => WOTSOverlapSignatureItem.fromJson(x))),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    Map<String, dynamic> jsonMap = {
-      "blocks": blocks,
-    };
-
-    return jsonMap;
-  }
-}
-
-
-class WOTSOverlapSignatureItem {
-  int id;
-  String publicKey;
-  String nextTopPublicKey;  // if we include this, we dont need overlap
-  List<String> topLeaves;
-  String topMerkle;
-  List<String> bottomLeaves;
-  String bottomMerkle;
-  List<String> signature;
-  String checksum;
-  BasicMessageData message;
-
-  WOTSOverlapSignatureItem({
-    required this.id,
-    required this.publicKey,
-    required this.nextTopPublicKey,
-    required this.topLeaves,
-    required this.topMerkle,
-    required this.bottomLeaves,
-    required this.bottomMerkle,
-    required this.signature,
-    required this.checksum,
-    required this.message, // encrypted
-  });
-
-  factory WOTSOverlapSignatureItem.fromRawJson(String str) =>
-      WOTSOverlapSignatureItem.fromJson(json.decode(str));
-
-  String toRawJson() => json.encode(toJson());
-
-  factory WOTSOverlapSignatureItem.fromJson(Map<String, dynamic> json) {
-    return WOTSOverlapSignatureItem(
-      id: json['id'],
-      publicKey: json['publicKey'],
-      nextTopPublicKey: json['nextTopPublicKey'],
-      topLeaves: json['topLeaves'],
-      topMerkle: json['topMerkle'],
-      bottomLeaves: json['bottomLeaves'],
-      bottomMerkle: json['bottomMerkle'],
-      signature: List<String>.from(json['signature']),
-      checksum: json['checksum'],
-      message: BasicMessageData.fromRawJson(json['message']),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    Map<String, dynamic> jsonMap = {
-      "id": id,
-      "publicKey": publicKey,
-      "nextTopPublicKey": nextTopPublicKey,
-      "topLeaves": topLeaves,
-      "topMerkle": topMerkle,
-      "bottomLeaves": bottomLeaves,
-      "bottomMerkle": bottomMerkle,
-      "signature": signature,
-      "checksum": checksum,
-      "message": message,
-    };
-
-    return jsonMap;
-  }
-}
-
-
-class WOTSSimpleSignatureDictionary {
-  List<WOTSSimpleOverlapSignatureChain> chains;
-
-  WOTSSimpleSignatureDictionary({
+  GigaWOTSSignatureDictionary({
     required this.chains,
   });
 
-  factory WOTSSimpleSignatureDictionary.fromRawJson(String str) =>
-      WOTSSimpleSignatureDictionary.fromJson(json.decode(str));
+  factory GigaWOTSSignatureDictionary.fromRawJson(String str) =>
+      GigaWOTSSignatureDictionary.fromJson(json.decode(str));
 
   String toRawJson() => json.encode(toJson());
 
-  factory WOTSSimpleSignatureDictionary.fromJson(Map<String, dynamic> json) {
-    return WOTSSimpleSignatureDictionary(
-      chains: List<WOTSSimpleOverlapSignatureChain>.from(
-          json["chains"].map((x) => WOTSSimpleOverlapSignatureChain.fromJson(x))),
+  factory GigaWOTSSignatureDictionary.fromJson(Map<String, dynamic> json) {
+    return GigaWOTSSignatureDictionary(
+      chains: List<GigaWOTSSignatureChain>.from(
+          json["chains"].map((x) => GigaWOTSSignatureChain.fromJson(x))),
     );
   }
 
@@ -376,25 +173,25 @@ class WOTSSimpleSignatureDictionary {
   }
 }
 
-class WOTSSimpleOverlapSignatureChain {
+class GigaWOTSSignatureChain {
   String chainId;
-  List<WOTSSimpleOverlapSignatureItem> blocks;
+  List<GigaWOTSSignatureItem> blocks;
 
-  WOTSSimpleOverlapSignatureChain({
+  GigaWOTSSignatureChain({
     required this.chainId,
     required this.blocks,
   });
 
-  factory WOTSSimpleOverlapSignatureChain.fromRawJson(String str) =>
-      WOTSSimpleOverlapSignatureChain.fromJson(json.decode(str));
+  factory GigaWOTSSignatureChain.fromRawJson(String str) =>
+      GigaWOTSSignatureChain.fromJson(json.decode(str));
 
   String toRawJson() => json.encode(toJson());
 
-  factory WOTSSimpleOverlapSignatureChain.fromJson(Map<String, dynamic> json) {
-    return WOTSSimpleOverlapSignatureChain(
+  factory GigaWOTSSignatureChain.fromJson(Map<String, dynamic> json) {
+    return GigaWOTSSignatureChain(
         chainId: json['chainId'],
-      blocks: List<WOTSSimpleOverlapSignatureItem>.from(
-          json["blocks"].map((x) => WOTSSimpleOverlapSignatureItem.fromJson(x))),
+      blocks: List<GigaWOTSSignatureItem>.from(
+          json["blocks"].map((x) => GigaWOTSSignatureItem.fromJson(x))),
     );
   }
 
@@ -409,52 +206,36 @@ class WOTSSimpleOverlapSignatureChain {
 }
 
 /// WOTS signature that contains the next public key
-class WOTSSimpleOverlapSignatureItem {
+class GigaWOTSSignatureItem {
   String id;   // unique identifier for wots chain (static)
-  int index;   // message/signature index in wots chain (dynamic)
-  String publicKey;  // current public key for signature verification
-  String nextPublicKey;  // public key for next message
-  String previousHash;    // hash of previous signature/message block
   List<String> signature;
   String checksum;
-  BasicMessageData message;
+  WOTSMessageData message;
 
-  WOTSSimpleOverlapSignatureItem({
+  GigaWOTSSignatureItem({
     required this.id,
-    required this.index,
-    required this.publicKey,
-    required this.nextPublicKey,
-    required this.previousHash,
     required this.signature,
     required this.checksum,
     required this.message, // encrypted
   });
 
-  factory WOTSSimpleOverlapSignatureItem.fromRawJson(String str) =>
-      WOTSSimpleOverlapSignatureItem.fromJson(json.decode(str));
+  factory GigaWOTSSignatureItem.fromRawJson(String str) =>
+      GigaWOTSSignatureItem.fromJson(json.decode(str));
 
   String toRawJson() => json.encode(toJson());
 
-  factory WOTSSimpleOverlapSignatureItem.fromJson(Map<String, dynamic> json) {
-    return WOTSSimpleOverlapSignatureItem(
+  factory GigaWOTSSignatureItem.fromJson(Map<String, dynamic> json) {
+    return GigaWOTSSignatureItem(
       id: json['id'],
-      index: json['index'],
-      publicKey: json['publicKey'],
-      nextPublicKey: json['nextPublicKey'],
-      previousHash: json['previousHash'],
       signature: List<String>.from(json['signature']),
       checksum: json['checksum'],
-      message: BasicMessageData.fromJson(json['message']),
+      message: WOTSMessageData.fromJson(json['message']),
     );
   }
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
       "id": id,
-      "index": index,
-      "publicKey": publicKey,
-      "nextPublicKey": nextPublicKey,
-      "previousHash": previousHash,
       "signature": signature,
       "checksum": checksum,
       "message": message,
@@ -464,6 +245,52 @@ class WOTSSimpleOverlapSignatureItem {
   }
 }
 
+
+class WOTSMessageData {
+  int messageIndex;     // current message/signature number
+  String previousHash;  // hash of previous signature block
+  String publicKey;     // current top public key for signature verification
+  String nextPublicKey; // next top public key in WOTS key tree
+  String time;          // creation timestamp
+  String data;          // message data
+
+  WOTSMessageData({
+    required this.messageIndex,
+    required this.previousHash,
+    required this.publicKey,
+    required this.nextPublicKey,
+    required this.time,
+    required this.data,
+  });
+
+  factory WOTSMessageData.fromRawJson(String str) => WOTSMessageData.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  factory WOTSMessageData.fromJson(Map<String, dynamic> json) {
+    return WOTSMessageData(
+      messageIndex: json['messageIndex'],
+      previousHash: json['previousHash'],
+      publicKey: json['publicKey'],
+      nextPublicKey: json['nextPublicKey'],
+      time: json['time'],
+      data: json['data'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonMap = {
+      "messageIndex": messageIndex,
+      "previousHash": previousHash,
+      "publicKey": publicKey,
+      "nextPublicKey": nextPublicKey,
+      "time": time,
+      "data": data,
+    };
+
+    return jsonMap;
+  }
+}
 
 // class SignatureAsym {
 //   String r;

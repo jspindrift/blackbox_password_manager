@@ -248,7 +248,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     ),
                     onPressed: () {
                       // print("press");
-                      _showLogoutDialog();
+                      _showLogoutDialog(context);
                     },
                   ),
                 ),
@@ -860,7 +860,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     });
   }
 
-  void _showLogoutDialog() {
+  void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -882,7 +882,13 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               _inactivityTimer.stopInactivityTimer();
               _settingsManager.setIsOnLockScreen(true);
               _cryptor.clearAllKeys();
+              _logManager.logger.d("log out homey");
+              // Navigator.of(ctx).pop();
               Navigator.of(ctx).popUntil((route) => route.isFirst);
+              // Navigator.of(ctx).popUntil((route) {
+              //   print("route.isFirst: $route : ${route.isFirst}");
+              //   return route.isFirst;
+              // } );
             },
             child: Text("Log Out"),
           ),

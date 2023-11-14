@@ -3,6 +3,7 @@ import "dart:typed_data";
 import 'dart:async';
 import "package:blackbox_password_manager/models/WOTSSignatureItem.dart";
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import "package:blackbox_password_manager/managers/Cryptor.dart";
 import "package:blackbox_password_manager/managers/WOTSManager.dart";
@@ -57,6 +58,16 @@ class PostQuantumManager {
   PostQuantumManager._internal();
 
 
+  initialize() async {
+    logger.d("Initialize PostQuantumManager");
+    await dotenv.load(fileName: "assets/.env",);
+
+    // final envX = dotenv.env.toString();
+    // logger.wtf("dotenv map: ${envX}");
+
+    await _wotsManager.initialize();
+  }
+
   reset() {
     _publicKeys = [];
     _privateKeys = [];
@@ -91,12 +102,28 @@ class PostQuantumManager {
     List<Uint8List> pubData = [];
 
     for (var index = 0; index < numOfKeys; index++) {
-      var priv = algorithm_secp256k1.generatePrivateKey();
-      _privateKeys.add(hex.encode(priv.bytes));
+      // var priv = algorithm_secp256k1.generatePrivateKey();
+      // _privateKeys.add(hex.encode(priv.bytes));
+      // final privateKey1 = elliptic.PrivateKey(
+      //   algorithm_secp256k1,
+      //   BigInt.parse(_privateKeys[keyIndex], radix: 16),
+      // );
+
+      final keyEnv = dotenv.env["KEY_SECP256K1_SIGN_1"];
+      final privGen = _cryptor.sha256("$keyEnv.$index");
+      // logger.d("privGen: $privGen");
+
+      _privateKeys.add(privGen);
+      final privateKeyGen = elliptic.PrivateKey(
+        algorithm_secp256k1,
+        BigInt.parse(privGen, radix: 16),
+      );
+
       // logger.d("privateKey.hex: ${hex.encode(priv.bytes)}");
 
-      var pub = priv.publicKey;
-      var xpub = algorithm_secp256k1.publicKeyToCompressedHex(pub);
+      // var pub = priv.publicKey;
+      final pubGen = privateKeyGen.publicKey;
+      final xpub = algorithm_secp256k1.publicKeyToCompressedHex(pubGen);
       _publicKeys.add(xpub);
 
       final hashedPubKey = _cryptor.sha256(xpub);
@@ -167,9 +194,14 @@ class PostQuantumManager {
     // _logManager.logLongMessage("fileHashes:\n\n${fileHashList}");
 
     final fileHash = _cryptor.sha256(fileHashList);
+    logger.d("fileHash: $fileHash");
 
-    final kek = List.filled(32, 0);
+    // final kek = List.filled(32, 0);
     // final kek = hex.encode(_cryptor.getRandomBytes(32));
+    final keyEnvWots = dotenv.env["KEY_GIGA_WOTS_ROOT"];
+    // final kekx = _cryptor.sha256(keyEnvWots);
+    final kek = hex.decode(_cryptor.sha256(keyEnvWots));
+    // logger.d("kekx: $kekx");
 
     var keyIndex_secp256k1 = 0;
 
@@ -181,20 +213,15 @@ class PostQuantumManager {
       keyIndex_secp256k1 = 0;
     }
 
-    final messageString = "publicKeyHashTree.secp256k1: ${publicKeyTree},"
-        " publicKey.secp256k1: ${publicKeys[keyIndex_secp256k1]},"
-        " project_file_hashes.txt: ${fileHash}";
-
-    var msgObject = BasicMessageData(
-      time: DateTime.now().toIso8601String(),
-      message: messageString,
-      signature: "",
-    );
-
-    final msgObjectHash = _cryptor.sha256(msgObject.toRawJson());
+    // var messageString = "publicKeyHashTree.secp256k1: ${publicKeyTree},"
+    //     " publicKey.secp256k1: ${publicKeys[keyIndex_secp256k1]},"
+    //     " project_file_hashes.txt: ${fileHash}";
+    var messageString = "project_file_hashes.txt: ${fileHash}";
+    // final msgObjectHash = _cryptor.sha256(messageString);
 
     /// compute asymmetric signature on message object
-    final msgSignature = await signHashAsym(keyIndex_secp256k1, msgObjectHash);
+    // final msgSignature = await signHashAsym(keyIndex_secp256k1, msgObjectHash);
+    // messageString = messageString + ", signature: ${msgSignature?.toCompactHex()}";
 
     /// check asymmetric signature on message object
     // final checkSignature = ecdsa.Signature.fromCompactHex(msgSignature!.toCompactHex());
@@ -202,7 +229,7 @@ class PostQuantumManager {
     // _logManager.logger.d("verify: ${verify}");
 
     /// add asymmetric signature to message object
-    msgObject.signature = msgSignature!.toCompactHex();
+    // msgObject.signature = msgSignature!.toCompactHex();
 
     /// decode the post_quantum_signature object to get values for next signature
     var storedSignature = await loadAssetSignature();
@@ -212,40 +239,79 @@ class PostQuantumManager {
 
     var thisSigatureIndex = 1;
     var lastBlockHash = "";
+    var chainId = "main";
     try {
-      var storedSignatureChainObject = WOTSSimpleOverlapSignatureChain.fromRawJson(
+      var storedSignatureChainObject = GigaWOTSSignatureChain.fromRawJson(
           storedSignatureFormatted,
       );
-      storedSignatureChainObject.blocks.sort((a, b) => a.index.compareTo(b.index));
+
+      chainId = storedSignatureChainObject.chainId;
+      storedSignatureChainObject.blocks.sort((a, b) => a.message.messageIndex.compareTo(b.message.messageIndex));
 
       _wotsManager.setSignatureChainObject(storedSignatureChainObject);
 
-      thisSigatureIndex = storedSignatureChainObject.blocks.last.index + 1;
+      thisSigatureIndex = storedSignatureChainObject.blocks.last.message.messageIndex + 1;
       lastBlockHash = _cryptor.sha256(
           storedSignatureChainObject.blocks.last.toRawJson());
     } catch (e) {
       logger.e("no previous block to get, must be genesis");
+
+      /// get random UID for signature chain
+      chainId = _cryptor.getUUID();
     }
 
+    final msgObject = WOTSMessageData(
+      messageIndex: thisSigatureIndex,
+      previousHash: lastBlockHash,
+      publicKey: _wotsManager.topPublicKey,
+      nextPublicKey: _wotsManager.nextTopPublicKey,
+      time: DateTime.now().toIso8601String(),
+      data: messageString,
+    );
 
     /// compute WOTS signature on message object
     // await _wotsManager.signMessage(kek, 1, msgObject.toRawJson());
-    await _wotsManager.signSimpleOverlapMessage(kek, "main", lastBlockHash, thisSigatureIndex, msgObject.toRawJson());
+    await _wotsManager.signGigaWotMessage(kek, chainId, lastBlockHash, thisSigatureIndex, msgObject);
   }
 
   Future<void> postQuantumProjectIntegrityTestVerify() async {
+
+    if (publicKeys.isEmpty) {
+      await createKeyTree(2);
+    }
+
     var storedSignature = await loadAssetSignature();
     _logManager.logLongMessage("storedSignature:\n\n${storedSignature.replaceAll(" ", "").replaceAll("\n", "")}");
 
     var storedSignatureFormatted = storedSignature.replaceAll("\n", "");
-    _logManager.logLongMessage("storedSignatureFormatted:\n\n${storedSignatureFormatted}");
+    // _logManager.logLongMessage("storedSignatureFormatted:\n\n${storedSignatureFormatted}");
 
     // final storedSignatureObject = WOTSBasicSignatureItem.fromRawJson(storedSignatureFormatted);
-    final storedSignatureObject = WOTSSimpleOverlapSignatureChain.fromRawJson(storedSignatureFormatted);
+    final storedSignatureObject = GigaWOTSSignatureChain.fromRawJson(storedSignatureFormatted);
     // _logManager.logLongMessage("storedSignatureObject:\n\n${storedSignatureObject}");
 
+    _wotsManager.setSignatureChainObject(storedSignatureObject);
+
+    // final msgObject = storedSignatureObject.blocks.last.message;
+    // // final msgParts = msgObject.message.split(",").last;
+    // final origMsg = msgObject.message.split(", signature").first;
+    // // logger.d("origMsg: $origMsg");
+    // final origMsgObjectHash = _cryptor.sha256(origMsg);
+    // // logger.d("${msgObject.message.split(", signature").first}\nmsgparts: $msgParts");
+    // final msgParts2 = msgObject.message.split("signature: ").last;
+    // // logger.d("msgParts2: $msgParts2");
+    // final sigasym = ecdsa.Signature.fromCompactHex(msgParts2);
+    //
+    // final verifyAsymSignature = await verifySignatureAtIndexAsym(sigasym, 0, origMsgObjectHash);
+    // logger.d("msgSignature verify: $verifyAsymSignature");
+    //
+    // if (!verifyAsymSignature) {
+    //   logger.e("msgSignature verify: FAIL");
+    //   return;
+    // }
+
     // final isValid = await _wotsManager.verifySignature(storedSignatureObject);
-    final isValid = await _wotsManager.verifySimpleOverlapSignature(storedSignatureObject.blocks.last);
+    final isValid = await _wotsManager.verifyGigaWotSignature(storedSignatureObject.blocks.last);
     _logManager.logger.d("storedSignatureObject: isValid: ${isValid}");
   }
 
