@@ -189,14 +189,15 @@ class WOTSManager {
     }
 
     /// Compute the public checksum leaf value
-    var pubChecksumLeaf = _privChecksumLeaf;
+    // var pubChecksumLeaf = _privChecksumLeaf;
     for (var i = 0; i < _checksumSize-1; i++) {
-      pubChecksumLeaf = _cryptor.sha256(pubChecksumLeaf);
+      _pubLeaves.last = _cryptor.sha256(_pubLeaves.last);
     }
-    logger.d("pubChecksumLeaf: $pubChecksumLeaf");
+    logger.d("pubChecksumLeaf: ${_pubLeaves.last}");
+    publicPad.addAll(hex.decode(_pubLeaves.last));
 
     /// add checksum public leaf value to public leaf array
-    publicPad.addAll(hex.decode(pubChecksumLeaf));
+    // publicPad.addAll(hex.decode(pubChecksumLeaf));
     // _pubLeaves.add(pubChecksumLeaf);
 
     _logManager.logLongMessage("\nmessageIndex: $_messageIndex\n"
@@ -376,7 +377,7 @@ class WOTSManager {
 
     _pubLeaves = [];
     _privLeaves = [];
-    _privChecksumLeaf = "";
+    // _privChecksumLeaf = "";
     // _messageIndex = msgIndex;
 
     if (rootKey.isEmpty || rootKey.length != _keySize) {
@@ -398,7 +399,7 @@ class WOTSManager {
     );
 
     /// hash the private keys together to get checksum leaf
-    _privChecksumLeaf = _cryptor.sha256(hex.encode(secretBox.cipherText));
+    // _privChecksumLeaf = _cryptor.sha256(hex.encode(secretBox.cipherText));
     // _privChecksumLeaf = hex.encode(cryptor.getRandomBytes(32));
 
     List<int> publicPad = [];
@@ -424,19 +425,22 @@ class WOTSManager {
 
       /// add public leaf hash
       _pubLeaves.add(leafHash);
-      publicPad.addAll(hex.decode(leafHash));
+      if (index < numLeaves-1) {
+        publicPad.addAll(hex.decode(leafHash));
+      }
     }
 
     /// Compute the public checksum leaf value
-    var pubChecksumLeaf = _privChecksumLeaf;
+    // var pubChecksumLeaf = _pubLeaves.last;
     for (var i = 0; i < _checksumSize-1; i++) {
-      pubChecksumLeaf = _cryptor.sha256(pubChecksumLeaf);
+      _pubLeaves.last = _cryptor.sha256(_pubLeaves.last);
     }
-    logger.d("pubChecksumLeaf: $pubChecksumLeaf");
+    publicPad.addAll(hex.decode(_pubLeaves.last));
+
+    // logger.d("checksumLeaf: ${_pubLeaves.last}");
 
     /// add checksum public leaf value to public leaf array
-    publicPad.addAll(hex.decode(pubChecksumLeaf));
-    // _pubLeaves.add(pubChecksumLeaf);
+    // publicPad.addAll(hex.decode(pubChecksumLeaf));
 
     // _logManager.logLongMessage("\nmessageIndex: $msgIndex\n"
     //     "_privLeaves: $_privLeaves\n\n"
@@ -486,7 +490,7 @@ class WOTSManager {
     );
 
     /// hash the private keys together to get checksum leaf
-    final privateChecksumLeaf = _cryptor.sha256(hex.encode(secretBox.cipherText));
+    // final privateChecksumLeaf = _cryptor.sha256(hex.encode(secretBox.cipherText));
     // _privChecksumLeaf = hex.encode(cryptor.getRandomBytes(32));
 
     List<int> publicPad = [];
@@ -512,18 +516,22 @@ class WOTSManager {
 
       /// add public leaf hash
       pubLeaves.add(leafHash);
-      publicPad.addAll(hex.decode(leafHash));
+
+      if (index < numLeaves-1) {
+        publicPad.addAll(hex.decode(leafHash));
+      }
     }
 
     /// Compute the public checksum leaf value
-    var pubChecksumLeaf = privateChecksumLeaf;
+    // var pubChecksumLeaf = pubLeaves.last;
     for (var i = 0; i < _checksumSize-1; i++) {
-      pubChecksumLeaf = _cryptor.sha256(pubChecksumLeaf);
+      pubLeaves.last = _cryptor.sha256(pubLeaves.last);
     }
+    publicPad.addAll(hex.decode(pubLeaves.last));
+
     // logger.d("pubChecksumLeaf: $pubChecksumLeaf");
 
     /// add checksum public leaf value to public leaf array
-    publicPad.addAll(hex.decode(pubChecksumLeaf));
 
     // _logManager.logLongMessage("\nnextMessageIndex: $nextMessageIndex\n"
     //     "privLeaves: $privLeaves\n\n"
@@ -570,22 +578,7 @@ class WOTSManager {
     await _createGigaWotTopPubKey(key, msgIndex);
 
     message.nextPublicKey = _nextTopPublicKey;
-
-    // // var messageItem;
-    // try {
-    //   // messageItem = BasicMessageData.fromRawJson(message);
-    //   // messageItem = message;//WOTSMessageData.fromRawJson(message.toRawJson());
-    //
-    //   message.nextPublicKey = _nextTopPublicKey;
-    //
-    //   // logger.wtf("got here");
-    //
-    // } catch (e) {
-    //   logger.e("error json format: $e");
-    //   return null;
-    // }
-
-    // messageItem
+    message.publicKey = _topPublicKey;
 
     _logManager.logLongMessage("message to hash 1: ${message.toRawJson()}");
 
@@ -610,9 +603,9 @@ class WOTSManager {
     // logger.d("checksum int value: $checksum");
 
     /// Compute the checksum leaf value, 32x256 = 8192
-    var checksumHash = _privChecksumLeaf;
+    // var checksumHash = _privChecksumLeaf;
     for (var i = 1; i < 8192-checksum; i++) {
-      checksumHash = _cryptor.sha256(checksumHash);
+      signature.last = _cryptor.sha256(signature.last);
     }
     // logger.d("checksumHash leaf: ${checksumHash}");
 
@@ -620,7 +613,6 @@ class WOTSManager {
     GigaWOTSSignatureItem wotsItem = GigaWOTSSignatureItem(
       id: chainId,
       signature: signature,
-      checksum: checksumHash,
       message: message,
     );
 
@@ -714,7 +706,6 @@ class WOTSManager {
     final chainIdentifier = item.id;
     final topPublicKey = item.message.publicKey;
     final messageIndex = item.message.messageIndex;
-    // final topPublicKey2 = item.publicKey;
 
     var previousPublicKey = "";
 
@@ -741,7 +732,6 @@ class WOTSManager {
 
 
     final sig = item.signature;
-    final csum = item.checksum;
     final message = item.message;
     _logManager.logLongMessage("message to hash 2: ${message.toRawJson()}");
 
@@ -753,6 +743,7 @@ class WOTSManager {
     int index = 0;
     int checksum = 0;
 
+    var checkSumLeaf = "";
     /// compute the public leaves from the signature and message hash
     for (var c in messageHashBytes) {
       /// add message hash values for checksum
@@ -761,19 +752,26 @@ class WOTSManager {
       for (var i = 0; i < c; i++) {
         leafHash = _cryptor.sha256(leafHash);
       }
-      checkPublicLeaves.addAll(hex.decode(leafHash));
+      // logger.d("pubLeaf[$index]: ${leafHash}");
+
+      checkSumLeaf = leafHash;
+      if (index < 31) {
+        checkPublicLeaves.addAll(hex.decode(leafHash));
+      }
       index += 1;
     }
+    // logger.d("checkSumLeaf: ${checkSumLeaf}");
 
     /// Compute the public checksum leaf value
-    var checksig = csum;
+    var checksig = checkSumLeaf;
     for (var i = 0; i < checksum; i++) {
       checksig = _cryptor.sha256(checksig);
     }
+    checkPublicLeaves.addAll(hex.decode(checksig));
     // logger.d("checksig: ${checksig}");
 
     /// add checksum hash to the public leaves
-    checkPublicLeaves.addAll(hex.decode(checksig));
+    // checkPublicLeaves.addAll(hex.decode(checksig));
 
     /// hash the public leaves + checksum to get top pub hash
     final checkTopPubHash = _cryptor.sha256(hex.encode(checkPublicLeaves));

@@ -209,13 +209,11 @@ class GigaWOTSSignatureChain {
 class GigaWOTSSignatureItem {
   String id;   // unique identifier for wots chain (static)
   List<String> signature;
-  String checksum;
   WOTSMessageData message;
 
   GigaWOTSSignatureItem({
     required this.id,
     required this.signature,
-    required this.checksum,
     required this.message, // encrypted
   });
 
@@ -228,7 +226,6 @@ class GigaWOTSSignatureItem {
     return GigaWOTSSignatureItem(
       id: json['id'],
       signature: List<String>.from(json['signature']),
-      checksum: json['checksum'],
       message: WOTSMessageData.fromJson(json['message']),
     );
   }
@@ -237,7 +234,6 @@ class GigaWOTSSignatureItem {
     Map<String, dynamic> jsonMap = {
       "id": id,
       "signature": signature,
-      "checksum": checksum,
       "message": message,
     };
 

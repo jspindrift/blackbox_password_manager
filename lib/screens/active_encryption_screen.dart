@@ -1239,7 +1239,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     GigaWOTSSignatureItem? wotsSignature1 = GigaWOTSSignatureItem(
       id: "",
       signature:[],
-      checksum: "",
       message: msgObject,
     );
 

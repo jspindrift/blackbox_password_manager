@@ -287,7 +287,7 @@ class Cryptor {
   }
 
   void setLogKeyBytes(List<int> bytes) {
-    logger.d("setLogKeyBytes: $bytes");
+    // logger.d("setLogKeyBytes: $bytes");
     _logSecretKeyBytes = bytes;
     _logSecretKey = SecretKey(bytes);
   }

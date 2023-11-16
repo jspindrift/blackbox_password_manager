@@ -822,7 +822,7 @@ class KeychainManager {
 
       } else {
         final decodedLogKey = base64.decode(_encodedLogKeyMaterial);
-        logger.d("readLogKey: $decodedLogKey");
+        // logger.d("readLogKey: $decodedLogKey");
 
         cryptor.setLogKeyBytes(decodedLogKey);
         logManager.log("KeychainManager", "readLogKey", "success");
