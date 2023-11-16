@@ -188,13 +188,20 @@ class PostQuantumManager {
     return result;
   }
 
-  Future<void> postQuantumProjectIntegrityTest() async {
+  Future<void> postQuantumProjectIntegrityTest(int bitSecurity) async {
 
     final fileHashList = await loadAsset();
     // _logManager.logLongMessage("fileHashes:\n\n${fileHashList}");
 
-    final fileHash = _cryptor.sha256(fileHashList);
-    logger.d("fileHash: $fileHash");
+    String fileHash;
+    if (bitSecurity == 256) {
+      fileHash = _cryptor.sha256(fileHashList);
+      logger.d("fileHash: $fileHash");
+    } else {
+      fileHash = _cryptor.sha512(fileHashList);
+      logger.d("fileHash: $fileHash");
+    }
+
 
     // final kek = List.filled(32, 0);
     // final kek = hex.encode(_cryptor.getRandomBytes(32));
@@ -271,7 +278,7 @@ class PostQuantumManager {
 
     /// compute WOTS signature on message object
     // await _wotsManager.signMessage(kek, 1, msgObject.toRawJson());
-    await _wotsManager.signGigaWotMessage(kek, chainId, lastBlockHash, thisSigatureIndex, msgObject);
+    await _wotsManager.signGigaWotMessage(kek, chainId, lastBlockHash, thisSigatureIndex, msgObject, bitSecurity);
   }
 
   Future<void> postQuantumProjectIntegrityTestVerify() async {

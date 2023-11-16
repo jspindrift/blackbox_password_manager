@@ -1252,6 +1252,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
           "lastBlockHash",
           _wotsSigningCounter,
           msgObject,
+          256,
       );
 
       _logManager.logger.d("wotsSignature1: ${wotsSignature1?.toRawJson()}");

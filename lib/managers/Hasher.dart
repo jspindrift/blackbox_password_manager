@@ -15,12 +15,15 @@ class Hasher {
   Hasher._internal();
 
   String sha256Hash(String message) {
-    // print('hashing: $message');
     var msgInBytes = utf8.encode(message);
     Digest value = sha256.convert(msgInBytes);
 
-    // print("hashed string: ${value.toString()}");
-    // print("hashed bytes: ${value.bytes}");
+    return value.toString();
+  }
+
+  String sha512Hash(String message) {
+    var msgInBytes = utf8.encode(message);
+    Digest value = sha512.convert(msgInBytes);
 
     return value.toString();
   }

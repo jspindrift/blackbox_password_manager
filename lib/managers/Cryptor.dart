@@ -3038,6 +3038,15 @@ class Cryptor {
     return c1;
   }
 
+  String sha512(String? message) {
+    if (message == null) {
+      return "";
+    }
+    final c1 = Hasher().sha512Hash(message);
+
+    return c1;
+  }
+
   /// HMAC function
   Future<String> hmac256(String? message) async {
     if (message == null) {
