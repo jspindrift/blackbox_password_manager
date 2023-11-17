@@ -124,8 +124,6 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
                         : "")
                     : "",
         onChange: (String code) async {
-          _logManager.logger.d("$code");
-
           if (widget.flow == PinCodeFlow.create) {
             if (_isConfirmingPinCode) {
               if (_initialPinCode == code) {
@@ -148,7 +146,6 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
                 });
               }
             } else {
-              _logManager.logger.d("$code");
               setState(() {
                 _initialPinCode = code;
                 _isConfirmingPinCode = true;
@@ -174,17 +171,15 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
   void _createPinCode(String code) async {
     try {
       final pinJsonString = await _cryptor.derivePinKey(code);
-      _logManager.logger.wtf("_createPinCode: derivePinKey: $pinJsonString");
+      // _logManager.logger.wtf("_createPinCode: derivePinKey: $pinJsonString");
 
       if (pinJsonString.isNotEmpty) {
         final status = await _keyManager.savePinCode(pinJsonString);
-        _logManager.logger.wtf("_createPinCode: save status: $status");
+        // _logManager.logger.wtf("_createPinCode: save status: $status");
 
         if (status) {
           /// delete biometric key
-          // final deleteStatus =
           await _keyManager.deleteBiometricKey();
-          // print("delete status 1: $deleteStatus");
 
           /// deleteStatus can be false but we still want to confirm the
           /// saved pincode

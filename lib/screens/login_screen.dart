@@ -91,9 +91,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     /// add observer for app lifecycle state transitions
     WidgetsBinding.instance.addObserver(this);
 
-    // logManager.initialize();
-    logManager.initialize2();
-
+    logManager.initialize();
 
     settingsManager.initializeLaunchSettings();
     // keyManager.deleteAll();
@@ -398,7 +396,6 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         logManager.log("LoginScreen", "didChangeAppLifecycleState",
             "AppLifecycleState: inactive");
         logManager.logger.d("AppLifecycleState: inactive - LoginScreen");
-        // Navigator.of(context).pop();
 
         /// Save logs here...
         /// Tried saving on AppLifecycleState.paused but it fails and
@@ -432,10 +429,9 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         }
         break;
       case AppLifecycleState.paused:
+        logManager.logger.d("AppLifecycleState: paused - LoginScreen");
         logManager.log("LoginScreen", "didChangeAppLifecycleState",
             "AppLifecycleState: paused");
-        logManager.logger.d("AppLifecycleState: paused - LoginScreen");
-
         break;
       case AppLifecycleState.detached:
         logManager.logger.d("AppLifecycleState: detached");
@@ -444,7 +440,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         break;
       case AppLifecycleState.hidden:
         logManager.logger.d("AppLifecycleState: hidden - LoginScreen");
-
+        logManager.log("LoginScreen", "didChangeAppLifecycleState",
+            "AppLifecycleState: hidden");
         break;
     }
   }

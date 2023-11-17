@@ -202,7 +202,7 @@ class _HomeTabScreenState extends State<HomeTabScreen>
         // print("INACTIVE-------------------------------");
         // _logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
         //     "AppLifecycleState: inactive");
-        _logManager.logger.d("AppLifecycleState: inactive - HomeTabScreen");
+        // _logManager.logger.d("AppLifecycleState: inactive - HomeTabScreen");
         // Navigator.of(context).pop();
 
         /// Save logs here...
@@ -286,7 +286,8 @@ class _HomeTabScreenState extends State<HomeTabScreen>
         break;
       case AppLifecycleState.hidden:
         // _logManager.logger.d("AppLifecycleState: hidden - HomeTabScreen");
-
+        // _logManager.log("HomeTabScreen", "didChangeAppLifecycleState",
+        //     "AppLifecycleState: hidden");
         break;
     }
   }

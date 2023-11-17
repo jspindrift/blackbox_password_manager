@@ -772,7 +772,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     // await _postQuantumManager.postQuantumProjectIntegrityTest(256);
 
     /// TODO: uncomment this after to verify
-    await _postQuantumManager.postQuantumProjectIntegrityTestVerify();
+    await _postQuantumManager.postQuantumProjectIntegrityTestVerify(); 
   }
 
   Future<void> _runPostQuantumIntegrityTestWithReset() async {

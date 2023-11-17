@@ -193,6 +193,8 @@ class _InactivityTimeScreenState extends State<InactivityTimeScreen> {
     ///
     await _settingsManager.saveInactivityTime(_timeIndexSeconds[index]);
 
+    _logManager.log("InactivityTimeScreen", "onTimeSelected", "change inactivity time: ${_timeIndexSeconds[index]} seconds");
+
     _inactivityTimer.startInactivityTimer();
 
     setState(() {

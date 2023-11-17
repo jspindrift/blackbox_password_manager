@@ -444,11 +444,7 @@ class SettingsManager {
         return;
       }
 
-      if (intData == 0) {
-        _sessionNumber = 1;
-      } else {
-        _sessionNumber = intData;
-      }
+      _sessionNumber = intData;
     } catch (e) {
       logger.e(e);
       _sessionNumber = 1;

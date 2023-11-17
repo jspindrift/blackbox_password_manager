@@ -30,30 +30,21 @@ class InactivityTimer {
     }
 
     if (_timer != null) {
-      // logManager.logger.d("resetting inactivity timer.");
       stopInactivityTimer();
-      // return;
     }
-
-    // logManager.logger.d("set inactivity timer");
-    // logManager.log("InactivityTimer", "startInactivityTimer", "start heartbeat timer");
 
     var inactivityTime = settingsManager.inactivityTime;
     if (inactivityTime == null || inactivityTime == 0) {
       inactivityTime = _defaultInactiveTimeSeconds;
     }
-    // logManager.logger.d("set inactivity timer: $inactivityTime");
-
 
     if (_lastActivityTime != null) {
       final timeDiff = DateTime.now().difference(_lastActivityTime!).inSeconds;
-      // logManager.logger.d("inactivity time diff: $timeDiff");
       if (timeDiff > inactivityTime) {
-        // logManager.logger.d("inactivity time diff: $timeDiff");
+        /// logout if change inactivity time action occurs after
         settingsManager.postLogoutMessage();
       }
     }
-
 
     _lastActivityTime = DateTime.now();
 
@@ -63,8 +54,6 @@ class InactivityTimer {
       logManager.log("InactivityTimer", "startInactivityTimer", "inactivity");
 
       _lastActivityTime = null;
-      // final timeDiff = DateTime.now().difference(_lastActivityTime!).inSeconds;
-      // logManager.logger.d("inactivity TIMER: time diff: $timeDiff");
       /// post a logout message
       settingsManager.postLogoutMessage();
     });

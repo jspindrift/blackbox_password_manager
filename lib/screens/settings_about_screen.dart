@@ -253,28 +253,11 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
                   ),
                 ),
               ),
-              Divider(
-                color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
-              ),
               Visibility(
-                visible: false,
-                child: ListTile(
-                  title: Text(
-                    "Key ID:",
-                    style: TextStyle(
-                      color: _isDarkModeEnabled ? Colors.white : null,
-                    ),
-                  ),
-                  subtitle: Text(
-                    "${_keyManager.keyId.toUpperCase()}\n",
-                    style: TextStyle(
-                      color: _isDarkModeEnabled ? Colors.white : null,
-                    ),
-                  ),
+                visible: true,
+                child:Divider(
+                    color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
                 ),
-              ),
-              Divider(
-                color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
               ),
               Visibility(
                 visible: false,
@@ -287,6 +270,7 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
                 ),
                 subtitle: Text(
                     "${_settingsManager.deviceManager.deviceData.toString()}\n",
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: _isDarkModeEnabled ? Colors.white : null,
                   ),

@@ -39,7 +39,7 @@ class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
     return Scaffold(
       backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
       appBar: AppBar(
-        title: Text('Session #${widget.block.blockNumber + 1}'),
+        title: Text('Block #${widget.block.blockNumber + 1}'),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         leading: CloseButton(

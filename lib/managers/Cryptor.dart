@@ -287,9 +287,18 @@ class Cryptor {
   }
 
   void setLogKeyBytes(List<int> bytes) {
-    // logger.d("setLogKeyBytes: $bytes");
+    logger.d("LOG: setLogKeyBytes: ${hex.encode(bytes)}");
     _logSecretKeyBytes = bytes;
     _logSecretKey = SecretKey(bytes);
+  }
+
+  Future<void> createLogKey() async {
+    _logSecretKey = await algorithm_nomac.newSecretKey();
+    _logSecretKeyBytes = (await _logSecretKey?.extractBytes())!;
+    _logKeyMaterial = base64.encode(_logSecretKeyBytes);
+    logger.d("LOG: createLogKey: ${hex.encode(_logSecretKeyBytes)}");
+
+    KeychainManager().saveLogKey(_logKeyMaterial);
   }
 
   String getUUID() {
@@ -411,6 +420,21 @@ class Cryptor {
     return phrase;
   }
 
+
+  /// log key
+  ///
+  Future<String> readLogKeyAndSet() async {
+    try {
+      _logKeyMaterial = await KeychainManager().readLogKey();
+      var material = base64.decode(_logKeyMaterial);
+      _logSecretKeyBytes = material;
+      return _logKeyMaterial;
+    } catch (e) {
+      logger.e("Exception: $e");
+      return "";
+    }
+
+  }
   ///
   /// Key Derivation.............................................................
   ///
@@ -490,8 +514,7 @@ class Cryptor {
       /// if we already have one, dont create it.
       /// only created once per device per app instance
       if (_logSecretKeyBytes == null || _logSecretKeyBytes.isEmpty) {
-        _logSecretKey = await algorithm_nomac.newSecretKey();
-        _logSecretKeyBytes = (await _logSecretKey?.extractBytes())!;
+        await createLogKey();
       }
       // logger.d("created log key bytes: $_logSecretKeyBytes");
 
@@ -1133,9 +1156,7 @@ class Cryptor {
             /// create a new log key
             /// user is restoring a backup on new device app instance
             ///
-            _logSecretKey = await algorithm_nomac.newSecretKey();
-            _logSecretKeyBytes = (await _logSecretKey?.extractBytes())!;
-            _logKeyMaterial = base64.encode(_logSecretKeyBytes);
+            await createLogKey();
           } else {
             var material = base64.decode(_logKeyMaterial);
             _logSecretKeyBytes = material;

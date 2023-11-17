@@ -103,12 +103,35 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
 
   @override
   Widget build(BuildContext context) {
-    // final seconds = _logManager.lifeTimeInSeconds;
-    // final minutes = seconds/60;
-    // final hours = seconds/3600;
-    // final days = seconds/(24*3600);
+    double years = 0;
+    double days = 0;
+    double hours = 0;
+    double minutes = 0;
+    int seconds = _logManager.appUsageInSeconds;
+    var elapsedTimeString = "$seconds seconds";
 
-    // final timeString = days > 0 ? "$days days" : "";
+    if (seconds > 60) {
+      minutes = (seconds/60);
+    }
+    if (minutes > 60) {
+      hours = (minutes/60);
+    }
+    if (hours > 24) {
+      days = (hours/24);
+    }
+    if (days >= 365) {
+      years = (days/365);
+    }
+
+    if (days > 365) {
+      elapsedTimeString = "${years.toStringAsFixed(2)} years";
+    } else if (days > 1) {
+      elapsedTimeString = "${days.toStringAsFixed(2)} days";
+    } else if (hours > 1) {
+      elapsedTimeString = "${hours.toStringAsFixed(2)} hours";
+    } else if (minutes > 1) {
+      elapsedTimeString = "${minutes.toStringAsFixed(2)} minutes";
+    }
 
     _logManager.getLogFileSize().then((value) {
       _logFileSize = value;
@@ -234,13 +257,20 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
                     title: Text(
                       "Log file: ${(_logFileSizeScaled).toStringAsFixed(2)} $_logFileSizeUnits",
                       style: TextStyle(
-                          color: _isDarkModeEnabled ? Colors.white : null),
+                          color: _isDarkModeEnabled ? Colors.white : null,
+                      ),
                     ),
-                    subtitle: Text(
-                      "lifetime: ${_logManager.lifeTimeInSeconds} seconds\nusage: ${_logManager.appUsageInSeconds} seconds\n${(100 * _logManager.appUsageInSeconds / _logManager.lifeTimeInSeconds).toStringAsFixed(2)}%",
-                      style: TextStyle(
-                          color: _isDarkModeEnabled ? Colors.white : null),
-                    ),
+                    subtitle: Padding(
+                      padding: EdgeInsets.fromLTRB(0, 8, 8, 4),
+                      child: Text(
+                      // "App Time: ${_logManager.appUsageInSeconds} seconds\n$elapsedTimeString",
+                      //   "App Time: $elapsedTimeString",
+                        "App Time: $elapsedTimeString\n\nrate: ${((_logFileSize)/_logManager.appUsageInSeconds).toStringAsFixed(2)} bytes/sec",
+                        style: TextStyle(
+                          color: _isDarkModeEnabled ? Colors.white : null,
+                          fontSize: 16,
+                        ),
+                     ),),
                   ),
                 ],
               ),
@@ -345,8 +375,9 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
   }
 
   void deleteLogs() {
-    _logManager.deleteLogFile();
-    setState(() {});
+    setState(() {
+      _logManager.deleteLogFile();
+    });
   }
 
   void _showConfirmDeleteLogsDialog() {

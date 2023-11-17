@@ -71,7 +71,7 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObse
 
             setState(() {
               _blocks.forEach((element) {
-                _logManager.logger.wtf("${element.toJson()}");
+                // _logManager.logger.wtf("${element.toRawJson()}");
                 final a = DateTime.parse(element.logList.list.first.time);
                 final b = DateTime.parse(element.logList.list.last.time);
 
@@ -224,21 +224,21 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObse
         itemCount: _blocks.length,
         itemBuilder: (context, index) {
           return ListTile(
-            isThreeLine: true,
+            isThreeLine: timeLapses[index].isNotEmpty ? true : false,
             title: Text(
-              '${index + 1}: ${DateFormat('yyyy-MM-dd  hh:mm a').format(DateTime.parse(_blocks[index].time))}\n'
-                  'session #: ${_blocks[index].blockNumber + 1} | ${sessionTimes[index]} seconds\n'
-                  'size: ${_blocks[index].toRawJson().length/1024} KB',
+              '#${index + 1}: ${DateFormat('yyyy-MM-dd  hh:mm a').format(DateTime.parse(_blocks[index].time))}\n'
+                  '${sessionTimes[index]} seconds\n'
+                  'size: ${(_blocks[index].toRawJson().length/1024).toStringAsFixed(2)} KB',
               style: TextStyle(
                 color: _isDarkModeEnabled ? Colors.white : null,
               ),
             ),
-            subtitle: Text(
+            subtitle: timeLapses[index].isNotEmpty ? Text(
               timeLapses.length > 0 ? timeLapses[index] : "",
               style: TextStyle(
                 color: _isDarkModeEnabled ? Colors.white : null,
               ),
-            ),
+            ) : null,
             onTap: () {
               Navigator.push(
                 context,
