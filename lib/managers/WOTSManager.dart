@@ -1,4 +1,5 @@
 import "dart:typed_data";
+import "package:blackbox_password_manager/merkle/merkle_example.dart";
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import "package:cryptography/cryptography.dart";
@@ -415,6 +416,8 @@ class WOTSManager {
     );
 
     List<int> publicPad = [];
+    List<Uint8List> pubData = [];
+
     final numLeaves = secretBox.cipherText.length / _leafKeySize;
 
     /// compute the public leaves from private hashes
@@ -442,6 +445,7 @@ class WOTSManager {
       _pubLeaves.add(leafHash);
       if (index < numLeaves-1) {
         publicPad.addAll(hex.decode(leafHash));
+        pubData.add(Uint8List.fromList(hex.decode(leafHash)));
       }
     }
 
@@ -455,6 +459,8 @@ class WOTSManager {
       }
     }
     publicPad.addAll(hex.decode(_pubLeaves.last));
+    pubData.add(Uint8List.fromList(hex.decode(_pubLeaves.last)));
+
 
     // logger.d("checksumLeaf: ${_pubLeaves.last}");
 
@@ -468,13 +474,23 @@ class WOTSManager {
         "_pubLeaves: $_pubLeaves");
     /// hash public leaf values with checksum to get top pub hash
 
+    // String topPublicKeyMerkle;
     if (bitSecurity == 256) {
-      _topPublicKey = _cryptor.sha256(hex.encode(publicPad));
-      logger.d("_topPublicKey: ${_topPublicKey}");
+      // _topPublicKey = _cryptor.sha256(hex.encode(publicPad));
+      // topPublicKeyMerkle = getTree(pubData, 256).last;
+      _topPublicKey = getTree(pubData, 256).last;
+
+      // logger.d("_topPublicKey: ${_topPublicKey}\ntopPublicKeyMerkle: $topPublicKeyMerkle");
     } else {
-      _topPublicKey = _cryptor.sha512(hex.encode(publicPad));
-      logger.d("_topPublicKey: ${_topPublicKey}");
+      // _topPublicKey = _cryptor.sha512(hex.encode(publicPad));
+      // topPublicKeyMerkle = getTree(pubData, 512).last;
+      _topPublicKey = getTree(pubData, 512).last;
+
+      // logger.d("_topPublicKey: ${_topPublicKey}\ntopPublicKeyMerkle: $topPublicKeyMerkle");
     }
+
+    logger.d("_topPublicKey: ${_topPublicKey}");
+
 
     _nextTopPublicKey = await _createNextGigaWotTopPubKey(rootKey, msgIndex, bitSecurity);
 
@@ -532,6 +548,8 @@ class WOTSManager {
     // _privChecksumLeaf = hex.encode(cryptor.getRandomBytes(32));
 
     List<int> publicPad = [];
+    List<Uint8List> pubData = [];
+
     final numLeaves = secretBox.cipherText.length / _leafKeySize;
 
     /// compute the public leaves from private hashes
@@ -561,6 +579,7 @@ class WOTSManager {
 
       if (index < numLeaves-1) {
         publicPad.addAll(hex.decode(leafHash));
+        pubData.add(Uint8List.fromList(hex.decode(leafHash)));
       }
     }
 
@@ -574,7 +593,7 @@ class WOTSManager {
     }
 
     publicPad.addAll(hex.decode(pubLeaves.last));
-
+    pubData.add(Uint8List.fromList(hex.decode(pubLeaves.last)));
     // logger.d("pubChecksumLeaf: ${pubLeaves.last}");
 
     /// add checksum public leaf value to public leaf array
@@ -588,24 +607,28 @@ class WOTSManager {
     /// hash public leaf values with checksum to get top pub hash
     if (bitSecurity == 256) {
       final nextTopPublicKey = _cryptor.sha256(hex.encode(publicPad));
-      logger.d("nextTopPublicKey: ${nextTopPublicKey}");
+      final nextTopPublicKeyMerkle = getTree(pubData, 256).last;
+
+      logger.d("nextTopPublicKey: ${nextTopPublicKey}\nnextTopPublicKeyMerkle: $nextTopPublicKeyMerkle");
 
       final endTime = DateTime.now();
       final timeDiff = endTime.difference(startTime);
       logger.d("createPubKeyWOTS: time diff: ${timeDiff.inMilliseconds} ms");
 
       logger.d("\n\t\t--------------------------_createNextGigaWotTopPubKey END - [${msgIndex}]--------------------------");
-      return nextTopPublicKey;
+      return nextTopPublicKeyMerkle;//nextTopPublicKey;
     } else {
       final nextTopPublicKey = _cryptor.sha512(hex.encode(publicPad));
-      logger.d("nextTopPublicKey: ${nextTopPublicKey}");
+      final nextTopPublicKeyMerkle = getTree(pubData, 512).last;
+
+      logger.d("nextTopPublicKey: ${nextTopPublicKey}\nnextTopPublicKeyMerkle: $nextTopPublicKeyMerkle");
 
       final endTime = DateTime.now();
       final timeDiff = endTime.difference(startTime);
       logger.d("createPubKeyWOTS: time diff: ${timeDiff.inMilliseconds} ms");
 
       logger.d("\n\t\t--------------------------_createNextGigaWotTopPubKey END - [${msgIndex}]--------------------------");
-      return nextTopPublicKey;
+      return nextTopPublicKeyMerkle;//nextTopPublicKey;
     }
 
   }
@@ -836,6 +859,8 @@ class WOTSManager {
     }
 
     List<int> checkPublicLeaves = [];
+    List<Uint8List> pubData = [];
+
     int index = 0;
     int checksum = 0;
 
@@ -857,6 +882,7 @@ class WOTSManager {
       checkSumLeaf = leafHash;
       if (index < messageHashBytes.length-1) {
         checkPublicLeaves.addAll(hex.decode(leafHash));
+        pubData.add(Uint8List.fromList(hex.decode(leafHash)));
       }
       index += 1;
     }
@@ -872,6 +898,8 @@ class WOTSManager {
       }
     }
     checkPublicLeaves.addAll(hex.decode(checksig));
+    pubData.add(Uint8List.fromList(hex.decode(checksig)));
+
     // logger.d("checksig: ${checksig}");
 
     /// add checksum hash to the public leaves
@@ -880,13 +908,18 @@ class WOTSManager {
     /// hash the public leaves + checksum to get top pub hash
 
     String checkTopPubHash;
+    String checkTopPubMerkle;
+
     if (bitSecurity == 256) {
       checkTopPubHash = _cryptor.sha256(hex.encode(checkPublicLeaves));
+      checkTopPubMerkle = getTree(pubData, 256).last;
+
     } else {
       checkTopPubHash = _cryptor.sha512(hex.encode(checkPublicLeaves));
+      checkTopPubMerkle = getTree(pubData, 512).last;
     }
 
-    logger.d("checkTopPubHash: ${checkTopPubHash}");
+    logger.d("checkTopPubHash: ${checkTopPubHash}\ncheckTopPubMerkle: $checkTopPubMerkle");
 
     final endTime = DateTime.now();
     final timeDiff = endTime.difference(startTime);
@@ -894,7 +927,8 @@ class WOTSManager {
 
     logger.d("\n\t\t--------------------------END: verifyGigaWotSignature--------------------------");
 
-    return checkTopPubHash == topPublicKey;
+    return checkTopPubMerkle == topPublicKey;
+    // return checkTopPubHash == topPublicKey;
   }
 
 }

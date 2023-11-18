@@ -24,6 +24,10 @@ Uint8List sha256(Uint8List data) {
   return Uint8List.fromList(crypto.sha256.convert(data.toList()).bytes);
 }
 
+Uint8List sha512(Uint8List data) {
+  return Uint8List.fromList(crypto.sha512.convert(data.toList()).bytes);
+}
+
 List<Uint8List> datat = [
   'cafebeef',
   'ffffffff',
@@ -65,16 +69,13 @@ void treeTest(List<Uint8List> data) {
   logger.d('End Tree Test');
 }
 
-List<String> getTree(List<Uint8List> data) {
-  // logger.d('getTree');
-  List<Uint8List> tree = merkle(data, sha256);
-
+List<String> getTree(List<Uint8List> data, int bits) {
+  List<Uint8List> tree = merkle(data, bits == 256 ? sha256 : sha512);
   // logger.d('[\n\t"${tree.map((x) => hex.encode(x)).join('",\n\t"')}"\n]');
 
-  final hexTree = List<String>.from(tree.map((x) => hex.encode(x)));//.toList();  //List<String>.from(hex.encode(x))
+  final hexTree = List<String>.from(tree.map((x) => hex.encode(x)));
   // logger.d('End getTree: $hexTree');
   // logger.d('hexTree[\n\t"${hexTree.join('",\n\t"')}"\n]');
-
 
   return hexTree;
 }

@@ -132,7 +132,7 @@ class PostQuantumManager {
       // logger.d("pub.toHex()[$index]: ${pub.toHex()}");
     }
 
-    _publicKeyTree = getTree(pubData);
+    _publicKeyTree = getTree(pubData, 256);
     // logger.d("pubKey tree: ${_publicKeyTree}");
   }
 

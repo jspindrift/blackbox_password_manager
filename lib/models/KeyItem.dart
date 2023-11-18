@@ -287,7 +287,7 @@ class SecureMessageList {
     }
     // logger.d("msgHashList: $msgHashList");
 
-    final tree = getTree(data);
+    final tree = getTree(data, 256);
     /// TODO: set this
     merkleTree = tree;
     logger.d("tree: $tree");
@@ -307,7 +307,7 @@ class SecureMessageList {
     }
     // logger.d("msgHashList: $msgHashList");
 
-    final localTree = getTree(data);
+    final localTree = getTree(data, 256);
 
     int index = 0;
     for (var leaf in localTree) {

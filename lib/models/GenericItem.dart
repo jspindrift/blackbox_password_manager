@@ -137,7 +137,7 @@ class GenericItemList {
     }
 
     // logger.d("data: $data");
-    final itree = getTree(data);
+    final itree = getTree(data, 256);
 
     return itree;
   }
@@ -200,7 +200,7 @@ class GenericItemList {
     }
 
     // logger.d("data: $data");
-    final itree = getTree(data);
+    final itree = getTree(data, 256);
 
     return itree;
   }
