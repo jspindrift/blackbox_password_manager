@@ -12,6 +12,59 @@ import "../models/WOTSSignatureItem.dart";
 
 import "LogManager.dart";
 
+/*
+* Notes on Giga-WOTS:
+*
+* We want a merkle tree root public key since hashing a large value of appended
+* public key leaves can more easily produce a collision.  All an attacker
+* has to do is find a set of intermediate signature leaves (from a random private
+* key leaf set) that computes to a public key leaf set which computes to the
+* nextPublicKey stated in a current signature.  The attacker can then publish
+* their message and signature first and beat out the legitimate original signer,
+* basically adding to the signature chain.
+*
+* If we combine a asymmetric key signature within the WOTS signed message
+* the attacker must compromise the asymmetric key first, then try to find a key
+* set that produces a collision on the future public key (assuming we were not
+* using a merkle tree vector as the public key).
+*
+* If the asymmetric key does get compromised, then the attacker must then try to
+* find a collision on the nextPublicKey before the next message is published.
+*
+* Lets say the attacker does both, they find the private asymmetric key and
+* a collision on the nextPublicKey.  How do we defend against this?
+*
+* It is possible that the legitimate signer can prove that one of the
+* private keys follows a "structured" generation procedure, which may include
+* hashing a nonce value along with the private key leaves to produce the public
+* leaves, where the nonce is also used in the encryption protocol that produces
+* the private key leaf stream and is incremented upon each leaf value generated.
+*
+* Many things can be done to recover from such instances.  The genesis block is
+* the most important portion of the protocol/algorithm and should include
+* rules/values that allow one to prove against a signature that produces collisions
+* on a future chained WOTS public key.
+*
+* For example, we could generate an asymmetric recovery key and hash its public key to
+* include within the message of the genesis block.  If one needs to recover
+* at any point, you can pick the block in which you want to recover.
+* You can sign some value with your recovery key (say an index, the index of
+* the compromised block in question), then hash this
+* signature to become one of the private leaves in your WOTS private key leaf
+* set.
+*
+* Upon recovery, you just need to publish your competing signature and message
+* while revealing the recovery public key, signed value, and signature computed from
+* your asymmetric recovery private key (and maybe the index of where that hashed
+* signature lies within the WOTS private key leaf set).
+*
+* This is the ultimate recovery mechanism.
+*
+* 🙈🙉🙊
+*
+*
+* */
+
 
 class WOTSManager {
   static final WOTSManager _shared = WOTSManager._internal();
