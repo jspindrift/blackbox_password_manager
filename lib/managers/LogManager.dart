@@ -301,6 +301,7 @@ class LogManager {
 
   static const _minCreationTime = '2023-11-07T08:28:44.219169';
 
+  static const _logFileExpiryTimeInDays = 30;
   static const _logFileLimitSize = 1048576; // 1 MB , //10485760; // 10 MB in bytes
   static const _logFileLimitSize_1MB = 1048576; // 1 MB in bytes
   static const _logFileLimitSize_10MB = 10485760; // 10 MB in bytes
@@ -351,6 +352,8 @@ class LogManager {
   bool _deletedLogFile = false;
   bool _isSavingLogs = false;
 
+  String _logDataString = "";
+
   String _lastHash = "lastHash";
   String _lastMac = "lastMac";
   List<int> _logKeyBytes = [];
@@ -393,7 +396,7 @@ class LogManager {
     try {
       final logKeyHex = await _cryptor.readLogKeyAndSet();
       _logKeyBytes = base64.decode(logKeyHex);
-      logger.d("LogManager: initialize2: logKey: ${hex.encode(_logKeyBytes)}");
+      // logger.d("LogManager: initialize2: logKey: ${hex.encode(_logKeyBytes)}");
     } catch (e) {
       logger.e("LOG: Exception reading log key: $e");
 
@@ -412,15 +415,21 @@ class LogManager {
         logger.d("LOG: first time opening app");
       }
 
-      final logData = await _fileManager.readLogDataAppend();
-      final blockSplit = logData.split("\n");
-      logger.d("LOG: logData size: ${logData.length}");
+      _validLogs = await verifyLogFile();
+      logger.wtf("verifyLogFile: $_validLogs");
+
+      _logDataString = await _fileManager.readLogDataAppend();
+      final blockSplit = _logDataString.split("\n");
+      logger.d("LOG: logData size: ${_logDataString.length}");
 
       _blockHeight = blockSplit.length - 1;
       logger.d("LOG: _blockHeight: $_blockHeight");
 
+      _logsAreVerifiable = _blockHeight > 1;
+
       int index = 0;
       String appendedString = "";
+      List<int> expiredBlockNumbers = [];
 
       for (var block in blockSplit) {
         try {
@@ -428,15 +437,27 @@ class LogManager {
             break;
           }
 
-          final isBlock = Block.fromRawJson(block.trim());
-          if (isBlock != null) {
-            logger.d("LOG: decoded line: ${isBlock.toRawJson()}");
+          final thisBlock = Block.fromRawJson(block.trim());
+          if (thisBlock != null) {
+            // logger.d("LOG: decoded line: ${thisBlock.toRawJson()}");
             appendedString += block + "\n";
-            _blocks.add(isBlock);
+            _blocks.add(thisBlock);
+
+            /// expiration date of logs
+            final expiryBlockTimeLimit = Duration(days: _logFileExpiryTimeInDays);
+
+            /// keep Genesis block
+            if (thisBlock.blockNumber != 0) {
+              /// check for expired blocks and track by blockNumber
+              if (DateTime.now().subtract(expiryBlockTimeLimit).isAfter(DateTime.parse(thisBlock.time))) {
+                expiredBlockNumbers.add(thisBlock.blockNumber);
+                logger.d("LOG: shouldRemove: ${thisBlock.toRawJson()}");
+              }
+            }
           }
 
-          _lastHash = isBlock.hash;
-          _lastMac = isBlock.mac;
+          _lastHash = thisBlock.hash;
+          _lastMac = thisBlock.mac;
 
         } catch (e) {
           logger.e("error: $e\n...cant decode line: ${block.length}: ${block.toString()}");
@@ -483,18 +504,18 @@ class LogManager {
         index += 1;
       }
 
-      if (_logsAreVerifiable) {
-        _validLogs = !_hasInvalidLogs;
-      } else {
-        _validLogs = false;
-      }
+      // if (_logsAreVerifiable && !_validLogs) {
+      //   _validLogs = !_hasInvalidLogs;
+      // } else {
+      //   _validLogs = false;
+      // }
 
-      // print("_validLogs: $_validLogs");
+      await cleanUpLogs(expiredBlockNumbers, _validLogs);
 
-      _initialLogSizeInBytes = logData.length;
-      _initialLogSizeInKilobytes = logData.length / 1024;
-      _initialLogSizeInMegabytes = logData.length / 1048576;
-      _initialLogSizeInGigabytes = logData.length / 1073741824;
+      _initialLogSizeInBytes = _logDataString.length;
+      _initialLogSizeInKilobytes = _logDataString.length / 1024;
+      _initialLogSizeInMegabytes = _logDataString.length / 1048576;
+      _initialLogSizeInGigabytes = _logDataString.length / 1073741824;
       logger.d(
           'initialize log append retrieved data: $_initialLogSizeInBytes bytes, $_initialLogSizeInKilobytes kB, $_initialLogSizeInMegabytes MB, $_initialLogSizeInGigabytes Gb');
 
@@ -505,26 +526,13 @@ class LogManager {
         return;
       }
 
-      if (logData != null) {
-        if (logData.isNotEmpty) {
+      if (_logDataString != null) {
+        if (_logDataString.isNotEmpty) {
           logger.d(
               'is file size less than 1MB: ${_initialLogSizeInBytes <= _logFileLimitSize_1MB}');
 
           final appVersion = _settingsManager.versionAndBuildNumber();
           final startTime = DateTime.now().toIso8601String();
-
-          // final logHash = _hasher.sha256Hash(logData);
-          // final logKeyHex = hex.encode(_logKeyBytes);
-          // print('logKeyHex _cryptor: ${logKeyHex}');
-
-          // var logHexMacEncoded = "";
-          // try {
-          //   final logHexMac = await _digester.hmac(logHash, logKeyHex);
-          //   logHexMacEncoded = hex.encode(logHexMac);
-          //   // print('logHexMac: ${logHexMacEncoded}');
-          // } catch (e) {
-          //   logger.e("Exception: $e");
-          // }
 
           /// TODO: diff logging
           _logLineCount += 1;
@@ -562,6 +570,204 @@ class LogManager {
     }
   }
 
+  Future<void> cleanUpLogs(List<int> expiredBlockNumbers, bool hasValidLogFile) async {
+    /// prune expired blocks and recalculate hashes and macs
+    /// make sure we have valid logs first, otherwise should preserve
+    /// unless file gets too big
+
+    logger.d("cleanUpLogs: inputs: ($expiredBlockNumbers, $hasValidLogFile)");
+    var didModifyLogs = false;
+    var modifyAppendedString = _logDataString;
+    List<Block> newBlockList = [];
+
+
+    if (expiredBlockNumbers.isNotEmpty && hasValidLogFile) {
+      didModifyLogs = true;
+      logger.wtf("cleaning expired logs");
+      List<Block> removeBlocks = [];
+      for (var rblock in _blocks) {
+        if (expiredBlockNumbers.contains(rblock.blockNumber)) {
+          removeBlocks.add(rblock);
+        }
+      }
+
+      /// remove the expired blocks here
+      _blocks.removeWhere((e) => removeBlocks.contains(e));
+
+      _blocks.sort((a, b) {
+        return a.time.compareTo(b.time);
+      });
+
+      /// create new block list with genesis as first
+      newBlockList = [_blocks.first];
+
+      /// initialize new log string with genesis block
+      modifyAppendedString = _blocks.first.toRawJson() + "\n";
+      var checkIndex = 0;
+      for (var newBlock in _blocks) {
+        /// skip Genesis block
+        if (checkIndex == 0) {
+          checkIndex++;
+          continue;
+        }
+
+        final lastHash = _blocks[checkIndex-1].hash;
+        final lastMac = _blocks[checkIndex-1].mac;
+
+        final modifiedLogLine = BasicLogLine(
+          time:  newBlock.logList.list.last.time, //DateTime.now().toIso8601String(),
+          index: newBlock.logList.list.last.index + 1,
+          callingFunction:
+          "LogManager.initialize.modifyBlock",
+          message: "prevHash: $lastHash, prevMac: $lastMac",
+        );
+
+        BasicLogList newLogList = BasicLogList(list: newBlock.logList.list);
+        newLogList.list.add(modifiedLogLine);
+
+        final logLineJsonString = newLogList.toRawJson();
+        final blockHash = _hasher.sha256Hash(logLineJsonString);
+
+        final logKey = base64.encode(_logKeyBytes);
+        final blockMac = await _digester.hmac(blockHash, logKey);
+        // logger.d('saving blockHash: ${blockHash}\nblockMac: ${hex.encode(blockMac)}');
+
+        Block newBlock2 = Block(
+          blockNumber: checkIndex,
+          time: newBlock.time,
+          logList: newLogList,
+          hash: blockHash,
+          mac: hex.encode(blockMac),
+        );
+
+        // logger.d('saving newBlock: ${newBlock2.toRawJson()}');
+        newBlockList.add(newBlock2);
+
+        modifyAppendedString += newBlock2.toRawJson() + "\n";
+        checkIndex++;
+      }
+
+      _blocks = newBlockList;
+      _blockHeight = _blocks.length;
+      _initialLogSizeInBytes = modifyAppendedString.length;
+
+      _blocks.sort((a, b) {
+        return a.time.compareTo(b.time);
+      });
+    }
+
+
+    /// clean up logs if we go over size limit
+    if (_initialLogSizeInBytes >= _logFileLimitSize) {
+      if (!didModifyLogs) {
+        didModifyLogs = true;
+
+        _blocks.sort((a, b) {
+          return a.time.compareTo(b.time);
+        });
+      }
+
+      logger.wtf("cleaning logs over size limit");
+
+      final sizeDifference = _initialLogSizeInBytes - _logFileLimitSize;
+
+      modifyAppendedString = _blocks.first.toRawJson() + "\n";
+
+      var sumBlockSizes = modifyAppendedString.length;
+      List<Block> removeBlocks = [];
+      for (var rblock in _blocks) {
+        if (rblock == _blocks.first) {
+          continue;
+        }
+        /// check sizes and add tolerance
+        if (sizeDifference + 4096 > sumBlockSizes) {
+          sumBlockSizes += rblock.toRawJson().length;
+          removeBlocks.add(rblock);
+        } else {
+          break;
+        }
+      }
+
+      logger.wtf("cleaning logs over size limit: remove: ${removeBlocks.length}");
+
+      /// remove the blocks here
+      _blocks.removeWhere((e) => removeBlocks.contains(e));
+
+      /// create new block list with genesis as first
+      newBlockList = [_blocks.first];
+
+      /// initialize new log string with genesis block
+      var checkIndex = 0;
+      for (var newBlock in _blocks) {
+        /// skip Genesis block
+        if (checkIndex == 0) {
+          checkIndex++;
+          continue;
+        }
+
+        final lastHash = _blocks[checkIndex-1].hash;
+        final lastMac = _blocks[checkIndex-1].mac;
+
+        final modifiedLogLine = BasicLogLine(
+          time: newBlock.logList.list.last.time,// DateTime.now().toIso8601String(),
+          index: newBlock.logList.list.last.index + 1,
+          callingFunction:
+          "LogManager.initialize.modifyBlock",
+          message: "prevHash: $lastHash, prevMac: $lastMac",
+        );
+
+        BasicLogList newLogList = BasicLogList(list: newBlock.logList.list);
+        newLogList.list.add(modifiedLogLine);
+
+        final logLineJsonString = newLogList.toRawJson();
+        final blockHash = _hasher.sha256Hash(logLineJsonString);
+
+        final logKey = base64.encode(_logKeyBytes);
+        final blockMac = await _digester.hmac(blockHash, logKey);
+        // logger.d('saving blockHash: ${blockHash}\nblockMac: ${hex.encode(blockMac)}');
+
+        Block newBlock2 = Block(
+          blockNumber: checkIndex,
+          time: newBlock.time,
+          logList: newLogList,
+          hash: blockHash,
+          mac: hex.encode(blockMac),
+        );
+
+        newBlockList.add(newBlock2);
+        modifyAppendedString += newBlock2.toRawJson() + "\n";
+        checkIndex++;
+      }
+      // logLongMessage("modifyAppendedString: $modifyAppendedString");
+      logger.wtf("cleaning logs over size limit: new modifyAppendedString length: ${modifyAppendedString.length}");
+    }
+
+
+    if (didModifyLogs) {
+      logger.wtf("WTF whats the deal?");
+      /// delete current log file
+      await _fileManager.clearLogFileAppend();
+
+      logger.wtf("WTF whats the deal? $modifyAppendedString");
+
+      /// write new modified log blocks
+      await _fileManager
+          .writeLogDataAppend(modifyAppendedString);
+
+      logger.wtf("WTF whats the deal? newBlockList: ${newBlockList.length}");
+      _blocks = newBlockList;
+      _blockHeight = _blocks.length;
+      _logDataString = await _fileManager.readLogDataAppend();
+      // logLongMessage("new modified logData: $logData");
+
+      _blocks.sort((a, b) {
+        return a.time.compareTo(b.time);
+      });
+
+      final validModifiedLogFile = await verifyLogFile();
+      logger.wtf("validModifiedLogFile: $validModifiedLogFile");
+    }
+  }
 
   /// create the first block in our chain.
   void _createFirstBlock() async {
@@ -669,8 +875,6 @@ class LogManager {
 
     _isSavingLogs = true;
 
-
-
     try {
       final timestamp = DateTime.now();
 
@@ -709,9 +913,8 @@ class LogManager {
 
             final logKey = base64.encode(_cryptor.logSecretKeyBytes);
             final blockMac = await _digester.hmac(blockHash, logKey);
-
-            logger.d('saving blockHash: ${blockHash}');
-            logger.d('saving block mac: ${hex.encode(blockMac)}');
+            // logger.d('saving blockHash: ${blockHash}');
+            // logger.d('saving block mac: ${hex.encode(blockMac)}');
 
             if (blockHash.isEmpty) {
               logger.wtf("blockHash is EMPTY");
@@ -738,28 +941,9 @@ class LogManager {
             _initialLogSizeInBytes = logDataToAppend.length + _initialLogSizeInBytes;
             logger.wtf("new _initialLogSizeInBytes: ${_initialLogSizeInBytes}");
 
-            if (_initialLogSizeInBytes >= _logFileLimitSize) {
-              if (_logFileLimitSize_10MB >= _logFileLimitSize) {
-                /// shoudn't happen
-                logger.w("LogFile Size Limit Reached - DELETING");
-                _basicLogLineList.list = [];
-                _isSavingLogs = false;
-                _initialLogSizeInBytes = 0;
-                deleteLogFile();
-                return;
-              }
-              /// shoudn't happen
-              logger.w("LogFile Size Limit Reached");
-              _basicLogLineList.list = [];
-              _isSavingLogs = false;
-              return;
-            }
-
             /// write logs
             await _fileManager
                 .writeLogDataAppend(logDataToAppend);
-
-            // _settingsManager.incrementSessionNumber();
 
             _logLineCount = 0;
             _basicLogLineList.list = [];
@@ -787,7 +971,7 @@ class LogManager {
               lastMac = _lastMac;
             }
 
-            logger.d("LOG: lastHash: ${_lastHash}");
+            // logger.d("LOG: lastHash: ${_lastHash}");
 
             _logLineCount += 1;
 
@@ -833,8 +1017,8 @@ class LogManager {
 
             final logKey = base64.encode(_logKeyBytes);
             final blockMac = await _digester.hmac(blockHash, logKey);
-            logger.d('saving blockHash: ${blockHash}');
-            logger.d('saving block mac: ${hex.encode(blockMac)}');
+            // logger.d('saving blockHash: ${blockHash}');
+            // logger.d('saving block mac: ${hex.encode(blockMac)}');
 
             if (blockHash.isEmpty) {
               logger.wtf("blockHash is EMPTY");
@@ -861,28 +1045,9 @@ class LogManager {
             _initialLogSizeInBytes = logDataToAppend.length + _initialLogSizeInBytes;
             // logger.wtf("new _initialLogSizeInBytes: ${_initialLogSizeInBytes}");
 
-            if (_initialLogSizeInBytes >= _logFileLimitSize) {
-              if (_logFileLimitSize_10MB >= _logFileLimitSize) {
-                /// shoudn't happen
-                logger.w("LogFile Size Limit Reached - DELETING");
-                _basicLogLineList.list = [];
-                _isSavingLogs = false;
-                deleteLogFile();
-                _initialLogSizeInBytes = 0;
-                return;
-              }
-              /// shoudn't happen
-              logger.w("LogFile Size Limit Reached");
-              _basicLogLineList.list = [];
-              _isSavingLogs = false;
-              return;
-            }
-
             /// write/append log data
             await _fileManager
                 .writeLogDataAppend(logDataToAppend);
-
-            // _settingsManager.incrementSessionNumber();
 
             _logLineCount = 0;
             _isSavingLogs = false;
@@ -955,22 +1120,22 @@ class LogManager {
 
   /// verify the log files entries using the log key and block's
   /// previous hash and mac entries
-  Future<bool?> verifyLogFile() async {
+  Future<bool> verifyLogFile() async {
     logger.d("verifyLogFile");
     try {
-      final logs = await _fileManager.readLogDataAppend();
-      if (logs != null && logs.isNotEmpty) {
-        _latestLogSizeInBytes = logs.length;
-        _initialLogSizeInBytes = logs.length;
-        _initialLogSizeInKilobytes = logs.length / 1024;
-        _initialLogSizeInMegabytes = logs.length / 1048576;
-        _initialLogSizeInGigabytes = logs.length / 1073741824;
+      _logDataString = await _fileManager.readLogDataAppend();
+      if (_logDataString != null && _logDataString.isNotEmpty) {
+        _latestLogSizeInBytes = _logDataString.length;
+        _initialLogSizeInBytes = _logDataString.length;
+        _initialLogSizeInKilobytes = _logDataString.length / 1024;
+        _initialLogSizeInMegabytes = _logDataString.length / 1048576;
+        _initialLogSizeInGigabytes = _logDataString.length / 1073741824;
         logger.d('initialize retrieved data: $_initialLogSizeInBytes bytes\n'
                 '$_initialLogSizeInKilobytes kB\n$_initialLogSizeInMegabytes MB\n'
                 ' $_initialLogSizeInGigabytes Gb');
 
 
-        final blockSplit = logs.split("\n");
+        final blockSplit = _logDataString.split("\n");
         final logKey = base64.encode(_cryptor.logSecretKeyBytes);
 
         // blocks that have a bug reported message in them from the app

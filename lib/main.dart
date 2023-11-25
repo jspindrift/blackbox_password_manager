@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
+
 import '../models/KeyItem.dart';
 import '../models/NoteItem.dart';
 import '../screens/active_encryption_screen.dart';
@@ -9,8 +12,6 @@ import '../screens/peer_public_key_list_screen.dart';
 import '../screens/rekey_auth_screen.dart';
 import '../screens/show_log_detail2_screen.dart';
 import '../screens/welcome_all_list_screen.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 import '../managers/LogManager.dart';
 import './screens/change_password_screen.dart';
 import './screens/add_password_screen.dart';

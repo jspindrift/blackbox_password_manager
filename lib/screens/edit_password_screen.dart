@@ -2807,7 +2807,13 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
     } else if (_selectedSegment == PasswordType.mnemonic) {
       if (_numberWordsLabel == 12) {
         final mnemonic = bip39.generateMnemonic(strength: 128);
-
+        // var a = mnemonic;
+        // final randNumber = 269;
+        // for (var index = 0; index < randNumber; index++) {
+        //   a = _cryptor.sha256(a);
+        // }
+        // final words = bip39.entropyToMnemonic(a.substring(0,32));
+//         newPassword = _delimeterConversion(words);
         newPassword = _delimeterConversion(mnemonic);
       } else if (_numberWordsLabel == 15) {
         final mnemonic = bip39.generateMnemonic(strength: 160);
@@ -2827,14 +2833,19 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         newPassword = _delimeterConversion(mnemonic);
       } else {
         final mnemonic = bip39.generateMnemonic(strength: 256);
-
+        // var a = mnemonic;
+        // final randNumber = 269;
+        // for (var index = 0; index < randNumber; index++) {
+        //   a = _cryptor.sha256(a);
+        // }
+        // final words = bip39.entropyToMnemonic(a);
+//         newPassword = _delimeterConversion(words);
         newPassword = _delimeterConversion(mnemonic);
       }
       bool isValid = bip39.validateMnemonic(newPassword);
       state(() {
         _isBip39Valid = isValid;
       });
-      // print('isValid: $isValid');
     } else {
       newPassword = _randomGenerator.randomPassword(
           letters: false,
@@ -2843,9 +2854,10 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
           specialChar: false,
           uppercase: false);
     }
-    // print('random password: ${newPassword.length}: $newPassword');
 
+    // _logManager.logger.d('random password: ${newPassword.length}: $newPassword');
     double strength = estimatePasswordStrength(newPassword);
+
     state(() {
       _randomPassword = newPassword;
       _randomPasswordStrength = strength;

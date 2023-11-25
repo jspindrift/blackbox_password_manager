@@ -287,7 +287,7 @@ class Cryptor {
   }
 
   void setLogKeyBytes(List<int> bytes) {
-    logger.d("LOG: setLogKeyBytes: ${hex.encode(bytes)}");
+    // logger.d("LOG: setLogKeyBytes: ${hex.encode(bytes)}");
     _logSecretKeyBytes = bytes;
     _logSecretKey = SecretKey(bytes);
   }

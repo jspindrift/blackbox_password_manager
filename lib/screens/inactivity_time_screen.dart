@@ -98,8 +98,6 @@ class _InactivityTimeScreenState extends State<InactivityTimeScreen> {
                     : null,
                 checkColor: _isDarkModeEnabled ? Colors.black : null,
                 onChanged: (value) {
-                  // print("$value");
-
                   onTimeSelected(index);
                 },
               ),

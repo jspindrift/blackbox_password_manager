@@ -527,13 +527,11 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                             : Colors.redAccent,
                       ),
                       onPressed: () async {
-                        await _runPostQuantumIntegrityTestWithReset();
-                        // await _runSimpleOverlapWOTSTestWithReset();
+                        // await _runPostQuantumIntegrityTestWithReset();
                       },
                     ),
                     onTap: () async {
-                      await _runPostQuantumIntegrityTest();
-                      // await _runSimpleOverlapWOTSTest();
+                      // await _runPostQuantumIntegrityTest();
                     },
                   ),
                 ),
@@ -571,34 +569,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                   ),
                 ),
               ),
-              // Divider(
-              //   color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
-              // ),
-              // Visibility(
-              //   visible: Platform.isIOS,
-              //   child: Padding(
-              //     padding: EdgeInsets.all(12.0),
-              //     child: OutlinedButton(
-              //       style: OutlinedButton.styleFrom(
-              //         side: _isDarkModeEnabled
-              //             ? BorderSide(color: Colors.greenAccent)
-              //             : null,
-              //       ),
-              //       child: Text(
-              //         'Erase iCloud Data',
-              //         style: TextStyle(
-              //           color: _isDarkModeEnabled
-              //               ? Colors.greenAccent
-              //               : Colors.redAccent,
-              //         ),
-              //       ),
-              //       onPressed: () {
-              //         logManager.logger.d("TODO: Delete iCloud Data");
-              //         _showConfirmDeleteIcloudDataDialog();
-              //       },
-              //     ),
-              //   ),
-              // ),
               Visibility(
                 visible: Platform.isIOS,
                 child: Divider(
@@ -633,7 +603,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
       bottomNavigationBar: BottomNavigationBar(
         elevation: 2.0,
         backgroundColor: _isDarkModeEnabled ? Colors.black12 : Colors.white,
-        // fixedColor: Colors.white,
         currentIndex: _selectedIndex,
         selectedItemColor:
             _isDarkModeEnabled ? Colors.white : Colors.blueAccent,
@@ -736,35 +705,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     _signCounter++;
   }
 
-  // void _runTestsWithReset() async {
-  //   _resetTestVariables();
-  //
-  //   _runTests();
-  // }
-  //
-  // /// timed tests for creating multiple sets of WOTS keys
-  // Future<void> _runWOTSTimingTest() async {
-  //   final startTime = DateTime.now();
-  //
-  //   final kek = List.filled(32, 0);
-  //   final numTests = 32;
-  //
-  //   List<String> topHashes = [];
-  //
-  //   /// generate keys
-  //   for (var index = 0; index < numTests; index++) {
-  //     await _wotsManager.createTopPubKey(kek, index);
-  //     topHashes.add(_wotsManager.topPublicKey);
-  //   }
-  //
-  //   _logManager.logLongMessage("topHashes: ${topHashes}");
-  //
-  //   final endTime = DateTime.now();
-  //   final timeDiff = endTime.difference(startTime);
-  //   _logManager.logger.d("_runWOTSTimingTest: time diff: ${timeDiff.inMilliseconds} ms\n"
-  //       "${timeDiff.inMilliseconds/numTests}");
-  // }
-
   /// hybrid asymmetric and WOTS signing
   Future<void> _runPostQuantumIntegrityTest() async {
     _logManager.logger.d("_runPostQuantumTest");
@@ -772,7 +712,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     // await _postQuantumManager.postQuantumProjectIntegrityTest(256);
 
     /// TODO: uncomment this after to verify
-    await _postQuantumManager.postQuantumProjectIntegrityTestVerify();
+    // await _postQuantumManager.postQuantumProjectIntegrityTestVerify();
   }
 
   Future<void> _runPostQuantumIntegrityTestWithReset() async {

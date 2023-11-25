@@ -1776,27 +1776,36 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
     } else if (_selectedSegment == PasswordType.mnemonic) {
       if (_numberWordsLabel == 12) {
         final mnemonic = bip39.generateMnemonic(strength: 128);
-
+        // var a = mnemonic;
+        // final randNumber = 269;
+        // for (var index = 0; index < randNumber; index++) {
+        //   a = _cryptor.sha256(a);
+        // }
+        // final words = bip39.entropyToMnemonic(a.substring(0,32));
+//         newPassword = _delimeterConversion(words);
         newPassword = _delimeterConversion(mnemonic);
       } else if (_numberWordsLabel == 15) {
         final mnemonic = bip39.generateMnemonic(strength: 160);
-
         newPassword = _delimeterConversion(mnemonic);
       } else if (_numberWordsLabel == 18) {
         final mnemonic = bip39.generateMnemonic(strength: 192);
-
         newPassword = _delimeterConversion(mnemonic);
       } else if (_numberWordsLabel == 21) {
         final mnemonic = bip39.generateMnemonic(strength: 224);
-
         newPassword = _delimeterConversion(mnemonic);
       } else if (_numberWordsLabel == 24) {
         final mnemonic = bip39.generateMnemonic(strength: 256);
-
+//         final mnemonic = bip39.generateMnemonic(strength: 256);
+//         var a = mnemonic;
+//         final randNumber = 269;
+//         for (var index = 0; index < randNumber; index++) {
+//           a = _cryptor.sha256(a);
+//         }
+//         final words = bip39.entropyToMnemonic(a);
+//         newPassword = _delimeterConversion(words);
         newPassword = _delimeterConversion(mnemonic);
       } else {
         final mnemonic = bip39.generateMnemonic(strength: 256);
-
         newPassword = _delimeterConversion(mnemonic);
       }
       bool isValid = bip39.validateMnemonic(newPassword);
@@ -1809,9 +1818,11 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
           numbers: true,
           passwordLength: _numberPinDigits,
           specialChar: false,
-          uppercase: false);
+          uppercase: false,
+      );
     }
 
+    // _logManager.logger.d('random password: ${newPassword.length}: $newPassword');
     double strength = estimatePasswordStrength(newPassword);
 
     state(() {

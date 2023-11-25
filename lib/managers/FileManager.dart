@@ -385,8 +385,7 @@ class FileManager {
 
   Future<File> clearTempVaultFile() async {
     final file = await _localTempVaultFile;
-
-    print("clearTempVaultFile: $file");
+    // print("clearTempVaultFile: $file");
     // Write the file
     return file.writeAsString("", mode: FileMode.writeOnly);
     // return file.writeAsString(data, mode: FileMode.append);

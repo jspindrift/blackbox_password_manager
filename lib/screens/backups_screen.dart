@@ -1314,7 +1314,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
         final idString =
             "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${backupName}";
-        _logManager.logger.d("idString: $idString ");
+        // _logManager.logger.d("idString: $idString ");
 
         var encryptedBlob = await _cryptor.encryptBackupVault(testItems, idString);
         // _logManager.logger.d('encryptedBlob: ${encryptedBlob.length}: $encryptedBlob');
@@ -1323,7 +1323,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         final recoveryKeys = await _keyManager.getRecoveryKeyItems();
 
         final deviceDataString = _settingsManager.deviceManager.deviceData.toString();
-        _logManager.logger.d("deviceDataString: $deviceDataString");
+        // _logManager.logger.d("deviceDataString: $deviceDataString");
         // _logManager.logLongMessage("deviceDataString: $deviceDataString");
         // _logManager.logger.d("deviceData[utsname.version:]: ${_settingsManager._deviceManager.deviceData["utsname.version:"]}");
 
@@ -1379,7 +1379,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         backupItem.mac = backupMac;
         // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
-        _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
+        // _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
         // log("backupItemJson: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
         final backupItemString = backupItem.toRawJson();
@@ -1484,8 +1484,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
         final idString =
             "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${backupName}";
-        _logManager.logger.d("idString: $idString ");
-
+        // _logManager.logger.d("idString: $idString ");
 
         // _logManager.logger.d('items: ${items.toJson()}');
         // _logManager.logger.d('items.toString: ${items.toString().length}: ${items.toString()}');
@@ -1555,7 +1554,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
         // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
-        _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
+        // _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
         // log("backupItemJson: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
         final backupItemString = backupItem.toRawJson();
@@ -1942,7 +1941,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
       final backupMac = await _cryptor.hmac256(backupItem.toRawJson());
       backupItem.mac = backupMac;
 
-      _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
+      // _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
       // print("passwordItems: $passwordItems");
       // print("genericItems: $items");
