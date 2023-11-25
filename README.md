@@ -4,7 +4,7 @@ A new unique open source password manager for iOS and Android written in Flutter
 
 Note: icons provided by icons8.com 
 
-If you are a Flutter developer, I am basically taking the keys to a GT-R sports car, starting it, and telling you to hop in and floor it. 😃
+If you are a Flutter developer, I am basically taking the keys to a GT-R sports car, starting it, and telling you to hop in and floor it. 😃...But you should learn manual first.
 
 ## About Blackbox Password Manager 
 
