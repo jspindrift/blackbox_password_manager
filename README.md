@@ -91,6 +91,10 @@ important to note that geo-encryption can indeed be brute forced, but since the 
 is encrypted itself within the password manager it can only be brute forced if someone already has access
 to the unencrypted vault itself.
 
+## Help a fellow out
+
+https://www.buymeacoffee.com/jspindrift
+
 
 ## Getting Started with Flutter                                                               
                                                                                         
