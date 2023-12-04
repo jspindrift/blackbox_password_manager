@@ -302,10 +302,8 @@ class LogManager {
   static const _minCreationTime = '2023-11-07T08:28:44.219169';
 
   static const _logFileExpiryTimeInDays = 30;
-  static const _logFileLimitSize = 1048576; // 1 MB , //10485760; // 10 MB in bytes
+  static const _logFileLimitSize = 4393216; //4 MB //1048576; // 1 MB , //10485760; // 10 MB in bytes
   static const _logFileLimitSize_1MB = 1048576; // 1 MB in bytes
-  static const _logFileLimitSize_10MB = 10485760; // 10 MB in bytes
-  static const _logFileLimitSize_100MB = 104857600; // 100 MB in bytes
 
   int _initialLogSizeInBytes = 0;
   double _initialLogSizeInKilobytes = 0;
@@ -319,11 +317,6 @@ class LogManager {
   }
 
   bool _deletedLogs = false;
-
-  int _currentBlockLogSizeInBytes = 0;
-  double _currentBlockLogSizeInKilobytes = 0;
-  double _currentBlockLogSizeInMegabytes = 0;
-  double _currentBlockLogSizeInGigabytes = 0;
 
   BasicLogList _basicLogLineList = BasicLogList(list: []);
 
@@ -346,9 +339,6 @@ class LogManager {
   int _logLineCount = 0;
 
   bool _validLogs = false;
-  bool _hasInvalidLogs = false;
-  bool _logsAreVerifiable = false;
-
   bool _deletedLogFile = false;
   bool _isSavingLogs = false;
 
@@ -425,8 +415,6 @@ class LogManager {
       _blockHeight = blockSplit.length - 1;
       logger.d("LOG: _blockHeight: $_blockHeight");
 
-      _logsAreVerifiable = _blockHeight > 1;
-
       int index = 0;
       String appendedString = "";
       List<int> expiredBlockNumbers = [];
@@ -463,7 +451,6 @@ class LogManager {
           logger.e("error: $e\n...cant decode line: ${block.length}: ${block.toString()}");
           final block2 = block.split(", ");
           if (block2.length > 1) {
-            _logsAreVerifiable = true;
             logger.d("block2 first: ${block2.first}");
             logger.d("block2 last: ${block2.last}");
 
@@ -483,7 +470,6 @@ class LogManager {
             // logger.d('logMac==MAC: ${logMacHex==macCheck}');
 
             if (logHash != hashCheck || logMacHex != macCheck) {
-              _hasInvalidLogs = true;
               logger.w(
                   "invalid hash/digest[$index]: $hashCheck, $logHash, $logMacHex");
             }
@@ -503,12 +489,6 @@ class LogManager {
         }
         index += 1;
       }
-
-      // if (_logsAreVerifiable && !_validLogs) {
-      //   _validLogs = !_hasInvalidLogs;
-      // } else {
-      //   _validLogs = false;
-      // }
 
       await cleanUpLogs(expiredBlockNumbers, _validLogs);
 
@@ -998,10 +978,6 @@ class LogManager {
             _basicLogLineList.list.add(logLine2);
 
             final logLineJsonString = _basicLogLineList.toRawJson();
-
-            _currentBlockLogSizeInBytes = logLineJsonString.length;
-            _currentBlockLogSizeInKilobytes = logLineJsonString.length / 1024;
-
             final blockHash = _hasher.sha256Hash(logLineJsonString);
 
             /// check for log key

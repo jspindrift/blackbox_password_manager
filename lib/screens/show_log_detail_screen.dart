@@ -21,6 +21,8 @@ class ShowLogDetailScreen extends StatefulWidget {
 class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
   bool _isDarkModeEnabled = false;
 
+  late ScrollController _controller = ScrollController();
+
   final fileManager = FileManager();
   final _logManager = LogManager();
   final settingsManager = SettingsManager();
@@ -28,7 +30,6 @@ class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
   @override
   void initState() {
     super.initState();
-
     _logManager.log("ShowLogDetailScreen", "initState", "initState");
 
     _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
@@ -48,12 +49,42 @@ class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
             Navigator.of(context).pop();
           },
         ),
+        actions: [
+          Visibility(
+            visible: true,
+            child: IconButton(
+              icon: Icon(Icons.upload),
+              color: _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
+              onPressed: () async {
+                _controller.animateTo(
+                  _controller.position.minScrollExtent,
+                  duration: Duration(seconds: 1),
+                  curve: Curves.ease,
+                );
+              },
+            ),
+          ),
+          Visibility(
+            visible: true,
+            child: IconButton(
+              icon: Icon(Icons.download_outlined),
+              color: _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
+              onPressed: () async {
+                _controller.animateTo(
+                  _controller.position.maxScrollExtent,
+                  duration: Duration(seconds: 1),
+                  curve: Curves.ease,
+                );
+              },
+            ),
+          ),
+        ],
       ),
-      body: Scrollbar(
-        child: ListView.separated(
+      body: ListView.separated(
           separatorBuilder: (context, index) => Divider(
             color: _isDarkModeEnabled ? Colors.greenAccent : null,
           ),
+          controller: _controller,
           itemCount: widget.block.logList.list.length,
           itemBuilder: (context, index) {
             // print('index: $index');
@@ -179,7 +210,6 @@ class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
             );
           },
         ),
-      ),
     );
   }
 

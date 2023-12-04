@@ -23,6 +23,8 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObse
 
   bool _isDarkModeEnabled = false;
 
+  late ScrollController _controller = ScrollController();
+
   final _fileManager = FileManager();
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
@@ -216,12 +218,43 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObse
             Navigator.of(context).pop();
           },
         ),
+        actions: [
+          Visibility(
+            visible: true,
+            child: IconButton(
+              icon: Icon(Icons.upload),
+              color: _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
+              onPressed: () async {
+                _controller.animateTo(
+                  _controller.position.minScrollExtent,
+                  duration: Duration(seconds: 1),
+                  curve: Curves.ease,
+                );
+              },
+            ),
+          ),
+          Visibility(
+            visible: true,
+            child: IconButton(
+              icon: Icon(Icons.download_outlined),
+              color: _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
+              onPressed: () async {
+                _controller.animateTo(
+                  _controller.position.maxScrollExtent,
+                  duration: Duration(seconds: 1),
+                  curve: Curves.ease,
+                );
+              },
+            ),
+          ),
+        ],
       ),
       body: ListView.separated(
         separatorBuilder: (context, index) => Divider(
           color: _isDarkModeEnabled ? Colors.greenAccent : null,
         ),
         itemCount: _blocks.length,
+        controller: _controller,
         itemBuilder: (context, index) {
           return ListTile(
             isThreeLine: timeLapses[index].isNotEmpty ? true : false,
