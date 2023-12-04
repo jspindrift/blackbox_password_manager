@@ -135,7 +135,6 @@ class PasswordItem {
       if (isBip39) {
         final seed = cryptor.mnemonicToEntropy(password);
 
-        /// TODO: add geo-lock
         if (isGeoLocked) {
           geoItem = await doGeoLockEncryption(geoLocation, seed);
           encryptedPassword = (geoItem?.password)!;
@@ -144,7 +143,6 @@ class PasswordItem {
           encryptedPassword = await cryptor.encrypt(seed);
         }
       } else {
-        /// TODO: add geo-lock
         if (isGeoLocked) {
           geoItem = await doGeoLockEncryption(geoLocation, password);
           encryptedPassword = (geoItem?.password)!;

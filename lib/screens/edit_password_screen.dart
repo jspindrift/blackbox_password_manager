@@ -184,8 +184,8 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         .listen((geoLocationUpdate) async {
       final userLocationString =
           "position: ${geoLocationUpdate.userLocation.latitude}, ${geoLocationUpdate.userLocation.longitude}";
-      _logManager.logger.d(
-          "EditPassword: onGeoLocationUpdate: userLocationString: $userLocationString");
+      // _logManager.logger.d(
+      //     "EditPassword: onGeoLocationUpdate: userLocationString: $userLocationString");
       if (!_isInitiallyGeoLocked) {
         _logManager.logger.d("not initially geo locked, returning");
         return;
@@ -202,10 +202,10 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
           final decryptedPassword = await decryptGeoLock(geoLocationUpdate);
 
           if (decryptedPassword.isNotEmpty) {
-            _logManager.logger.d("debug: geoLock: We are still within range: $decryptedPassword");
+            // _logManager.logger.d("debug: geoLock: We are still within range: $decryptedPassword");
 
             _isBip39Valid = (_passwordItem?.isBip39)!;
-            _logManager.logger.d("debug: geoLock: We are still within range: $_isBip39Valid");
+            // _logManager.logger.d("debug: geoLock: We are still within range: $_isBip39Valid");
 
             if (_isBip39Valid) {
               final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
@@ -1443,27 +1443,6 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                           ),
                         );
                       }
-
-                      /// TODO: add this up higher in code
-                      // return GridView.builder(
-                      //     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      //       crossAxisCount: 4,
-                      //     ),
-                      //     itemCount: _passwordTags.length+1,
-                      //     itemBuilder: (BuildContext context, int index) {
-                      //       return Padding(
-                      //         padding: EdgeInsets.all(4),
-                      //         child: Container(
-                      //           height: 44,
-                      //           decoration: BoxDecoration(
-                      //             color: _isDarkModeEnabled ? Colors.greenAccent.withOpacity(0.25) : Colors.blueAccent.withOpacity(0.25),
-                      //             borderRadius: BorderRadius.circular(20),
-                      //           ),
-                      //           child: (index == 0 ? addTagItem : currentTagItem),
-                      //         ),
-                      //       );
-                      //     }
-                      // );
                       return Padding(
                         padding: EdgeInsets.all(4),
                         child: GestureDetector(

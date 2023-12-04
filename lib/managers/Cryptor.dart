@@ -2569,10 +2569,10 @@ class Cryptor {
         final iv_long = array[1];
 
         /// TODO: change this back after testing
-        if (!AppConstants.debugKeyData) {
-          logger.d("iv_lat: $iv_lat");
-          logger.d("iv_long: $iv_long");
-        }
+        // if (!AppConstants.debugKeyData) {
+        //   logger.d("iv_lat: $iv_lat");
+        //   logger.d("iv_long: $iv_long");
+        // }
 
         /// generate our 2 keys that are combined to form 1 encryption key
         final Ka = algorithm_nomac.newNonce();
@@ -2726,56 +2726,60 @@ class Cryptor {
     var foundKeys = false;
     var i = 0;
     // var j = 0;
-    for (var check_lat_tok in convertedLatTokens) {
-      // final lat_tok = convertedLatTokens.sublist(i * 16, i * 16 + 16);
-      if (foundKeys) {
-        break;
-      }
-      var j = 0;
-      for (var check_long_tok in convertedLongTokens) {
-        // final long_tok = convertedLongTokens.sublist(j * 16, j * 16 + 16);
-        j++;
+    try {
+      for (var check_lat_tok in convertedLatTokens) {
+        // final lat_tok = convertedLatTokens.sublist(i * 16, i * 16 + 16);
         if (foundKeys) {
           break;
         }
-        final test_geo_key = check_lat_tok + check_long_tok;
-        // logger.d("$test_geo_key");
-        final geoSecretKey_check = SecretKey(test_geo_key as List<int>);
+        var j = 0;
+        for (var check_long_tok in convertedLongTokens) {
+          // final long_tok = convertedLongTokens.sublist(j * 16, j * 16 + 16);
+          j++;
+          if (foundKeys) {
+            break;
+          }
+          final test_geo_key = check_lat_tok + check_long_tok;
+          // logger.d("$test_geo_key");
+          final geoSecretKey_check = SecretKey(test_geo_key as List<int>);
 
-        SecretBox sbox = SecretBox(ciphertext2, nonce: iv, mac: Mac(mac));
-        try {
-          final secretBoxGeoDecrypt = await algorithm2.decrypt(
-            sbox,
-            secretKey: geoSecretKey_check,
-          );
-
-          if (secretBoxGeoDecrypt != null) {
-            // logger.d("Found Keys: $check_lat_tok & $check_long_tok");
-            // logger.d("Found Keys indexes: $i && ${j-1}");
-            // WidgetUtils.showSnackBar(context, "$i, $j");
-            WidgetUtils.showToastMessage("${i}, ${j-1}", 1);
-
-            foundKeys = true;
-            dItem = DecryptedGeoLockItem(
-                index_lat: i,
-                index_long: j-1,
-                decryptedPassword: utf8.decode(secretBoxGeoDecrypt),
+          SecretBox sbox = SecretBox(ciphertext2, nonce: iv, mac: Mac(mac));
+          try {
+            final secretBoxGeoDecrypt = await algorithm2.decrypt(
+              sbox,
+              secretKey: geoSecretKey_check,
             );
 
-            return dItem;
+            if (secretBoxGeoDecrypt != null) {
+              // logger.d("Found Keys: $check_lat_tok & $check_long_tok");
+              // logger.d("Found Keys indexes: $i && ${j-1}");
+              // WidgetUtils.showSnackBar(context, "$i, $j");
+              WidgetUtils.showToastMessage("${i}, ${j - 1}", 1);
+
+              foundKeys = true;
+              dItem = DecryptedGeoLockItem(
+                index_lat: i,
+                index_long: j - 1,
+                decryptedPassword: utf8.decode(secretBoxGeoDecrypt),
+              );
+
+              return dItem;
+            }
+
+            // j++;
+          } catch (e) {
+            // logger.e("Exception Geo2: $e");
+            continue;
           }
 
-          // j++;
-        } catch (e) {
-          logger.e(e);
-          continue;
+          if (foundKeys) {
+            break;
+          }
         }
-
-        if (foundKeys) {
-          break;
-        }
+        i++;
       }
-      i++;
+    } catch (e) {
+      logger.wtf("Exception Geo: $e");
     }
 
     WidgetUtils.showToastMessage("Out Of Range!!!", 1);

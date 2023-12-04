@@ -162,7 +162,7 @@ class GeoLocationManager {
         Geolocator.getPositionStream(locationSettings: locationSettings)
             .listen((Position position) {
       _isLocationSettingsEnabled = true;
-      logger.d("position stream: $position");
+      // logger.d("position stream: $position");
 
       _sendLocationUpdate(position);
     });

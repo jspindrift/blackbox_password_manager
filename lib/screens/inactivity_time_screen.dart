@@ -14,6 +14,7 @@ class InactivityTimeScreen extends StatefulWidget {
   State<InactivityTimeScreen> createState() => _InactivityTimeScreenState();
 }
 
+
 class _InactivityTimeScreenState extends State<InactivityTimeScreen> {
   bool _isDarkModeEnabled = false;
 
@@ -31,6 +32,7 @@ class _InactivityTimeScreenState extends State<InactivityTimeScreen> {
     "30 minutes",
     "1 hour"
   ];
+
   static const _timeIndexSeconds = [
     60,
     2 * 60,

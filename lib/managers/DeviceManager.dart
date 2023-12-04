@@ -47,28 +47,13 @@ class DeviceManager {
         deviceData = _readIosDeviceInfo(await deviceInfoPlugin.iosInfo);
       }
 
-      // logger.d("device data: $deviceData");
-
-      // else if (Platform.isLinux) {
-      //   deviceData = _readLinuxDeviceInfo(await deviceInfoPlugin.linuxInfo);
-      // } else if (Platform.isMacOS) {
-      //   deviceData = _readMacOsDeviceInfo(await deviceInfoPlugin.macOsInfo);
-      // } else if (Platform.isWindows) {
-      //   deviceData =
-      //       _readWindowsDeviceInfo(await deviceInfoPlugin.windowsInfo);
-      // }
-
     } on PlatformException {
       deviceData = <String, dynamic>{
         'Error:': 'Failed to get platform version.'
       };
     }
 
-    // if (!mounted) return;
-
-    // setState(() {
     _deviceData = deviceData;
-    // });
   }
 
   Map<String, dynamic> _readAndroidBuildData(AndroidDeviceInfo build) {
