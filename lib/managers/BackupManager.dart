@@ -19,6 +19,13 @@ import 'LogManager.dart';
 import 'SettingsManager.dart';
 import 'FileManager.dart';
 
+/*
+* TODO: Keep a list of initialization vectors used to ensure no repetition
+* occurs.  Then when the lookup gets too inefficient we will just re-key
+* and re-encrypt all our data.
+*
+* */
+
 class BackupManager {
   static final BackupManager _shared = BackupManager._internal();
 
