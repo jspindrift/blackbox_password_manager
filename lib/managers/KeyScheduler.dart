@@ -43,12 +43,12 @@ class KeyScheduler {
 
   String _mainPrivExchangeKeySeed = "";
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
-  final fileManager = FileManager();
-  final deviceManager = DeviceManager();
-  final keyManager = KeychainManager();
-  final cryptor = Cryptor();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _fileManager = FileManager();
+  final _deviceManager = DeviceManager();
+  final _keyManager = KeychainManager();
+  final _cryptor = Cryptor();
 
   KeyScheduler._internal();
 
@@ -56,28 +56,28 @@ class KeyScheduler {
   Future<bool> startReKeyService(String password) async {
 
     final status = await _reKeyDeviceVault(password);
-    logManager.logger.d("startReKeyService: $status");
+    _logManager.logger.d("startReKeyService: $status");
 
     if (!status) {
       /// Recover and re-save temp backup vault into keychain
       ///
 
       final statusRecover = await _recoverVault();
-      logManager.logger.d("🔐🔑statusRecover Vault: $statusRecover");
+      _logManager.logger.d("🔐🔑statusRecover Vault: $statusRecover");
 
       return statusRecover;
     }
 
     // delete pin code and biometrics
     //
-    await keyManager.deletePinCode();
-    await keyManager.deleteBiometricKey();
+    await _keyManager.deletePinCode();
+    await _keyManager.deleteBiometricKey();
 
 
 
-    await fileManager.clearTempVaultFile();
+    await _fileManager.clearTempVaultFile();
 
-    logManager.logger.d("startReKeyService: success!!!!!!!!!!!🔐🔑");
+    _logManager.logger.d("startReKeyService: success!!!!!!!!!!!🔐🔑");
 
     return true;
   }
@@ -92,7 +92,7 @@ class KeyScheduler {
     final status3 = await _resaveAllOriginalIdentities();
     final status4 = await _resaveAllOriginalRecoveryKeys();
 
-    logManager.logger.d("status2: $status2, status3: $status3, status4: $status4");
+    _logManager.logger.d("status2: $status2, status3: $status3, status4: $status4");
 
     /// TODO: shouldnt have to re-save master password key data
     ///
@@ -103,13 +103,11 @@ class KeyScheduler {
 
 
   Future<bool> _reKeyDeviceVault(String password) async {
-    logManager.log("KeyScheduler", "reKeyDeviceVault", "hello");
-
+    _logManager.log("KeyScheduler", "reKeyDeviceVault", "hello");
 
     // /// First - check current password
-    // final status = await cryptor.deriveKeyCheck(password, keyManager.salt);
-    // logManager.logger.d("deriveKeyCheck: $status: salt(now): ${keyManager.salt}");
-
+    // final status = await _cryptor.deriveKeyCheck(password, _keyManager.salt);
+    // _logManager.logger.d("deriveKeyCheck: $status: salt(now): ${_keyManager.salt}");
 
     /// Second - backup current vault to temp file
     final tempVaultItem = await _getCurrentVaultBackup();
@@ -122,22 +120,20 @@ class KeyScheduler {
     _currentDeviceVault = tempVaultItem;
 
     final tempBackupItemString = tempVaultItem.toRawJson();
-    // logManager.logger.d("tempBackupItemString: $tempBackupItemString");
+    // _logManager.logger.d("tempBackupItemString: $tempBackupItemString");
 
     /// write to temp file
     try {
       // final status =
-      await fileManager.writeTempVaultData(tempBackupItemString);
+      await _fileManager.writeTempVaultData(tempBackupItemString);
     } catch(e) {
       return false;
     }
 
 
-
-
     /// Third - derive new key to re-key
-    final newEncryptedKey = await cryptor.deriveNewKeySchedule(password);
-    // logManager.logger.d("newEncryptedKey: $newEncryptedKey");
+    final newEncryptedKey = await _cryptor.deriveNewKeySchedule(password);
+    // _logManager.logger.d("newEncryptedKey: $newEncryptedKey");
 
     if (newEncryptedKey == null) {
       return false;
@@ -148,14 +144,14 @@ class KeyScheduler {
     ///
 
     final statusReKeyList = await reKeyItemList();
-    logManager.logger.d("statusReKeyItemList: $statusReKeyList");
+    _logManager.logger.d("statusReKeyItemList: $statusReKeyList");
 
     if (!statusReKeyList) {
       return false;
     }
 
     final statusReKeyMyId = await _reKeyMyDigitalId();
-    logManager.logger.d("statusReKeyMyDigitalId: $statusReKeyMyId");
+    _logManager.logger.d("statusReKeyMyDigitalId: $statusReKeyMyId");
 
     if (!statusReKeyMyId) {
       return false;
@@ -166,7 +162,7 @@ class KeyScheduler {
     ///
 
     final statusReKeyIds = await _reKeyIdentities();
-    logManager.logger.d("statusReKeyIds: $statusReKeyIds");
+    _logManager.logger.d("statusReKeyIds: $statusReKeyIds");
 
     if (!statusReKeyIds) {
       return false;
@@ -176,7 +172,7 @@ class KeyScheduler {
 
     /// Resave all our generic items into the keychain
     final statusReSaveAllItems = await _resaveAllReKeyedItems();
-    logManager.logger.d("statusReSaveAllItems: $statusReSaveAllItems");
+    _logManager.logger.d("statusReSaveAllItems: $statusReSaveAllItems");
 
     if (!statusReSaveAllItems) {
       return false;
@@ -189,11 +185,11 @@ class KeyScheduler {
       return false;
     }
 
-    final statusId = await keyManager.saveMyIdentity(
-      keyManager.vaultId,
+    final statusId = await _keyManager.saveMyIdentity(
+      _keyManager.vaultId,
       tempMyRKId.toRawJson(),
     );
-    logManager.logger.d("_reKeyedMyDigitalIdentity: statusId: $statusId");
+    _logManager.logger.d("_reKeyedMyDigitalIdentity: statusId: $statusId");
 
     if (!statusId) {
       return false;
@@ -204,7 +200,7 @@ class KeyScheduler {
     ///
 
     final statusReSaveIds = await _resaveAllReKeyedIdentities();
-    logManager.logger.d("statusReSaveIds: $statusReSaveIds");
+    _logManager.logger.d("statusReSaveIds: $statusReSaveIds");
 
     if (!statusReSaveIds) {
       return false;
@@ -214,7 +210,7 @@ class KeyScheduler {
     ///
 
     final statusReSaveRecoveryKeys = await _resaveAllReKeyedRecoveryKeys();
-    logManager.logger.d("statusReSaveRecoveryKeys: $statusReSaveRecoveryKeys");
+    _logManager.logger.d("statusReSaveRecoveryKeys: $statusReSaveRecoveryKeys");
 
     if (!statusReSaveRecoveryKeys) {
       return false;
@@ -224,8 +220,8 @@ class KeyScheduler {
     /// save new master password
     ///
 
-    final vaultId = keyManager.vaultId;
-    final rekeyId = keyManager.rekeyId;
+    final vaultId = _keyManager.vaultId;
+    final rekeyId = _keyManager.rekeyId;
 
     final newSalt = newEncryptedKey.salt;
     if (newSalt == null) {
@@ -233,7 +229,7 @@ class KeyScheduler {
     }
 
     /// TODO: check this function
-    // cryptor.setSecretSaltBytes(base64.decode(newSalt));
+    // _cryptor.setSecretSaltBytes(base64.decode(newSalt));
 
     KeyMaterial newKeyParams = KeyMaterial(
       id: vaultId,
@@ -241,37 +237,37 @@ class KeyScheduler {
       salt: newSalt,
       rounds: newEncryptedKey.rounds,
       key: newEncryptedKey.keyMaterial,
-      hint: keyManager.hint,
+      hint: _keyManager.hint,
     );
 
     /// save master passwaord key data (NEW ROOT KEY!!)
     ///
-    final statusSaveReKeyedMaster = await keyManager.saveMasterPassword(
+    final statusSaveReKeyedMaster = await _keyManager.saveMasterPassword(
         newKeyParams,
     );
 
-    logManager.logger.d("statusSaveReKeyedMaster: $statusSaveReKeyedMaster");
+    _logManager.logger.d("statusSaveReKeyedMaster: $statusSaveReKeyedMaster");
     if (!statusSaveReKeyedMaster) {
       return false;
     }
 
 
     /// Set new KeyId for Vault
-    keyManager.setKeyId(rekeyId);
+    _keyManager.setKeyId(rekeyId);
 
 
     /// transition the live AES Keys for app vault session
-    cryptor.switchTempKeysToCurrent();
+    _cryptor.switchTempKeysToCurrent();
 
 
     /// TODO: do this after we have safe everything
     ///
 
     /// re-save log key in-case we needed to create a new one
-    await keyManager.saveLogKey(cryptor.logKeyMaterial);
+    await _keyManager.saveLogKey(_cryptor.logKeyMaterial);
 
     /// re-read and refresh our variables
-    await keyManager.readEncryptedKey();
+    await _keyManager.readEncryptedKey();
 
     return true;
   }
@@ -281,24 +277,24 @@ class KeyScheduler {
   Future<VaultItem?> _getCurrentVaultBackup() async {
 
     /// create EncryptedKey object
-    final salt = keyManager.salt;
+    final salt = _keyManager.salt;
     final kdfAlgo = EnumToString.convertToString(KDFAlgorithm.pbkdf2_512);
-    final rounds = cryptor.rounds;
+    final rounds = _cryptor.rounds;
     final type = 0;
     final version = 1;
     final memoryPowerOf2 = 0;
     final encryptionAlgo = EnumToString.convertToString(EncryptionAlgorithm.aes_ctr_256);
-    final keyMaterial = keyManager.encryptedKeyMaterial;
+    final keyMaterial = _keyManager.encryptedKeyMaterial;
 
-    // var items = await keyManager.getAllItemsForBackup() as GenericItemList;
+    // var items = await _keyManager.getAllItemsForBackup() as GenericItemList;
     var items = await _getKeychainGenericItemListState();
 
     _currentItemList = items;
 
     /// TODO: Digital ID
-    final myId = await keyManager.getMyDigitalIdentity();
+    final myId = await _keyManager.getMyDigitalIdentity();
 
-    final deviceId = await deviceManager.getDeviceId();
+    final deviceId = await _deviceManager.getDeviceId();
 
     if (deviceId == null) {
       return null;
@@ -307,29 +303,38 @@ class KeyScheduler {
     final timestamp = DateTime.now().toIso8601String();
     final backupName = "temp-vault";
 
-    final appVersion = settingsManager.versionAndBuildNumber();
+    final appVersion = _settingsManager.versionAndBuildNumber();
 
-    final vaultId = keyManager.vaultId;
-    final keyId = keyManager.keyId;
-
-    final idString =
-        "${vaultId}-${deviceId}-${appVersion}-${timestamp}-${timestamp}-${backupName}";
+    final vaultId = _keyManager.vaultId;
+    final keyId = _keyManager.keyId;
 
     var testItems = json.encode(items);
 
-    var encryptedBlob = await cryptor.encryptBackupVault(testItems, idString);
+    final iv = _cryptor.getNewNonce();
+    List<String>? currentIVList = [];
+
+    currentIVList.add(base64.encode(iv));
+
+    /// get hash of iv list
+    final ivListHash = _cryptor.sha256(currentIVList.toString());
+
+    final idString =
+        "${vaultId}-${deviceId}-${appVersion}-${timestamp}-${timestamp}-${ivListHash}-${backupName}";
+
+
+    var encryptedBlob = await _cryptor.encryptBackupVault(testItems, iv, idString);
 
     /// TODO: implement this outside of this function
-    settingsManager.doEncryption(utf8.encode(testItems).length);
-    // cryptor.setTempKeyIndex(keyIndex);
-    // logManager.logger.d("keyIndex: $keyIndex");
+    _settingsManager.doEncryption(utf8.encode(testItems).length);
+    // _cryptor.setTempKeyIndex(keyIndex);
+    // _logManager.logger.d("keyIndex: $keyIndex");
 
     final keyNonce = _convertEncryptedBlocksNonce();
-    logManager.logger.d("keyNonce: ${keyNonce.length}: ${keyNonce}\n"
+    _logManager.logger.d("keyNonce: ${keyNonce.length}: ${keyNonce}\n"
         "keyNonce utf8: ${utf8.encode(keyNonce).length}: ${utf8.encode(keyNonce)}");
 
-    final encryptedKeyNonce = await cryptor.encrypt(keyNonce);
-    logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
+    final encryptedKeyNonce = await _cryptor.encrypt(keyNonce);
+    _logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
 
 
     final encryptedKey = EncryptedKey(
@@ -346,26 +351,25 @@ class KeyScheduler {
       mac: "",
     );
 
-    final keyParamsMac = await cryptor.hmac256(encryptedKey.toRawJson());
+    final keyParamsMac = await _cryptor.hmac256(encryptedKey.toRawJson());
     encryptedKey.mac = keyParamsMac;
 
     /// identities
-    final identities = await keyManager.getIdentities();
+    final identities = await _keyManager.getIdentities();
     _currentIdentites = identities;
 
     /// Recovery Keys
-    final recoveryKeys = await keyManager.getRecoveryKeyItems();
+    final recoveryKeys = await _keyManager.getRecoveryKeyItems();
 
     _currentRecoveryKeys = recoveryKeys;
 
-    final deviceDataString = settingsManager.deviceManager.deviceData.toString();
-    // logManager.logger.d("deviceDataString: $deviceDataString");
-    // logManager.logger.d("deviceData[utsname.version:]: ${settingsManager.deviceManager.deviceData["utsname.version:"]}");
+    final deviceDataString = _settingsManager.deviceManager.deviceData.toString();
+    // _logManager.logger.d("deviceDataString: $deviceDataString");
+    // _logManager.logger.d("deviceData[utsname.version:]: ${_settingsManager.deviceManager.deviceData["utsname.version:"]}");
 
-    settingsManager.doEncryption(utf8.encode(deviceDataString).length);
-    final encryptedDeviceData = await cryptor.encrypt(deviceDataString);
-    // logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
-
+    _settingsManager.doEncryption(utf8.encode(deviceDataString).length);
+    final encryptedDeviceData = await _cryptor.encrypt(deviceDataString);
+    // _logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
 
 
     final backupItem = VaultItem(
@@ -383,15 +387,13 @@ class KeyScheduler {
       cdate: timestamp,
       mdate: timestamp,
       mac: "",
+      usedIVs: currentIVList,
     );
 
-    final backupMac = await cryptor.hmac256(backupItem.toRawJson());
+    final backupMac = await _cryptor.hmac256(backupItem.toRawJson());
     backupItem.mac = backupMac;
 
-    // logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
-
-    // print("passwordItems: $passwordItems");
-    // print("genericItems: $items");
+    _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
     return backupItem;
   }
@@ -400,15 +402,15 @@ class KeyScheduler {
     final zeroBlock = List<int>.filled(16, 0);
 
     /// account for what we are about to encrypt
-    settingsManager.doEncryption(16);
+    _settingsManager.doEncryption(16);
 
-    final numRollover = settingsManager.numRolloverEncryptionCounts;
-    final numBlocks = settingsManager.numBlocksEncrypted;
+    final numRollover = _settingsManager.numRolloverEncryptionCounts;
+    final numBlocks = _settingsManager.numBlocksEncrypted;
     // final currentNonce = zeroBlock.sublist(0, 8) + cbytes + zeroBlock.sublist(0, 4);
     // final shortNonce = zeroBlock.sublist(0, 8) + cbytes;// + zeroBlock.sublist(0, 4);
 
     var aindex = int.parse("${numRollover}").toRadixString(16);
-    logManager.logger.d("aindex: $aindex");
+    _logManager.logger.d("aindex: $aindex");
 
     if (aindex.length % 2 == 1) {
       aindex = "0" + aindex;
@@ -419,7 +421,7 @@ class KeyScheduler {
         abytes;
 
     var bindex = int.parse("${numBlocks}").toRadixString(16);
-    logManager.logger.d("bindex: $bindex");
+    _logManager.logger.d("bindex: $bindex");
 
     if (bindex.length % 2 == 1) {
       bindex = "0" + bindex;
@@ -429,16 +431,16 @@ class KeyScheduler {
     final blockNonceBBytes = zeroBlock.sublist(0, 4 - bbytes.length) +
         bbytes;
 
-    logManager.logger.d("blockNonceBBytes: ${blockNonceBBytes.length}: ${hex.encode(
+    _logManager.logger.d("blockNonceBBytes: ${blockNonceBBytes.length}: ${hex.encode(
         blockNonceBBytes)}");
 
     /// form nonce based on message index
     final countingNonce = blockNonceABytes + blockNonceBBytes;
-    logManager.logger.d("countingNonce: ${countingNonce.length}: ${hex.encode(
+    _logManager.logger.d("countingNonce: ${countingNonce.length}: ${hex.encode(
         countingNonce)}");
 
     final currentNonce = zeroBlock.sublist(0, 16-countingNonce.length) + countingNonce;
-    logManager.logger.d("currentNonce: ${currentNonce.length}: ${hex.encode(
+    _logManager.logger.d("currentNonce: ${currentNonce.length}: ${hex.encode(
         currentNonce)}");
 
 
@@ -449,7 +451,7 @@ class KeyScheduler {
 
   Future<GenericItemList> _getKeychainGenericItemListState() async {
     var finalGenericItemList = GenericItemList(list: []);
-    var localGenericItemList = await keyManager.getAllItemsForBackup() as GenericItemList;
+    var localGenericItemList = await _keyManager.getAllItemsForBackup() as GenericItemList;
     var list = localGenericItemList.list;
     if (list == null) {
       return finalGenericItemList;
@@ -473,7 +475,6 @@ class KeyScheduler {
 
   /// REKEYING ---------------------------------------------------------
   ///
-  ///
   Future<bool> reKeyItemList() async {
 
     final items = _currentItemList!;
@@ -496,24 +497,24 @@ class KeyScheduler {
         if (passwordItem != null) {
           /// decrypt with current key first
           // final keyIndex = (passwordItem?.keyIndex)!;
-          // final decryptedName = await cryptor.decrypt(passwordItem.name);
-          // final decryptedUsername = await cryptor.decrypt(passwordItem.username);
+          // final decryptedName = await _cryptor.decrypt(passwordItem.name);
+          // final decryptedUsername = await _cryptor.decrypt(passwordItem.username);
 
           if (passwordItem.geoLock == null) {
             /// decrypt with current key first
             // final decryptedPassword =
-            // await cryptor.decrypt(passwordItem.password);
-            // logManager.logger.d("rekey enc: ${passwordItem.name}\nusername: ${passwordItem.username}");
+            // await _cryptor.decrypt(passwordItem.password);
+            // _logManager.logger.d("rekey enc: ${passwordItem.name}\nusername: ${passwordItem.username}");
 
             final name = passwordItem.name;
             final username = passwordItem.username;
             final password = passwordItem.password;
             final notes = passwordItem.notes;
 
-            final reecryptedName = await cryptor.reKeyEncryption(false, name);
-            final reecryptedUsername = await cryptor.reKeyEncryption(false, username);
-            final reecryptedPassword = await cryptor.reKeyEncryption(false, password);
-            final reecryptedNotes = await cryptor.reKeyEncryption(false, notes);
+            final reecryptedName = await _cryptor.reKeyEncryption(false, name);
+            final reecryptedUsername = await _cryptor.reKeyEncryption(false, username);
+            final reecryptedPassword = await _cryptor.reKeyEncryption(false, password);
+            final reecryptedNotes = await _cryptor.reKeyEncryption(false, notes);
 
             // print("reecryptedName enc: ${reecryptedName}\nreecryptedUsername: ${reecryptedUsername}");
             // print("reecryptedPassword enc: ${reecryptedPassword}\n");
@@ -526,7 +527,7 @@ class KeyScheduler {
             List<PreviousPassword> newPreviousPasswordList = [];
             for (var pp in passwordItem.previousPasswords) {
               // final x = pp.password;
-              final reecryptedPreviousPassword = await cryptor.reKeyEncryption(false, pp.password);
+              final reecryptedPreviousPassword = await _cryptor.reKeyEncryption(false, pp.password);
               final newPp = PreviousPassword(
                   password: reecryptedPreviousPassword,
                   isBip39: pp.isBip39,
@@ -545,7 +546,7 @@ class KeyScheduler {
             genericList.add(gitem);
 
           } else {
-            logManager.logger.w("geo lock needs attention");
+            _logManager.logger.w("geo lock needs attention");
             return false;
           }
 
@@ -559,7 +560,7 @@ class KeyScheduler {
           // final keyIndex = (noteItem?.keyIndex)!;
 
           if (noteItem.geoLock == null) {
-            final reecryptedNote = await cryptor.reKeyEncryption(false, noteItem.notes);
+            final reecryptedNote = await _cryptor.reKeyEncryption(false, noteItem.notes);
             noteItem.notes = reecryptedNote;
 
             _reKeyedItems.add(noteItem);
@@ -569,7 +570,7 @@ class KeyScheduler {
             genericList.add(gitem);
 
           } else {
-            logManager.logger.w("geo lock needs attention");
+            _logManager.logger.w("geo lock needs attention");
             return false;
           }
 
@@ -582,10 +583,10 @@ class KeyScheduler {
           final name = keyItem.name;
           final notes = keyItem.notes;
           final key = keyItem.key;
-          final reecryptedName = await cryptor.reKeyEncryption(false, name);
-          final reecryptedNotes = await cryptor.reKeyEncryption(false, notes);
-          final reecryptedKey = await cryptor.reKeyEncryption(false, key);
-          // final reecryptedKey = await cryptor.reKeyEncryption(keyItem.);
+          final reecryptedName = await _cryptor.reKeyEncryption(false, name);
+          final reecryptedNotes = await _cryptor.reKeyEncryption(false, notes);
+          final reecryptedKey = await _cryptor.reKeyEncryption(false, key);
+          // final reecryptedKey = await _cryptor.reKeyEncryption(keyItem.);
 
           keyItem.name = reecryptedName;
           keyItem.notes = reecryptedNotes;
@@ -595,8 +596,8 @@ class KeyScheduler {
           List<PeerPublicKey> newPeerPublicKeys = [];
           for (var peerKey in peerPubs) {
 
-              final reecryptedPeerPublicKey = await cryptor.reKeyEncryption(false, peerKey.key);
-              final reecryptedPeerName = await cryptor.reKeyEncryption(false, peerKey.name);
+              final reecryptedPeerPublicKey = await _cryptor.reKeyEncryption(false, peerKey.key);
+              final reecryptedPeerName = await _cryptor.reKeyEncryption(false, peerKey.name);
 
               peerKey.name = reecryptedPeerName;
               peerKey.key = reecryptedPeerPublicKey;
@@ -628,7 +629,7 @@ class KeyScheduler {
   }
 
   Future<bool> _reKeyMyDigitalId() async {
-    final myDigitalId = await keyManager.getMyDigitalIdentity();
+    final myDigitalId = await _keyManager.getMyDigitalIdentity();
       // print("value: ${value!.toRawJson()}");
 
     final timestamp = DateTime.now().toIso8601String();
@@ -642,8 +643,8 @@ class KeyScheduler {
         // print("value.privateHexE: ${value.privKeyExchange}");
 
         /// TODO: fix this
-        final privateHexS = await cryptor.decrypt(myDigitalId.privKeySignature);
-        _mainPrivExchangeKeySeed = await cryptor.decrypt(myDigitalId.privKeyExchange);
+        final privateHexS = await _cryptor.decrypt(myDigitalId.privKeySignature);
+        _mainPrivExchangeKeySeed = await _cryptor.decrypt(myDigitalId.privKeyExchange);
         // print("privateHexS: $privateHexS");
         // print("pubExchangeKeySeed: $pubExchangeKeySeed");
 
@@ -655,12 +656,12 @@ class KeyScheduler {
         //     .extractPublicKey(); // PrivateKey(algorithm_exchange, BigInt.parse(privateHexE,radix: 16));
 
         /// TODO: fix this
-        final reencryptedEKey = await cryptor.reKeyEncryption(false, myDigitalId.privKeyExchange);
-        final reencryptedSKey = await cryptor.reKeyEncryption(false, myDigitalId.privKeySignature);
+        final reencryptedEKey = await _cryptor.reKeyEncryption(false, myDigitalId.privKeyExchange);
+        final reencryptedSKey = await _cryptor.reKeyEncryption(false, myDigitalId.privKeySignature);
 
         /// TODO: check keyId state
         _reKeyedMyDigitalIdentity = MyDigitalIdentity(
-            keyId: keyManager.keyId,
+            keyId: _keyManager.keyId,
             version: AppConstants.myDigitalIdentityItemVersion,
             privKeyExchange: reencryptedEKey,
             privKeySignature: reencryptedSKey,
@@ -670,7 +671,7 @@ class KeyScheduler {
         );
 
         if (_reKeyedMyDigitalIdentity != null) {
-          final myIdMac = await cryptor.hmac256(
+          final myIdMac = await _cryptor.hmac256(
               _reKeyedMyDigitalIdentity?.toRawJson());
           _reKeyedMyDigitalIdentity?.mac = myIdMac;
         }
@@ -686,7 +687,7 @@ class KeyScheduler {
   Future<bool> _reKeyIdentities() async {
     _reKeyedIdentities = [];
 
-    final identities = await keyManager.getIdentities();
+    final identities = await _keyManager.getIdentities();
     List<String> decryptedKeyExchangePubKey = [];
     List<String> pubKeyFingerprints = [];
 
@@ -699,21 +700,21 @@ class KeyScheduler {
         });
         for (var id in identities) {
           /// TODO: fix this
-          final x = await cryptor.decrypt(id.pubKeySignature);
-          final y = await cryptor.decrypt(id.pubKeyExchange);
-          // final z = await cryptor.decrypt(id.intermediateKey);
+          final x = await _cryptor.decrypt(id.pubKeySignature);
+          final y = await _cryptor.decrypt(id.pubKeyExchange);
+          // final z = await _cryptor.decrypt(id.intermediateKey);
           decryptedKeyExchangePubKey.add(y);
-          final phash = cryptor.sha256(y);
+          final phash = _cryptor.sha256(y);
           // print("phash identity: $phash");
           pubKeyFingerprints.add(phash);
           fingerprintKeyMap.addAll({phash: y});
 
-          // final reencryptedName =  await cryptor.reKeyEncryption(id.name);
+          // final reencryptedName =  await _cryptor.reKeyEncryption(id.name);
 
-          final reencryptedX = await cryptor.reKeyEncryption(false,
+          final reencryptedX = await _cryptor.reKeyEncryption(false,
               id.pubKeySignature);
-          final reencryptedY = await cryptor.reKeyEncryption(false, id.pubKeyExchange);
-          // final reencryptedZ = await cryptor.reKeyEncryption(false,
+          final reencryptedY = await _cryptor.reKeyEncryption(false, id.pubKeyExchange);
+          // final reencryptedZ = await _cryptor.reKeyEncryption(false,
           //     id.intermediateKey);
 
           final timestamp = DateTime.now().toIso8601String();
@@ -731,27 +732,27 @@ class KeyScheduler {
             mdate: timestamp,
           );
 
-          final identityMac = await cryptor.hmac256ReKey(rekeyedIdentity.toRawJson());
+          final identityMac = await _cryptor.hmac256ReKey(rekeyedIdentity.toRawJson());
           rekeyedIdentity.mac = identityMac;
-          // logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
+          // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
 
           _reKeyedIdentities.add(rekeyedIdentity);
         }
         //
-        // logManager.logger.d("pubKeyFingerprints: ${pubKeyFingerprints}");
-        // logManager.logger.d("fingerprintKeyMap: ${fingerprintKeyMap}");
-        // logManager.logger.d("peer identity decryptedKeyExchangePubKey: ${decryptedKeyExchangePubKey}");
+        // _logManager.logger.d("pubKeyFingerprints: ${pubKeyFingerprints}");
+        // _logManager.logger.d("fingerprintKeyMap: ${fingerprintKeyMap}");
+        // _logManager.logger.d("peer identity decryptedKeyExchangePubKey: ${decryptedKeyExchangePubKey}");
       }
     } catch (e) {
-      logManager.logger.w("$e");
+      _logManager.logger.w("$e");
       return false;
     }
-    logManager.logger.d("pubKeyFingerprints: ${pubKeyFingerprints}");
-    logManager.logger.d("fingerprintKeyMap: ${fingerprintKeyMap}");
-    logManager.logger.d("peer identity decryptedKeyExchangePubKey: ${decryptedKeyExchangePubKey}");
+    _logManager.logger.d("pubKeyFingerprints: ${pubKeyFingerprints}");
+    _logManager.logger.d("fingerprintKeyMap: ${fingerprintKeyMap}");
+    _logManager.logger.d("peer identity decryptedKeyExchangePubKey: ${decryptedKeyExchangePubKey}");
 
-    final recoveryKeys = await keyManager.getRecoveryKeyItems();
+    final recoveryKeys = await _keyManager.getRecoveryKeyItems();
     // print("recovery items: ${recoveryKeys?.length}: $recoveryKeys");
 
     if (recoveryKeys != null) {
@@ -822,14 +823,14 @@ class KeyScheduler {
 
       final secretKeyData = SecretKey(sharedSecretBytes);
 
-      final rootKey = cryptor
+      final rootKey = _cryptor
           .tempReKeyRootSecretKeyBytes;
 
-      final encryptedKeys = await cryptor.encryptRecoveryKey(secretKeyData, rootKey);
+      final encryptedKeys = await _cryptor.encryptRecoveryKey(secretKeyData, rootKey);
 
       // print("encrypted Keys: $encryptedKeys");
 
-      final pubKeyHash = cryptor.sha256(pubKeyExchange);
+      final pubKeyHash = _cryptor.sha256(pubKeyExchange);
       // _publicKeyHashes.add(pubKeyHash);
 
       final recoveryKey = RecoveryKey(
@@ -842,7 +843,7 @@ class KeyScheduler {
 
       return recoveryKey;
     } catch (e) {
-      logManager.logger.w("Exception: $e");
+      _logManager.logger.w("Exception: $e");
       return null;
     }
   }
@@ -862,7 +863,7 @@ class KeyScheduler {
       if (item.type == "password") {
         var passwordItem = PasswordItem.fromRawJson(item.data);
         if (passwordItem != null) {
-          final status = await keyManager.saveItem(passwordItem.id, item.toRawJson());
+          final status = await _keyManager.saveItem(passwordItem.id, item.toRawJson());
           if (!status) {
             return false;
           }
@@ -873,7 +874,7 @@ class KeyScheduler {
         var noteItem = NoteItem.fromRawJson(item.data);
         if (noteItem != null) {
           // final keyIndex = (noteItem?.keyIndex)!;
-          final status = await keyManager.saveItem(noteItem.id, item.toRawJson());
+          final status = await _keyManager.saveItem(noteItem.id, item.toRawJson());
           if (!status) {
             return false;
           }
@@ -883,7 +884,7 @@ class KeyScheduler {
       } else if (item.type == "key") {
         var keyItem = KeyItem.fromRawJson(item.data);
         if (keyItem != null) {
-          final status = await keyManager.saveItem(keyItem.id, item.toRawJson());
+          final status = await _keyManager.saveItem(keyItem.id, item.toRawJson());
           if (!status) {
             return false;
           }
@@ -906,7 +907,7 @@ class KeyScheduler {
       final identityObjectString = newId.toRawJson();
       // print("identityObjectString: $identityObjectString");
 
-      final statusId = await keyManager.saveIdentity(newId.id, identityObjectString);
+      final statusId = await _keyManager.saveIdentity(newId.id, identityObjectString);
       if (!statusId) {
         return false;
       }
@@ -921,7 +922,7 @@ class KeyScheduler {
     for (var newRecoveryKey in _reKeyedRecoveryKeys) {
       // final identityObjectString = newRecoveryKey.toRawJson();
 
-      final status = await keyManager.saveRecoveryKey(newRecoveryKey.id, newRecoveryKey.toRawJson());
+      final status = await _keyManager.saveRecoveryKey(newRecoveryKey.id, newRecoveryKey.toRawJson());
 
       if (!status) {
         return false;
@@ -947,7 +948,7 @@ class KeyScheduler {
       if (item.type == "password") {
         var passwordItem = PasswordItem.fromRawJson(item.data);
         if (passwordItem != null) {
-          final status = await keyManager.saveItem(passwordItem.id, item.toRawJson());
+          final status = await _keyManager.saveItem(passwordItem.id, item.toRawJson());
           if (!status) {
             return false;
           }
@@ -958,7 +959,7 @@ class KeyScheduler {
         var noteItem = NoteItem.fromRawJson(item.data);
         if (noteItem != null) {
           // final keyIndex = (noteItem?.keyIndex)!;
-          final status = await keyManager.saveItem(noteItem.id, item.toRawJson());
+          final status = await _keyManager.saveItem(noteItem.id, item.toRawJson());
           if (!status) {
             return false;
           }
@@ -968,7 +969,7 @@ class KeyScheduler {
       } else if (item.type == "key") {
         var keyItem = KeyItem.fromRawJson(item.data);
         if (keyItem != null) {
-          final status = await keyManager.saveItem(keyItem.id, item.toRawJson());
+          final status = await _keyManager.saveItem(keyItem.id, item.toRawJson());
           if (!status) {
             return false;
           }
@@ -994,7 +995,7 @@ class KeyScheduler {
       final identityObjectString = id.toRawJson();
       // print("identityObjectString: $identityObjectString");
 
-      final statusId = await keyManager.saveIdentity(id.id, identityObjectString);
+      final statusId = await _keyManager.saveIdentity(id.id, identityObjectString);
       if (!statusId) {
         return false;
       }
@@ -1011,7 +1012,7 @@ class KeyScheduler {
     }
 
     for (var recoveryKey in origRecoveryKeys) {
-      final status = await keyManager.saveRecoveryKey(recoveryKey.id, recoveryKey.toRawJson());
+      final status = await _keyManager.saveRecoveryKey(recoveryKey.id, recoveryKey.toRawJson());
       if (!status) {
         return false;
       }

@@ -101,6 +101,7 @@ class VaultItem {
   String mac;                 // mac of VaultItem model with empty string as initial mac value (using auth key)
   String cdate;               // created date
   String mdate;               // modified date
+  List<String>? usedIVs; // used initialization vectors
 
   VaultItem({
     required this.id,
@@ -117,6 +118,7 @@ class VaultItem {
     required this.mac,
     required this.cdate,
     required this.mdate,
+    required this.usedIVs,
   });
 
   factory VaultItem.fromRawJson(String str) =>
@@ -124,6 +126,9 @@ class VaultItem {
 
   String toRawJson() => json.encode(toJson());
 
+  Map<String, dynamic> toJsonUsedIVs() => {
+    "usedIVs": usedIVs!,
+  };
 
   Map<String, dynamic> toJsonIdentities() => {
         "identities": identities!,
@@ -165,6 +170,7 @@ class VaultItem {
       mac: json['mac'],
       cdate: json['cdate'],
       mdate: json['mdate'],
+      usedIVs: json["usedIVs"] == null ? null : List<String>.from(json["usedIVs"]),
     );
   }
 
@@ -174,7 +180,6 @@ class VaultItem {
       "name": name,
       "version": version,
       "deviceId": deviceId,
-      // "deviceData": deviceData,
       "encryptedKey": encryptedKey,
       "numItems": numItems,
       "blob": blob,
@@ -197,6 +202,10 @@ class VaultItem {
 
     if (deviceData != null) {
       jsonMap.addAll(toJsonDeviceData());
+    }
+
+    if (usedIVs != null) {
+      jsonMap.addAll(toJsonUsedIVs());
     }
 
     return jsonMap;

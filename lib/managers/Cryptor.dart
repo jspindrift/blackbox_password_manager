@@ -1888,11 +1888,11 @@ class Cryptor {
 
   /// TODO: change this to use empty mac and compute mac manually
   /// used for encrypting backups with metadata string
-  Future<String> encryptBackupVault(String plaintext, String id) async {
+  Future<String> encryptBackupVault(String plaintext, List<int> iv, String id) async {
     // logger.d("encryptBackupVault");
     try {
       if (_aesEncryptionKey != null && _aesAuthKey != null) {
-        final iv = algorithm_nomac.newNonce();
+        // final iv = algorithm_nomac.newNonce();
         final encodedPlaintext = utf8.encode(plaintext);
 
         /// Encrypt
@@ -1940,6 +1940,10 @@ class Cryptor {
     }
   }
 
+  List<int> getNewNonce() {
+    final iv = algorithm_nomac.newNonce();
+    return iv;
+  }
 
   /// This is for encrypting recovery keys.. no need to check bytes counted
   ///
