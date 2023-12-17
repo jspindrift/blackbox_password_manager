@@ -1,20 +1,13 @@
 # blackbox_password_manager
 
-A new unique open source password manager for iOS and Android written in Flutter.
+An open source password manager for iOS and Android written in Flutter.
 
 Note: icons provided by icons8.com 
-
-If you are a Flutter developer, I am basically taking the keys to a GT-R sports car, starting it, and telling you to hop in and floor it. 😃...But you should learn manual first.
 
 ## About Blackbox Password Manager 
 
 Blackbox Password Manager uses the standard AES encryption algorithm in CTR mode to encrypt your passwords, 
-keys, notes, and other data.  We take privacy and security seriously and always enhance 
-our protocols to match the evolving threat landscape in the cyber security world.  After the issues 
-we observed with password managers like LastPass, we decided to take an extra step and encrypt as 
-much metadata as relevantly possible to ensure the security of your information.  Metadata is just as
-important to protect, as this leads to other possible avenues of attack outside of the actual 
-password manager application (ie. targeted phishing campaigns).
+keys, notes, and other data.
 
 ## Key Derivation and Encryption Protocol:
 
@@ -43,23 +36,16 @@ using the CTR mode of operation.  We use random nonces every time we encrypt to 
 of re-using nonces.  Re-use of a nonce can break the security of the individually encrypted data, and 
 possibly other pieces of encrypted data depending on the implementation.
 
-In light of the problem of nonce reuse, we secure the encrypted data in different layers to safe guard
-against the possibility of this vulnerability. It is very rare that we would re-use a nonce, but it is 
+It is rare that we would re-use a nonce, but it is 
 possible.  Each piece of encrypted data is saved with the above format (IV + MAC + Edata).  
 This data then gets saved in the Keychain (which is itself also encrypted depending on the platform).
 
-When a backup gets created, we take all the individually encrypted data items and create a single
-JSON list object.  We then encrypt the JSON blob itself with the same protocol.  By doing this, if a nonce
-does happen to get re-used within the individual items, no one can determine this because we add an 
-additional encryption layer over all these items.
 
 ## Recovery Mode
 
 Your master password is the only thing that protects you from unauthorized access to your vault and 
 cannot be recovered unless Recovery Mode is activated and the protocol is followed.  
-Recovery is a very important property for key management in general.
-We implemented an optional recovery mode within the password manager
-(Under Settings>Advanced Settings>Recovery Mode).  We use Curve25519 to enable you to share a
+An optional recovery mode uses Curve25519 to enable you to share a
 recovery key with other people that use Blackbox Password Manager.  
 
 For example, Alice and Bob are friends and both have Blackbox Password Manager.  
@@ -77,7 +63,6 @@ within the implementation and should not be used for mission critical data unles
 the application and implementation yourself.  There is also experimental code as well as unused code 
 within the application that needs to be cleaned up and/or enhanced.
 
-Besides this, there is some cool experimental cryptography being worked with and might be worth looking into.
 
 ## Experimental Geo-Encryption
 
