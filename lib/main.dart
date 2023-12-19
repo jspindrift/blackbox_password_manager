@@ -181,7 +181,6 @@ class MyApp extends StatelessWidget {
           ),
           ReKeyAuthScreen.routeName: (ctx) => ReKeyAuthScreen(),
         },
-
         builder: EasyLoading.init(),
       ),
     );
@@ -191,6 +190,7 @@ class MyApp extends StatelessWidget {
     // bool isDarkMode = (settingsManager?.isDarkModeEnabled)!;
     // var themeColor = isDarkMode ? Colors.black87 : Colors.blueAccent;
     return ThemeData(
+      useMaterial3: false,
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
             borderSide: BorderSide(
