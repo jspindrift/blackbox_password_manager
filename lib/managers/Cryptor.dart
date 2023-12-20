@@ -1993,6 +1993,9 @@ class Cryptor {
   /// 2-Key Encryption with Authentication
   /// (unimplemented)
   ///
+  /// TODO: look into implementing this for all the data models with a backup vault except the EncryptionKey data model
+  /// 
+  ///
   Future<String> superEncryption(List<int> Kenc, List<int> Kauth, List<int> iv, String plaintext) async {
     logger.d("superEncryption");
     try {
@@ -2092,6 +2095,9 @@ class Cryptor {
     }
   }
 
+  /// TODO: look into implementing this for all the data models with a backup vault except the EncryptionKey data model
+  ///
+  ///
   Future<String> superDecryption(List<int> Kenc, List<int> Kauth, List<int> iv, String ciphertext) async {
     logger.d("superDecryption");
     try {
