@@ -2031,18 +2031,6 @@ class Cryptor {
         final authKey = sha256(authNode1 + authNode2);
         final sessionAuthenticationKey = SecretKey(hex.decode(authKey));
 
-        var iv_xor = authenticationKeyStream.cipherText;
-
-        /// XOR all the authentication key stream blocks (16 bytes) together
-        while (iv_xor.length != 16) {
-          final x =
-          Uint8List.fromList(authenticationKeyStream.cipherText.sublist(0, (iv_xor.length! / 2).toInt()));
-          final y = Uint8List.fromList(authenticationKeyStream.cipherText.sublist(
-              (iv_xor.length! / 2).toInt(), (iv_xor.length!).toInt()));
-
-          iv_xor = xor(x, y);
-        }
-
         /// XOR the result (iv_xor) back upon our authentication key stream to
         /// get the inverse leaves
         final inverseAuthKeyStream = await _processKey(authenticationKeyStream.cipherText);
@@ -2055,7 +2043,6 @@ class Cryptor {
         /// Choose the same respective iv block from the inverse auth leaf set.
         /// This iv will be used for encryption with the computed mac key.
         final iv_auth = inverseAuthKeyStream.sublist(0, 16);
-
 
         /// encrypt-then-mac protocol
         ///
@@ -2146,22 +2133,9 @@ class Cryptor {
         final authKey = sha256(authNode1 + authNode2);
         final sessionAuthenticationKey = SecretKey(hex.decode(authKey));
 
-        var iv_xor = authenticationKeyStream.cipherText;
-
-        /// get our XOR value from all auth iv leaves
-        while (iv_xor.length != 16) {
-          final x =
-          Uint8List.fromList(authenticationKeyStream.cipherText.sublist(0, (iv_xor.length! / 2).toInt()));
-          final y = Uint8List.fromList(authenticationKeyStream.cipherText.sublist(
-              (iv_xor.length! / 2).toInt(), (iv_xor.length!).toInt()));
-
-          iv_xor = xor(x, y);
-        }
-
         /// XOR the result (iv_xor) back upon our authentication key stream to
         /// get the inverse leaves
         final inverseAuthKeyStream = await _processKey(authenticationKeyStream.cipherText);
-
 
         List<int> iv_enc = [];
         List<int> iv_auth = [];
