@@ -1779,7 +1779,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
         var mnemonic = bip39.generateMnemonic(strength: 128);
         if (_debugRand) {
           var a = mnemonic;
-          final randNumber = 269;
+          final randNumber = 369;
           for (var index = 0; index < randNumber; index++) {
             a = _cryptor.sha256(a);
           }
@@ -1802,7 +1802,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
         if (_debugRand) {
           mnemonic = bip39.generateMnemonic(strength: 256);
           var a = mnemonic;
-          final randNumber = 269;
+          final randNumber = 369;
           for (var index = 0; index < randNumber; index++) {
             a = _cryptor.sha256(a);
           }
