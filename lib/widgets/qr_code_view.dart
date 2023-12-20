@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../managers/LogManager.dart';
 
+
 /// This is the screen that you'll see when the app starts
 class QRCodeView extends StatefulWidget {
   const QRCodeView({
@@ -34,13 +35,13 @@ class _QRCodeViewState extends State<QRCodeView> {
   // ignore: lines_longer_than_80_chars ??
   // final message = 'Hey this is a QR code. Change this value in the main_screen.dart file. Hey this is a QR code. Change this value in the main_screen.dart file. Hey this is a QR code. Change this value in the main_screen.dart file.';
 
-  final logManager = LogManager();
+  final _logManager = LogManager();
 
   @override
   void initState() {
     super.initState();
 
-    logManager.log("QRCodeView", "initState", "initState");
+    _logManager.log("QRCodeView", "initState", "initState");
   }
 
   @override
@@ -139,7 +140,7 @@ class _QRCodeViewState extends State<QRCodeView> {
                   ),
                 ),
                 onPressed: () {
-                  logManager.log(
+                  _logManager.log(
                       "QRCodeView", "CloseButton:onPressed", "close");
 
                   Navigator.of(context).pop();

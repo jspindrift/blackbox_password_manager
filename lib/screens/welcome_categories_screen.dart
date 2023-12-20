@@ -1,5 +1,3 @@
-import '../screens/key_list_screen.dart';
-import '../screens/welcome_all_list_screen.dart';
 import 'package:flutter/material.dart';
 import "package:flutter_easyloading/flutter_easyloading.dart";
 import "package:bip39/bip39.dart" as bip39;
@@ -15,6 +13,8 @@ import '../screens/add_password_screen.dart';
 import '../screens/add_note_screen.dart';
 import '../screens/note_list_screen.dart';
 import '../screens/welcome_screen.dart';
+import '../screens/key_list_screen.dart';
+import '../screens/welcome_all_list_screen.dart';
 import 'add_public_encryption_key_screen.dart';
 
 
@@ -48,6 +48,7 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
   final _cryptor = Cryptor();
+
 
   @override
   void initState() {

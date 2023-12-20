@@ -15,6 +15,7 @@ import '../managers/Cryptor.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 
+
 class LockScreen extends StatefulWidget {
   const LockScreen({
     Key? key,
@@ -32,7 +33,6 @@ class _LockScreenState extends State<LockScreen> {
   bool _isAuthenticating = false;
   bool _isBiometricLoginEnabled = false;
   bool _isFieldValid = false;
-
   bool _isDarkModeEnabled = false;
 
   int _wrongPasswordCount = 0;
@@ -43,6 +43,7 @@ class _LockScreenState extends State<LockScreen> {
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
   final _inactivityTimer = InactivityTimer();
+
 
   @override
   void initState() {
@@ -57,6 +58,9 @@ class _LockScreenState extends State<LockScreen> {
     _settingsManager.setIsOnLockScreen(true);
 
     _settingsManager.setIsRecoveredSession(false);
+
+    /// save category tab index so we always land on this page to get vault item info
+    _settingsManager.setCurrentTabIndex(1);
 
     /// local authentication check
     _biometricManager.isDeviceSecured().then((bool isSupported) {
@@ -86,7 +90,8 @@ class _LockScreenState extends State<LockScreen> {
 
   _checkPinCodeScreenStatus() async {
     /// check pin code, if set show pin code screen
-    final status = await _keyManager.readPinCodeKey();//.then((value) {
+    final status = await _keyManager.readPinCodeKey();
+
     if (status) {
       Navigator.push(
         context,

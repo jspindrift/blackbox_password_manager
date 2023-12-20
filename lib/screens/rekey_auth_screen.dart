@@ -20,18 +20,13 @@ class ReKeyAuthScreen extends StatefulWidget {
 
 class _ReKeyAuthScreenState extends State<ReKeyAuthScreen> {
   final _currentPasswordTextController = TextEditingController();
-
   final _currentPasswordFocusNode = FocusNode();
 
   bool _hideCurrentPasswordField = true;
-
   bool _isConfirmingCurrentPassword = true;
   bool _currentFieldIsValid = false;
-
   bool _reKeyInProgress = false;
-
   bool _isAuthenticating = false;
-
   bool _isDarkModeEnabled = false;
 
   int _wrongPasswordCount = 0;
@@ -40,8 +35,8 @@ class _ReKeyAuthScreenState extends State<ReKeyAuthScreen> {
   var _keyManager = KeychainManager();
   var _logManager = LogManager();
   var _settingsManager = SettingsManager();
-  // final inactivityTimer = InactivityTimer();
   var _keyScheduler = KeyScheduler();
+
 
   @override
   void initState() {

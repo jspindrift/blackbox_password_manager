@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
+
 
 class InactivityTimer {
   static final InactivityTimer _shared = InactivityTimer._internal();
@@ -9,13 +11,12 @@ class InactivityTimer {
     return _shared;
   }
 
-
   Timer? _timer;
   static const int _defaultInactiveTimeSeconds = 5*60;  // 5 minutes
   DateTime? _lastActivityTime;
 
-  final logManager = LogManager();
-  final settingsManager = SettingsManager();
+  final _logManager = LogManager();
+  final _settingsManager = SettingsManager();
 
 
   InactivityTimer._internal();
@@ -23,7 +24,7 @@ class InactivityTimer {
 
   void startInactivityTimer() async {
     /// ignore calls when app is locked
-    if (settingsManager.isOnLockScreen) {
+    if (_settingsManager.isOnLockScreen) {
       // print("hit");
       _lastActivityTime = null;
       return;
@@ -33,7 +34,7 @@ class InactivityTimer {
       stopInactivityTimer();
     }
 
-    var inactivityTime = settingsManager.inactivityTime;
+    var inactivityTime = _settingsManager.inactivityTime;
     if (inactivityTime == null || inactivityTime == 0) {
       inactivityTime = _defaultInactiveTimeSeconds;
     }
@@ -42,7 +43,7 @@ class InactivityTimer {
       final timeDiff = DateTime.now().difference(_lastActivityTime!).inSeconds;
       if (timeDiff > inactivityTime) {
         /// logout if change inactivity time action occurs after
-        settingsManager.postLogoutMessage();
+        _settingsManager.postLogoutMessage();
       }
     }
 
@@ -50,20 +51,20 @@ class InactivityTimer {
 
     final duration = Duration(seconds: inactivityTime);
     _timer = Timer.periodic(duration, (timer) {
-      logManager.logger.d("inactivity timer timed out: ${timer.tick}: ${DateTime.now().toIso8601String()}");
-      logManager.log("InactivityTimer", "startInactivityTimer", "inactivity");
+      _logManager.logger.d("inactivity timer timed out: ${timer.tick}: ${DateTime.now().toIso8601String()}");
+      _logManager.log("InactivityTimer", "startInactivityTimer", "inactivity");
 
       _lastActivityTime = null;
       /// post a logout message
-      settingsManager.postLogoutMessage();
+      _settingsManager.postLogoutMessage();
     });
   }
 
   void stopInactivityTimer() async {
     if (_timer != null) {
       if ((_timer?.isActive)!) {
-        // logManager.logger.d("stop inactivity timer");
-        // logManager.log("InactivityTimer", "stopInactivityTimer", "stop heartbeat timer");
+        // _logManager.logger.d("stop inactivity timer");
+        // _logManager.log("InactivityTimer", "stopInactivityTimer", "stop heartbeat timer");
         _timer!.cancel();
         _timer = null;
       }

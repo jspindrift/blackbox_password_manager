@@ -13,6 +13,7 @@ import '../screens/backups_screen.dart';
 import '../screens/pin_code_screen.dart';
 import 'inactivity_time_screen.dart';
 
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     Key? key,
@@ -64,6 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   final _logManager = LogManager();
   final _cryptor = Cryptor();
   final _inactivityTimer = InactivityTimer();
+
 
   @override
   void initState() {

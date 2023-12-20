@@ -75,14 +75,11 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
 
   String _publicKeyMnemonic = "";
 
-  // List<int> _seedKey = [];
-  // List<int> Kenc = [];
-  // List<int> Kauth = [];
-
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
   final _keyManager = KeychainManager();
   final _cryptor = Cryptor();
+
 
   @override
   void initState() {

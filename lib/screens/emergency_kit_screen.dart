@@ -31,6 +31,7 @@ class _EmergencyKitScreenState extends State<EmergencyKitScreen> {
   final _settingsManager = SettingsManager();
   final _keyManager = KeychainManager();
 
+
   @override
   void initState() {
     super.initState();

@@ -1,4 +1,3 @@
-import 'dart:io';
 import "dart:math";
 import "dart:convert";
 import "dart:typed_data";
@@ -28,6 +27,7 @@ import 'package:logger/logger.dart';
 
 /// this creates a stackoverflow
 // import "LogManager.dart";
+
 
 class Cryptor {
   static final Cryptor _shared = Cryptor._internal();
@@ -1994,7 +1994,7 @@ class Cryptor {
   /// (unimplemented)
   ///
   /// TODO: look into implementing this for all the data models with a backup vault except the EncryptionKey data model
-  /// 
+  ///
   ///
   Future<String> superEncryption(List<int> Kenc, List<int> Kauth, List<int> iv, String plaintext) async {
     logger.d("superEncryption");

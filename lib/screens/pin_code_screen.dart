@@ -10,6 +10,7 @@ import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../helpers/AppConstants.dart';
 
+
 /// flow determines if user is creating the pin code
 /// or entering the code from the lock screen
 enum PinCodeFlow {
@@ -49,6 +50,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
 
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +60,9 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
     _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
     if (widget.flow == PinCodeFlow.lock) {
+      /// save category tab index so we always land on this page to get vault item info
+      _settingsManager.setCurrentTabIndex(1);
+
       _keyManager.getPinCodeItem().then((value) {
         setState(() {
           _pinCodeAttemptsLeft = 3 - value!.attempts;

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../managers/LogManager.dart';
-import '../managers/FileManager.dart';
 import '../managers/SettingsManager.dart';
+
 
 class ShowLogDetailScreen extends StatefulWidget {
   const ShowLogDetailScreen({
@@ -23,16 +23,16 @@ class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
 
   late ScrollController _controller = ScrollController();
 
-  final fileManager = FileManager();
   final _logManager = LogManager();
-  final settingsManager = SettingsManager();
+  final _settingsManager = SettingsManager();
+
 
   @override
   void initState() {
     super.initState();
     _logManager.log("ShowLogDetailScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
   }
 
   @override

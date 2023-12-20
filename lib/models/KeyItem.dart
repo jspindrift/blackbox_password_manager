@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'dart:typed_data';
+
 import 'package:convert/convert.dart';
 import 'package:logger/logger.dart';
+
 import '../managers/Cryptor.dart';
 import '../merkle/merkle_example.dart';
+
 
 var logger = Logger(
   printer: PrettyPrinter(),
@@ -48,7 +51,7 @@ enum KeyPurposeType {
   unknown,
 }
 
-///TODO: add this item in
+
 class KeyItem {
   String id;
   String keyId;
@@ -241,6 +244,7 @@ class PeerPublicKey {
 
 }
 
+
 class SecureMessageList {
   List<SecureMessage> list;
   List<String> merkleTree;
@@ -325,6 +329,7 @@ class SecureMessageList {
 
 }
 
+
 /// encrypted with key derived from user's shared secret key
 class SecureMessage {
   String iv;  // used as message id, as we should never repeat these
@@ -360,4 +365,5 @@ class SecureMessage {
 
     return jsonMap;
   }
+
 }

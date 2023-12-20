@@ -16,7 +16,6 @@ import 'add_public_encryption_key_screen.dart';
 import 'edit_public_encryption_key_screen.dart';
 import 'home_tab_screen.dart';
 
-/// Copied code from NoteListScreen
 
 class KeyListScreen extends StatefulWidget {
   const KeyListScreen({
@@ -32,8 +31,6 @@ class _KeyListScreenState extends State<KeyListScreen> {
   bool _isDarkModeEnabled = false;
 
   List<KeyItem> _keys = [];
-  List<String> _pubKeys = [];
-
 
   int _selectedIndex = 1;
 
@@ -41,6 +38,7 @@ class _KeyListScreenState extends State<KeyListScreen> {
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
   final _cryptor = Cryptor();
+
 
   @override
   void initState() {
@@ -58,7 +56,6 @@ class _KeyListScreenState extends State<KeyListScreen> {
 
   void _getAllKeyItems() async {
     _keys = [];
-    _pubKeys = [];
 
     final items = await _keyManager.getAllItems();
 

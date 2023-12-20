@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 
 import '../models/NoteItem.dart';
 import '../managers/LogManager.dart';
-import '../managers/Cryptor.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
 import '../screens/add_note_screen.dart';
 import 'home_tab_screen.dart';
+
 
 class NoteListScreen extends StatefulWidget {
   const NoteListScreen({
@@ -22,16 +22,15 @@ class NoteListScreen extends StatefulWidget {
 class _NoteListScreenState extends State<NoteListScreen> {
   bool _isDarkModeEnabled = false;
 
-  List<NoteItem> _notes = [];
-
   int _selectedIndex = 1;
 
-  List<NoteItem> _sortedNotesByDate = [];
+  List<NoteItem> _notes = [];
+
 
   final _keyManager = KeychainManager();
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
-  final _cryptor = Cryptor();
+
 
   @override
   void initState() {
@@ -49,7 +48,6 @@ class _NoteListScreenState extends State<NoteListScreen> {
 
   void _getAllNoteItems() async {
     _notes = [];
-    _sortedNotesByDate = [];
     final items = await _keyManager.getAllItems();
 
     // iterate through items
@@ -126,7 +124,6 @@ class _NoteListScreenState extends State<NoteListScreen> {
           color: _isDarkModeEnabled ? Colors.greenAccent : null,
         ),
         itemBuilder: (context, index) {
-          // var decryptedNote = _cryptor.decrypt(_notes[index].notes);
           var categoryIcon = Stack(
             children: [
               IconButton(

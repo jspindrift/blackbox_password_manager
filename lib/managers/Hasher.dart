@@ -1,9 +1,11 @@
 import 'dart:convert';
+
 import 'package:crypto/crypto.dart';
 
 /// cant use these two classes together
 // import 'package:crypt/crypt.dart' as crypt;
 // import 'package:cryptography/cryptography.dart';
+
 
 class Hasher {
   static final Hasher _shared = Hasher._internal();

@@ -61,6 +61,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   final _keyManager = KeychainManager();
   final _cryptor = Cryptor();
 
+
   @override
   void initState() {
     super.initState();

@@ -14,6 +14,7 @@ import '../screens/add_note_screen.dart';
 import '../screens/edit_public_encryption_key_screen.dart';
 import 'home_tab_screen.dart';
 
+
 class ItemsByTagScreen extends StatefulWidget {
   const ItemsByTagScreen({
     Key? key,
@@ -41,6 +42,7 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
   final _cryptor = Cryptor();
+
 
   @override
   void initState() {

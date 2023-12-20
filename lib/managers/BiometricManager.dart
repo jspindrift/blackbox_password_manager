@@ -1,7 +1,10 @@
 import 'dart:async';
+
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter/services.dart';
+
 import '../managers/LogManager.dart';
+
 
 class BiometricManager {
   static final BiometricManager _shared = BiometricManager._internal();

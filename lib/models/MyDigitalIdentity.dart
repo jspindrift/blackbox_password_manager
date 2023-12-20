@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+
 class MyDigitalIdentity {
   String keyId;  // root key identifier
   int version;

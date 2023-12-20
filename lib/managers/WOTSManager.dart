@@ -1,16 +1,17 @@
 import "dart:typed_data";
-import "package:blackbox_password_manager/merkle/merkle_example.dart";
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import "package:cryptography/cryptography.dart";
 import "package:convert/convert.dart";
 import 'package:logger/logger.dart';
 
+import "../merkle/merkle_example.dart";
 import "../helpers/ivHelper.dart";
 import "../managers/Cryptor.dart";
 import "../models/WOTSSignatureItem.dart";
 
 import "LogManager.dart";
+
 
 /*
 * Notes on Giga-WOTS:

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-/// TODO: FOR MNEMONIC KEY MANAGER
+
 class DigitalIdentityCode {
   String pubKeyExchange; // 32 byte hex // TODO: change to base64
   String pubKeySignature; // 32 byte hex // TODO: change to base64
@@ -30,4 +30,5 @@ class DigitalIdentityCode {
 
     return jsonMap;
   }
+
 }

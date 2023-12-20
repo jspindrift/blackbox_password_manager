@@ -1,6 +1,8 @@
 import 'dart:convert';
+
 import 'DigitalIdentity.dart';
 import 'MyDigitalIdentity.dart';
+
 
 enum KDFAlgorithm {
   pbkdf2_256,
@@ -13,6 +15,7 @@ enum EncryptionAlgorithm {
   aes_ctr_256,
   unknown,
 }
+
 
 /// keyId tracts the underlying key to point to items encrypted under the key
 /// keyId should change for vault after re-keying
@@ -92,12 +95,15 @@ class VaultItem {
   String deviceId;            // device identifier (id for vendor)
   String? deviceData;         // device information
   EncryptedKey encryptedKey;  // master key information
-  List<RecoveryKey>?
-      recoveryKeys;           // encrypted master key with recovery keys from identities
-  MyDigitalIdentity? myIdentity; // my key pair info - encrypted
   int numItems;               // number of passwords, notes, and keys
+
   String blob;                // encrypted GenericItemList JSON string base64 encoded
+  List<RecoveryKey>? recoveryKeys; // encrypted master key with recovery keys from identities
+  MyDigitalIdentity? myIdentity; // my key pair info - encrypted
   List<DigitalIdentity>? identities; // recovery identity public key info - encrypted
+
+  // Vault vault;
+
   String mac;                 // mac of VaultItem model with empty string as initial mac value (using auth key)
   String cdate;               // created date
   String mdate;               // modified date
@@ -109,11 +115,12 @@ class VaultItem {
     required this.deviceId,
     required this.deviceData,
     required this.encryptedKey,
+    required this.numItems,
+    required this.blob,
     required this.myIdentity,
     required this.identities,
     required this.recoveryKeys,
-    required this.numItems,
-    required this.blob,
+    // required this.vaultData,
     required this.mac,
     required this.cdate,
     required this.mdate,
@@ -148,6 +155,8 @@ class VaultItem {
       deviceId: json['deviceId'],
         deviceData: json["deviceData"] ?? "",
       encryptedKey: EncryptedKey.fromJson(json['encryptedKey']),
+      numItems: json['numItems'],
+      blob: json['blob'],
       myIdentity: json["myIdentity"] == null
           ? null
           : MyDigitalIdentity.fromJson(json["myIdentity"]),
@@ -159,8 +168,7 @@ class VaultItem {
           ? null
           : List<RecoveryKey>.from(
               json["recoveryKeys"].map((x) => RecoveryKey.fromJson(x))),
-      numItems: json['numItems'],
-      blob: json['blob'],
+      // vaultData: json['vaultData'],
       mac: json['mac'],
       cdate: json['cdate'],
       mdate: json['mdate'],
@@ -176,6 +184,7 @@ class VaultItem {
       "encryptedKey": encryptedKey,
       "numItems": numItems,
       "blob": blob,
+      // "vaultData": vaultData,
       "mac": mac,
       "cdate": cdate,
       "mdate": mdate,
@@ -201,6 +210,7 @@ class VaultItem {
   }
 
 }
+
 
 class RecoveryKey {
   String id;    // pubKeyHash (hash of peer identity public key)
@@ -231,6 +241,56 @@ class RecoveryKey {
       "id": id,
       "data": data,
       "cdate": cdate,
+    };
+
+    return jsonMap;
+  }
+
+}
+
+
+class Vault {
+  List<RecoveryKey>? recoveryKeys;  // encrypted master key with recovery keys from identities
+  MyDigitalIdentity? myIdentity;    // my key pair info - encrypted
+  String blob;                      // encrypted GenericItemList JSON string base64 encoded
+  List<DigitalIdentity>? identities; // recovery identity public key info - encrypted
+
+  Vault({
+    required this.blob,
+    required this.myIdentity,
+    required this.identities,
+    required this.recoveryKeys,
+  });
+
+  factory Vault.fromRawJson(String str) =>
+      Vault.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+
+  factory Vault.fromJson(Map<String, dynamic> json) {
+    return Vault(
+      blob: json['blob'],
+      myIdentity: json["myIdentity"] == null
+          ? null
+          : MyDigitalIdentity.fromJson(json["myIdentity"]),
+      identities: json["identities"] == null
+          ? null
+          : List<DigitalIdentity>.from(
+          json["identities"].map((x) => DigitalIdentity.fromJson(x))),
+      recoveryKeys: json["recoveryKeys"] == null
+          ? null
+          : List<RecoveryKey>.from(
+          json["recoveryKeys"].map((x) => RecoveryKey.fromJson(x))),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonMap = {
+      "blob": blob,
+      "myIdentity": myIdentity,
+      "identities": identities,
+      "recoveryKeys": recoveryKeys,
     };
 
     return jsonMap;

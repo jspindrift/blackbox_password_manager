@@ -27,6 +27,7 @@ import '../screens/home_tab_screen.dart';
 import "../widgets/QRScanView.dart";
 import '../testing/test_crypto.dart';
 
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
     Key? key,
@@ -73,16 +74,16 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   late StreamSubscription resetAppSubscription;
 
 
-  final cryptor = Cryptor();
-  final keyManager = KeychainManager();
-  final biometricManager = BiometricManager();
-  final settingsManager = SettingsManager();
-  final fileManager = FileManager();
-  final logManager = LogManager();
-  final deviceManager = DeviceManager();
-  final heartbeatTimer = HeartbeatTimer();
+  final _cryptor = Cryptor();
+  final _keyManager = KeychainManager();
+  final _biometricManager = BiometricManager();
+  final _settingsManager = SettingsManager();
+  final _fileManager = FileManager();
+  final _logManager = LogManager();
+  final _deviceManager = DeviceManager();
+  final _heartbeatTimer = HeartbeatTimer();
+  final _jailbreakChecker = JailbreakChecker();
 
-  final jailbreakChecker = JailbreakChecker();
 
   @override
   void initState() {
@@ -91,15 +92,15 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     /// add observer for app lifecycle state transitions
     WidgetsBinding.instance.addObserver(this);
 
-    logManager.initialize();
+    _logManager.initialize();
 
-    settingsManager.initializeLaunchSettings();
-    // keyManager.deleteAll();
-    // logManager.logger.d("now: ${DateTime.now().toIso8601String()}");
+    _settingsManager.initializeLaunchSettings();
+    // _keyManager.deleteAll();
+    // _logManager.logger.d("now: ${DateTime.now().toIso8601String()}");
 
-    logManager.log("LoginScreen", "initState", "initState");
+    _logManager.log("LoginScreen", "initState", "initState");
 
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
     _calculateDevices();
 
@@ -107,9 +108,12 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
     _readRecoveryMode();
 
+    /// save category tab index so we always land on this page to get vault item info
+    _settingsManager.setCurrentTabIndex(1);
+
     /// setup subscription streams
-    resetAppSubscription = settingsManager.onResetAppRecieved.listen((event) {
-      logManager.logger.d("LoginPage: resetAppSubscription: ${event}");
+    resetAppSubscription = _settingsManager.onResetAppRecieved.listen((event) {
+      _logManager.logger.d("LoginPage: resetAppSubscription: ${event}");
       if (mounted) {
         setState(() {
           _isSigningUp = event;
@@ -123,27 +127,27 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   }
 
   void _testStartupConfig() async {
-    // final sessionNumber = settingsManager.sessionNumber;
+    // final sessionNumber = _settingsManager.sessionNumber;
     // print("sessionNumber: $sessionNumber");
 
     // if (sessionNumber == 0) {
     //   print("first time opening app");
-    //   settingsManager.incrementSessionNumber();
+    //   _settingsManager.incrementSessionNumber();
     // } else {
-    //   settingsManager.incrementSessionNumber();
+    //   _settingsManager.incrementSessionNumber();
     // }
 
-    // settingsManager.saveEncryptionCount(0);
-    // settingsManager.saveNumBytesEncrypted(0);
-    // settingsManager.saveEncryptionRolloverCount(0);
+    // _settingsManager.saveEncryptionCount(0);
+    // _settingsManager.saveNumBytesEncrypted(0);
+    // _settingsManager.saveEncryptionRolloverCount(0);
 
-    // keyManager.deleteAll();
-    // settingsManager.removeAllPreferences();
+    // _keyManager.deleteAll();
+    // _settingsManager.removeAllPreferences();
   }
 
   void _readRecoveryMode() async {
     setState(() {
-      _isRecoveryModeEnabled = settingsManager.isRecoveryModeEnabled;
+      _isRecoveryModeEnabled = _settingsManager.isRecoveryModeEnabled;
     });
   }
 
@@ -151,14 +155,14 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   void _calculateDevices() async {
     await _getAppSettings();
 
-    final checkBiometrics = await biometricManager.doBiometricCheck();
+    final checkBiometrics = await _biometricManager.doBiometricCheck();
     setState(() {
       _isBiometricsAvailable = checkBiometrics;
     });
 
     if (Platform.isIOS) {
-      final idList = await keyManager.readLocalDeviceKeys();
-      final thisId = await deviceManager.getDeviceId();
+      final idList = await _keyManager.readLocalDeviceKeys();
+      final thisId = await _deviceManager.getDeviceId();
       // print("thisId: $thisId");
 
       var foundID = false;
@@ -181,30 +185,30 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           _isFirstLaunch = false;
         });
       } else {
-          logManager.logger.d("delete for startup!!");
-          await keyManager.deleteForStartup();
+          _logManager.logger.d("delete for startup!!");
+          await _keyManager.deleteForStartup();
           setState(() {
             _isSigningUp = true;
           });
           if (thisId != null) {
-            await keyManager.saveLocalDeviceKey(
+            await _keyManager.saveLocalDeviceKey(
               thisId,
               DateTime.now().toIso8601String(),
             );
           }
       }
     } else {
-      await settingsManager.initializeLaunchSettings();
-      // settingsManager.saveHasLaunched();
+      await _settingsManager.initializeLaunchSettings();
+      // _settingsManager.saveHasLaunched();
 
-      if (!settingsManager.launchSettingInitialized) {
-        logManager.logger.d("settingsManager.launchSettingInitialized: ${settingsManager.launchSettingInitialized}");
-        // await settingsManager.initializeLaunchSettings();
+      if (!_settingsManager.launchSettingInitialized) {
+        _logManager.logger.d("_settingsManager.launchSettingInitialized: ${_settingsManager.launchSettingInitialized}");
+        // await _settingsManager.initializeLaunchSettings();
 
         Future.delayed(Duration(seconds: 2), () {
-          logManager.logger.d("settingsManager.launchSettingInitialized-check: ${settingsManager.launchSettingInitialized}");
+          _logManager.logger.d("_settingsManager.launchSettingInitialized-check: ${_settingsManager.launchSettingInitialized}");
 
-            if (settingsManager.launchSettingInitialized) {
+            if (_settingsManager.launchSettingInitialized) {
                 _checkHasLaunchedState();
               }
 
@@ -216,13 +220,13 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   }
 
   _checkHasLaunchedState() async {
-    final status = settingsManager.hasLaunched;
-    logManager.logger.d("hasLaunched: $status");
+    final status = _settingsManager.hasLaunched;
+    _logManager.logger.d("hasLaunched: $status");
 
     if (!status) {
-      logManager.logger.d("delete for startup");
-      keyManager.deleteForStartup();
-      settingsManager.saveHasLaunched();
+      _logManager.logger.d("delete for startup");
+      _keyManager.deleteForStartup();
+      _settingsManager.saveHasLaunched();
 
       _showErrorDialog("Deleted for Startup");
     } else {
@@ -234,9 +238,9 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
   void _startup() async {
 
-    settingsManager.saveHasLaunched();
+    _settingsManager.saveHasLaunched();
 
-    _isJailbroken = await jailbreakChecker.isDeviceJailbroken();
+    _isJailbroken = await _jailbreakChecker.isDeviceJailbroken();
 
     if (_isJailbroken) {
       Future.delayed(Duration(seconds: 0), () {
@@ -246,12 +250,12 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     }
 
     /// get log key ready for authenticating logs
-    keyManager.readLogKey();
+    _keyManager.readLogKey();
 
     _getAppState();
 
     /// check for pin code
-    final pinStatus = await keyManager.readPinCodeKey();
+    final pinStatus = await _keyManager.readPinCodeKey();
     // print("pinStatus1: $pinStatus, $_isFirstLaunch");
 
     if (pinStatus && !_isFirstLaunch) {
@@ -270,11 +274,11 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           Navigator.of(context)
               .pushNamed(HomeTabScreen.routeName)
               .then((value) async {
-            logManager.saveLogs();
+            _logManager.saveLogs();
 
-            settingsManager.setCurrentTabIndex(1);
+            _settingsManager.setCurrentTabIndex(1);
 
-            HeartbeatTimer().stopHeartbeatTimer();
+            _heartbeatTimer.stopHeartbeatTimer();
 
             setState(() {
               _isOnLoginScreen = true;
@@ -291,18 +295,18 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
   _getAppState() async {
     /// read encrypted key material data
-    final keyStatus = await keyManager.readEncryptedKey();
+    final keyStatus = await _keyManager.readEncryptedKey();
     setState(() {
-      _isSigningUp = !keyManager.hasPasswordItems;
+      _isSigningUp = !_keyManager.hasPasswordItems;
     });
 
     /// check biometric key
-    final bioKeyStatus = await keyManager.renderBiometricKey();
+    final bioKeyStatus = await _keyManager.renderBiometricKey();
     // setState(() {
     //   _isBiometricLoginEnabled = bioKeyStatus;
     // });
 
-    final checkBioAvailability = await biometricManager.doBiometricCheck();
+    final checkBioAvailability = await _biometricManager.doBiometricCheck();
     setState(() {
       _isBiometricsAvailable = checkBioAvailability;// && bioStatus;
     });
@@ -312,7 +316,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     });
 
     if (!checkBioAvailability && bioKeyStatus) {
-      keyManager.deleteBiometricKey();
+      _keyManager.deleteBiometricKey();
     }
 
     if (_isFirstLaunch) {
@@ -328,17 +332,17 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       setState(() {
         _isDarkModeEnabled = true;
       });
-      settingsManager.saveDarkMode(true);
+      _settingsManager.saveDarkMode(true);
       // set to secure settings by default
-      settingsManager.saveLockOnExit(true);
+      _settingsManager.saveLockOnExit(true);
     } else {
       setState(() {
-        _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+        _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
       });
     }
 
     // /// check biometric key
-    // final bioStatus = await keyManager.renderBiometricKey();
+    // final bioStatus = await _keyManager.renderBiometricKey();
     // setState(() {
     //   _isBiometricLoginEnabled = bioStatus;
     // });
@@ -350,7 +354,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
 
     /// check local document backup file
-    final vaultFileString = await fileManager.readNamedVaultData();
+    final vaultFileString = await _fileManager.readNamedVaultData();
 
     if (vaultFileString.isNotEmpty) {
       setState(() {
@@ -364,7 +368,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
     /// check android SD backup file if local does not exist
     if (Platform.isAndroid && !_hasBackups) {
-      var vaultFileString = await fileManager.readVaultDataSDCard();
+      var vaultFileString = await _fileManager.readVaultDataSDCard();
       setState(() {
         _hasBackups = vaultFileString.isNotEmpty;
       });
@@ -373,13 +377,13 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _getAppSettings() async {
-    await settingsManager.initialize();
-    // await DeviceManager().initialize();
+    await _settingsManager.initialize();
+    // await _deviceManager().initialize();
 
-    // logManager.logger.d("deviceData: ${settingsManager.deviceManager.deviceData}");
+    // _logManager.logger.d("deviceData: ${_settingsManager._deviceManager.deviceData}");
 
     setState(() {
-      _isRecoveryModeEnabled = settingsManager.isRecoveryModeEnabled;
+      _isRecoveryModeEnabled = _settingsManager.isRecoveryModeEnabled;
     });
 
   }
@@ -393,9 +397,9 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     switch (state) {
       case AppLifecycleState.inactive:
         // print("INACTIVE-------------------------------");
-        logManager.log("LoginScreen", "didChangeAppLifecycleState",
+        _logManager.log("LoginScreen", "didChangeAppLifecycleState",
             "AppLifecycleState: inactive");
-        logManager.logger.d("AppLifecycleState: inactive - LoginScreen");
+        _logManager.logger.d("AppLifecycleState: inactive - LoginScreen");
 
         /// Save logs here...
         /// Tried saving on AppLifecycleState.paused but it fails and
@@ -404,43 +408,43 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         /// in build/debug mode, which is very odd...
 
         if (_isOnLoginScreen) {
-          logManager.setIsSavingLogs(true);
-          await logManager.saveLogs();
+          _logManager.setIsSavingLogs(true);
+          await _logManager.saveLogs();
         }
 
         break;
       case AppLifecycleState.resumed:
-        logManager.log("LoginScreen", "didChangeAppLifecycleState",
+        _logManager.log("LoginScreen", "didChangeAppLifecycleState",
             "AppLifecycleState: resumed");
-        logManager.logger.d("AppLifecycleState: resumed - LoginScreen");
+        _logManager.logger.d("AppLifecycleState: resumed - LoginScreen");
 
         if (!_isInit) {
           _readRecoveryMode();
 
           /// check biometrics
-          final checkBioAvailability = await biometricManager.doBiometricCheck();
+          final checkBioAvailability = await _biometricManager.doBiometricCheck();
           setState(() {
             _isBiometricsAvailable = checkBioAvailability;
           });
 
           if (!checkBioAvailability) {
-            keyManager.deleteBiometricKey();
+            _keyManager.deleteBiometricKey();
           }
         }
         break;
       case AppLifecycleState.paused:
-        logManager.logger.d("AppLifecycleState: paused - LoginScreen");
-        logManager.log("LoginScreen", "didChangeAppLifecycleState",
+        _logManager.logger.d("AppLifecycleState: paused - LoginScreen");
+        _logManager.log("LoginScreen", "didChangeAppLifecycleState",
             "AppLifecycleState: paused");
         break;
       case AppLifecycleState.detached:
-        logManager.logger.d("AppLifecycleState: detached");
-        logManager.log("LoginScreen", "didChangeAppLifecycleState",
+        _logManager.logger.d("AppLifecycleState: detached");
+        _logManager.log("LoginScreen", "didChangeAppLifecycleState",
             "AppLifecycleState: detached");
         break;
       case AppLifecycleState.hidden:
-        logManager.logger.d("AppLifecycleState: hidden - LoginScreen");
-        logManager.log("LoginScreen", "didChangeAppLifecycleState",
+        _logManager.logger.d("AppLifecycleState: hidden - LoginScreen");
+        _logManager.log("LoginScreen", "didChangeAppLifecycleState",
             "AppLifecycleState: hidden");
         break;
     }
@@ -455,11 +459,11 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
     // print("$_isOnLoginScreen, $_isFirstLaunch, $_isInit");
     if (_isOnLoginScreen && !_isFirstLaunch && !_isInit) {
-      keyManager.readPinCodeKey().then((value) {
+      _keyManager.readPinCodeKey().then((value) {
         // print("readPinCodeKey-login: $value");
         if (value) {
           _isOnLoginScreen = false;
@@ -473,25 +477,25 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
             ),
           ).then((value) async {
             if (value == 'login') {
-              // settingsManager.setCurrentTabIndex(0);
+              // _settingsManager.setCurrentTabIndex(0);
 
               Navigator.of(context)
                   .pushNamed(HomeTabScreen.routeName)
                   .then((value) async {
-                logManager.saveLogs();
+                _logManager.saveLogs();
 
-                settingsManager.setCurrentTabIndex(1);
+                _settingsManager.setCurrentTabIndex(1);
 
-                HeartbeatTimer().stopHeartbeatTimer();
+                _heartbeatTimer.stopHeartbeatTimer();
 
                 setState(() {
                   _isOnLoginScreen = true;
                 });
 
                 /// read encrypted key material data
-                await keyManager.readEncryptedKey();
+                await _keyManager.readEncryptedKey();
                 setState(() {
-                  _isSigningUp = !keyManager.hasPasswordItems;
+                  _isSigningUp = !_keyManager.hasPasswordItems;
                 });
 
                 // lets go dark... :)
@@ -499,20 +503,20 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                   setState(() {
                     _isDarkModeEnabled = true;
                   });
-                  settingsManager.saveDarkMode(true);
+                  _settingsManager.saveDarkMode(true);
                   // set to secure settings by default
-                  settingsManager.saveLockOnExit(true);
+                  _settingsManager.saveLockOnExit(true);
                 }
 
-                final bioKeyStatus = await keyManager.renderBiometricKey();
-                final checkBioAvailability = await biometricManager.doBiometricCheck();
+                final bioKeyStatus = await _keyManager.renderBiometricKey();
+                final checkBioAvailability = await _biometricManager.doBiometricCheck();
 
                 setState(() {
                   _isBiometricsAvailable = checkBioAvailability;
                   _isBiometricLoginEnabled = checkBioAvailability && bioKeyStatus;
                 });
 
-                final vaultFileString = await fileManager.readNamedVaultData();
+                final vaultFileString = await _fileManager.readNamedVaultData();
 
                 if (vaultFileString.isNotEmpty) {
                   setState(() {
@@ -522,7 +526,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
                 /// check android backup file
                 if (Platform.isAndroid && !_hasBackups) {
-                  var vaultFileString = await fileManager.readVaultDataSDCard();
+                  var vaultFileString = await _fileManager.readVaultDataSDCard();
                   setState(() {
                     _hasBackups = vaultFileString.isNotEmpty;
                   });
@@ -676,7 +680,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                           setState(() {
                             _isAuthenticating = true;
                           });
-                          // _logManager.logger.d("onEditingComplete");
+                          // __logManager.logger.d("onEditingComplete");
                           Timer(const Duration(milliseconds: 200), () async {
                             await _logIn();
                           });
@@ -882,7 +886,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                       padding: EdgeInsets.all(16),
                       child: IconButton(
                         icon: Image.asset(
-                          biometricManager.biometricIcon,
+                          _biometricManager.biometricIcon,
                           width: 100,
                           height: 100,
                         ),
@@ -953,9 +957,9 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                           ),
                         ),
                         onPressed: () async {
-                          final status = await keyManager.deleteForBackup();
+                          final status = await _keyManager.deleteForBackup();
                           if (status) {
-                            settingsManager.removeAllPreferences();
+                            _settingsManager.removeAllPreferences();
                             // Navigator.popUntil(context, (route) => route.isFirst);
                           } else {
                             _showErrorDialog('Delete account failed');
@@ -1019,14 +1023,14 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
     _readRecoveryMode();
 
-    logManager.saveLogs();
+    _logManager.saveLogs();
 
-    cryptor.clearAllKeys();
+    _cryptor.clearAllKeys();
 
     /// read encrypted key material data
-    keyManager.readEncryptedKey().then((value) {
+    _keyManager.readEncryptedKey().then((value) {
       setState(() {
-        _isSigningUp = !keyManager.hasPasswordItems;
+        _isSigningUp = !_keyManager.hasPasswordItems;
       });
 
       // lets go dark... :)
@@ -1034,14 +1038,14 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         setState(() {
           _isDarkModeEnabled = true;
         });
-        settingsManager.saveDarkMode(true);
+        _settingsManager.saveDarkMode(true);
         // set to secure settings by default
-        settingsManager.saveLockOnExit(true);
+        _settingsManager.saveLockOnExit(true);
       }
     });
 
-    final bioKeyStatus = await keyManager.renderBiometricKey();
-    final checkBioAvailability = await biometricManager.doBiometricCheck();
+    final bioKeyStatus = await _keyManager.renderBiometricKey();
+    final checkBioAvailability = await _biometricManager.doBiometricCheck();
 
     setState(() {
       _isBiometricsAvailable = checkBioAvailability;
@@ -1050,10 +1054,10 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
     await _checkBackups();
 
-    logManager.logger.d("_hasBackups: $_hasBackups");
+    _logManager.logger.d("_hasBackups: $_hasBackups");
 
     /// check for pin code
-    final pinStatus = await keyManager.readPinCodeKey();
+    final pinStatus = await _keyManager.readPinCodeKey();
 
     if (pinStatus && !_isFirstLaunch) {
       _isOnLoginScreen = false;
@@ -1071,11 +1075,11 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           Navigator.of(context)
               .pushNamed(HomeTabScreen.routeName)
               .then((value) async {
-            logManager.saveLogs();
+            _logManager.saveLogs();
 
-            settingsManager.setCurrentTabIndex(1);
+            _settingsManager.setCurrentTabIndex(1);
 
-            HeartbeatTimer().stopHeartbeatTimer();
+            _heartbeatTimer.stopHeartbeatTimer();
 
             setState(() {
               _isOnLoginScreen = true;
@@ -1091,7 +1095,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _checkBackups() async {
-    final vaultFileString = await fileManager.readNamedVaultData();
+    final vaultFileString = await _fileManager.readNamedVaultData();
 
     setState(() {
       _hasBackups = vaultFileString.isNotEmpty;
@@ -1100,7 +1104,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
     /// check android backup file
     if (Platform.isAndroid) {
-      var vaultFileString = await fileManager.readVaultDataSDCard();
+      var vaultFileString = await _fileManager.readVaultDataSDCard();
       setState(() {
         _hasBackups = vaultFileString.isNotEmpty;
       });
@@ -1121,16 +1125,16 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       return;
     }
 
-    final uuid = cryptor.getUUID();
+    final uuid = _cryptor.getUUID();
 
 
     try {
-      var newKeyParams = await cryptor.deriveKey(uuid, password, hint);
+      var newKeyParams = await _cryptor.deriveKey(uuid, password, hint);
       if (newKeyParams == null) {
         return null;
       }
 
-      keyManager.setKeyId(newKeyParams.keyId);
+      _keyManager.setKeyId(newKeyParams.keyId);
 
       // reset fields
       _enterPasswordTextController.text = '';
@@ -1144,12 +1148,12 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       // String encodedEncryptedKey = newKeyParams.key;//base64.encode(newKeyParams.key);
 
       // final deviceId = "simulator";
-      final deviceId = await deviceManager.getDeviceId();
+      final deviceId = await _deviceManager.getDeviceId();
 
       /// create secret salt
       if (deviceId != null) {
         // save password details
-        final status = await keyManager.saveMasterPassword(
+        final status = await _keyManager.saveMasterPassword(
             newKeyParams,
         );
         // print("status: $status");
@@ -1157,13 +1161,13 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         if (status) {
           /// Save identity key data
           ///
-          final myId = await cryptor.createMyDigitalID();
+          final myId = await _cryptor.createMyDigitalID();
           // print("myId: $myId");
 
           if (myId != null) {
             // final statusId =
-            await keyManager.saveMyIdentity(
-                keyManager.vaultId,
+            await _keyManager.saveMyIdentity(
+                _keyManager.vaultId,
                 myId.toRawJson(),
             );
 
@@ -1171,10 +1175,10 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           }
 
           /// re-save log key in-case we needed to create a new one
-          await keyManager.saveLogKey(cryptor.logKeyMaterial);
+          await _keyManager.saveLogKey(_cryptor.logKeyMaterial);
 
           /// re-read and refresh our variables
-          await keyManager.readEncryptedKey();
+          await _keyManager.readEncryptedKey();
         }
 
         setState(() {
@@ -1184,15 +1188,15 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           _isFirstLaunch = false;
         });
 
-        settingsManager.setCurrentTabIndex(1);
+        _settingsManager.setCurrentTabIndex(1);
 
-        settingsManager.setIsCreatingNewAccount(true);
+        _settingsManager.setIsCreatingNewAccount(true);
 
         Navigator.of(context).pushNamed(HomeTabScreen.routeName).then((value) {
-          settingsManager.setCurrentTabIndex(1);
-          // settingsManager.setIsCreatingNewAccount(true);
+          _settingsManager.setCurrentTabIndex(1);
+          // _settingsManager.setIsCreatingNewAccount(true);
 
-          HeartbeatTimer().stopHeartbeatTimer();
+          _heartbeatTimer.stopHeartbeatTimer();
 
           _computeLogoutValues();
         });
@@ -1200,7 +1204,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         _showErrorDialog('An error occurred. No deviceId available');
       }
     } catch (e) {
-      logManager.logger.d(e);
+      _logManager.logger.d(e);
       _showErrorDialog('An error occurred');
     }
   }
@@ -1221,9 +1225,9 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
     try {
       // check password
-      final status = await cryptor.deriveKeyCheck(password, keyManager.salt);
-      logManager.log("LoginScreen", "_logIn", "deriveKeyCheck: $status");
-      logManager.logger.d("deriveKeyCheck: $status");
+      final status = await _cryptor.deriveKeyCheck(password, _keyManager.salt);
+      _logManager.log("LoginScreen", "_logIn", "deriveKeyCheck: $status");
+      _logManager.logger.d("deriveKeyCheck: $status");
 
       if (status) {
         setState((){
@@ -1233,11 +1237,10 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           _hideEnterPasswordField = true;
         });
 
-
         Navigator.of(context).pushNamed(HomeTabScreen.routeName).then((value) {
-          settingsManager.setCurrentTabIndex(1);
+          _settingsManager.setCurrentTabIndex(1);
 
-          HeartbeatTimer().stopHeartbeatTimer();
+          _heartbeatTimer.stopHeartbeatTimer();
 
           _computeLogoutValues();
         });
@@ -1245,11 +1248,11 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         _wrongPasswordCount += 1;
 
         /// save the logs on invalid tries
-        logManager.log("LoginScreen", "_logIn", "invalid password");
-        logManager.saveLogs();
+        _logManager.log("LoginScreen", "_logIn", "invalid password");
+        _logManager.saveLogs();
 
-        if (_wrongPasswordCount % 3 == 0 && keyManager.hint.isNotEmpty) {
-          _showInvalidPasswordDialog('Invalid password.\n\nhint: ${keyManager.hint}');
+        if (_wrongPasswordCount % 3 == 0 && _keyManager.hint.isNotEmpty) {
+          _showInvalidPasswordDialog('Invalid password.\n\nhint: ${_keyManager.hint}');
         } else {
           _showInvalidPasswordDialog('Invalid password.');
         }
@@ -1263,11 +1266,11 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         _isAuthenticating = false;
       });
 
-      logManager.logger.w("Exception: $e");
+      _logManager.logger.w("Exception: $e");
 
       /// save the logs on invalid tries
-      logManager.log("LoginScreen", "_logIn", "Error");
-      logManager.saveLogs();
+      _logManager.log("LoginScreen", "_logIn", "Error");
+      _logManager.saveLogs();
     }
   }
 
@@ -1277,50 +1280,50 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
     _enterPasswordTextController.text = '';
 
-    await biometricManager.getAvailableBiometrics();
-    // print("no available biometrics: ${biometricManager.availableBiometrics}");
+    await _biometricManager.getAvailableBiometrics();
+    // print("no available biometrics: ${_biometricManager.availableBiometrics}");
 
-    if (biometricManager.availableBiometrics == null ||
-        biometricManager.availableBiometrics!.isEmpty) {
+    if (_biometricManager.availableBiometrics == null ||
+        _biometricManager.availableBiometrics!.isEmpty) {
       // print("no available biometrics");
       _showErrorDialog('Biometrics unavailable');
       setState(() {
         _isBiometricLoginEnabled = false;
       });
 
-      await keyManager.deleteBiometricKey();
+      await _keyManager.deleteBiometricKey();
       return;
     }
 
-    final status = await biometricManager.authenticateWithBiometrics();
+    final status = await _biometricManager.authenticateWithBiometrics();
     EasyLoading.show(status: "Authenticating...");
 
     if (status) {
       // if valid auth, create biometric key
-      final setStatus = await keyManager.setBiometricKey();
+      final setStatus = await _keyManager.setBiometricKey();
       if (setStatus) {
         setState(() {
           _isOnLoginScreen = false;
           _hideEnterPasswordField = true;
         });
 
-        final logKeyMaterial = await keyManager.readLogKey();
-        await cryptor.decodeAndSetLogKey(logKeyMaterial);
+        final logKeyMaterial = await _keyManager.readLogKey();
+        await _cryptor.decodeAndSetLogKey(logKeyMaterial);
 
         Navigator.of(context).pushNamed(HomeTabScreen.routeName).then((value) {
-          settingsManager.setCurrentTabIndex(1);
+          _settingsManager.setCurrentTabIndex(1);
 
-          HeartbeatTimer().stopHeartbeatTimer();
+          _heartbeatTimer.stopHeartbeatTimer();
 
           _computeLogoutValues();
         });
       } else {
-        logManager.log(
+        _logManager.log(
             "LoginScreen", "_pressedBiometricButton", "setStatus1 - fail");
 
         /// Android simulator bug only works sometimes if done twice???
         /// Note: Android sucks
-        final setStatus2 = await keyManager.setBiometricKey();
+        final setStatus2 = await _keyManager.setBiometricKey();
 
         if (setStatus2) {
           setState(() {
@@ -1329,24 +1332,24 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           Navigator.of(context)
               .pushNamed(HomeTabScreen.routeName)
               .then((value) {
-            settingsManager.setCurrentTabIndex(1);
+            _settingsManager.setCurrentTabIndex(1);
 
-            HeartbeatTimer().stopHeartbeatTimer();
+            _heartbeatTimer.stopHeartbeatTimer();
 
             _computeLogoutValues();
           });
         } else {
           // print('setStatus 2 - fail');
-          logManager.logger.w("setStatus2 - fail");
-          logManager.log(
+          _logManager.logger.w("setStatus2 - fail");
+          _logManager.log(
               "LoginScreen", "_pressedBiometricButton", "setStatus2 - fail");
           _showErrorDialog('Biometric key cannot be read 2');
         }
       }
     } else {
       /// save the logs on invalid states
-      logManager.log("LoginScreen", "_pressedBiometricButton", "Error");
-      logManager.saveLogs();
+      _logManager.log("LoginScreen", "_pressedBiometricButton", "Error");
+      _logManager.saveLogs();
       _showErrorDialog('Biometric error');
     }
 
@@ -1367,12 +1370,12 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       _isOnLoginScreen = true;
 
       /// read encrypted key material data
-      keyManager.readEncryptedKey().then((value) {
+      _keyManager.readEncryptedKey().then((value) {
         setState(() {
-          _isSigningUp = !keyManager.hasPasswordItems;
+          _isSigningUp = !_keyManager.hasPasswordItems;
         });
 
-        if (keyManager.hasPasswordItems) {
+        if (_keyManager.hasPasswordItems) {
           _isOnLoginScreen = false;
           _hideEnterPasswordField = true;
 
@@ -1380,14 +1383,14 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           _enterPasswordTextController.text = '';
           _confirmPasswordTextController.text = '';
 
-          settingsManager.setCurrentTabIndex(1);
+          _settingsManager.setCurrentTabIndex(1);
 
           Navigator.of(context)
               .pushNamed(HomeTabScreen.routeName)
               .then((value) {
-            settingsManager.setCurrentTabIndex(1);
+            _settingsManager.setCurrentTabIndex(1);
 
-            HeartbeatTimer().stopHeartbeatTimer();
+            _heartbeatTimer.stopHeartbeatTimer();
 
             _computeLogoutValues();
           });
@@ -1399,7 +1402,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   Future<void> _scanQR() async {
     String barcodeScanRes;
     if (!mounted) {
-      logManager.logger.e("something went wrong: not mounted");
+      _logManager.logger.e("something went wrong: not mounted");
       return;
     }
 
@@ -1408,7 +1411,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       try {
         barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
             "#ff6666", "Cancel", true, ScanMode.QR);
-        // logManager.logger.d(barcodeScanRes);
+        // _logManager.logger.d(barcodeScanRes);
 
         try {
           RecoveryKeyCode keyCode = RecoveryKeyCode.fromRawJson(barcodeScanRes);
@@ -1420,7 +1423,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
             _showErrorDialog("Exception: Invalid code format");
           }
         } catch (e) {
-          logManager.logger.d("something went wrong: $e");
+          _logManager.logger.d("something went wrong: $e");
           _showErrorDialog("Exception: Could not scan code.");
         }
       } on PlatformException {
@@ -1458,22 +1461,22 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
     final keyId = key.id;
     final keyData = key.key;
-    logManager.logger.d("vaultId: ${keyManager.vaultId}");
-    // logManager.logger.d("keyData: ${keyData}");
+    _logManager.logger.d("vaultId: ${_keyManager.vaultId}");
+    // _logManager.logger.d("keyData: ${keyData}");
 
-    final recoveryItem = await keyManager.getRecoveryKeyItem(keyId);
+    final recoveryItem = await _keyManager.getRecoveryKeyItem(keyId);
 
     if (recoveryItem != null) {
       SecretKey skey = SecretKey(base64.decode(keyData));
       final encryptedKeys = recoveryItem.data;
-      logManager.logger.d("encryptedKeys: ${encryptedKeys}");
+      _logManager.logger.d("encryptedKeys: ${encryptedKeys}");
 
-      final decryptedKeys = await cryptor.decryptRecoveryKey(skey, encryptedKeys);
+      final decryptedKeys = await _cryptor.decryptRecoveryKey(skey, encryptedKeys);
       // print("decrypted4Keys: ${decryptedKeys}");
 
       if (decryptedKeys.length == 32) {
-        cryptor.setAesRootKeyBytes(decryptedKeys);
-        await cryptor.expandSecretRootKey(decryptedKeys);
+        _cryptor.setAesRootKeyBytes(decryptedKeys);
+        await _cryptor.expandSecretRootKey(decryptedKeys);
 
         /// Log in
         /// TODO: set variable to tell user to change password on this session
@@ -1482,20 +1485,20 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         _isOnLoginScreen = false;
         _hideEnterPasswordField = true;
 
-        settingsManager.setIsRecoveredSession(true);
+        _settingsManager.setIsRecoveredSession(true);
 
         Navigator.of(context).pushNamed(HomeTabScreen.routeName).then((value) {
-          settingsManager.setCurrentTabIndex(1);
+          _settingsManager.setCurrentTabIndex(1);
 
-          settingsManager.setIsRecoveredSession(false);
+          _settingsManager.setIsRecoveredSession(false);
 
-          HeartbeatTimer().stopHeartbeatTimer();
+          _heartbeatTimer.stopHeartbeatTimer();
 
           _computeLogoutValues();
         });
       }
     } else {
-      logManager.logger.d("cant find recovery key item");
+      _logManager.logger.d("cant find recovery key item");
       _showErrorDialog("Could not get Recovery Key");
     }
 

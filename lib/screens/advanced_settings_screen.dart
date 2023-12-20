@@ -30,7 +30,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   bool _isDarkModeEnabled = false;
 
   int _selectedIndex = 3;
-
   int _signCounter = 1;
 
   final _logManager = LogManager();
@@ -40,6 +39,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   /// post quantum signing
   final _wotsManager = WOTSManager();
   final _postQuantumManager = PostQuantumManager();
+
 
   @override
   void initState() {

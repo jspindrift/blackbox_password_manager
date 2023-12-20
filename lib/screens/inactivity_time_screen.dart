@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+
 import '../helpers/InactivityTimer.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import 'home_tab_screen.dart';
+
 
 class InactivityTimeScreen extends StatefulWidget {
   const InactivityTimeScreen({
@@ -47,6 +49,7 @@ class _InactivityTimeScreenState extends State<InactivityTimeScreen> {
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
   final _inactivityTimer = InactivityTimer();
+
 
   @override
   void initState() {

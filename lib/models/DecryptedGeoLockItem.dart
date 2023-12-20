@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+
 class DecryptedGeoLockItem {
   int index_lat;
   int index_long;
@@ -33,4 +34,5 @@ class DecryptedGeoLockItem {
 
     return jsonMap;
   }
+
 }

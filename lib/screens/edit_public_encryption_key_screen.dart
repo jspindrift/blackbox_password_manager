@@ -95,6 +95,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
   final _keyManager = KeychainManager();
   final _cryptor = Cryptor();
 
+
   @override
   void initState() {
     super.initState();

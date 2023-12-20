@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:local_auth/local_auth.dart';
-import 'package:flutter/services.dart';
-import '../managers/LogManager.dart';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_jailbreak_detection/flutter_jailbreak_detection.dart';
+
+import '../managers/LogManager.dart';
 
 
 class JailbreakChecker {

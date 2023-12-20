@@ -47,7 +47,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   var _keyManager = KeychainManager();
   var _logManager = LogManager();
   var _settingsManager = SettingsManager();
-  // final inactivityTimer = InactivityTimer();
+
 
   @override
   void initState() {

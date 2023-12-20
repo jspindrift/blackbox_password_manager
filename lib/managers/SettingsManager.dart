@@ -1,13 +1,14 @@
-import 'dart:async';
-import 'dart:math';
 import 'dart:io';
-import '../helpers/WidgetUtils.dart';
+import 'dart:async';
+
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import '../models/VaultItem.dart';
+
+import '../helpers/WidgetUtils.dart';
 import '../helpers/AppConstants.dart';
+import '../models/VaultItem.dart';
 import '../managers/DeviceManager.dart';
 
 
@@ -345,7 +346,6 @@ class SettingsManager {
   void setCurrentTabIndex(int index) async {
     _currentTabIndex = index;
     // logger.d("setCurrentTabIndex: $index");
-
     try {
       final prefs = await SharedPreferences.getInstance();
       prefs.setInt(

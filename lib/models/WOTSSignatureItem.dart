@@ -27,7 +27,9 @@ class WOTSBasicSignatureChain {
 
     return jsonMap;
   }
+
 }
+
 
 class WOTSBasicSignatureItem {
   int id;
@@ -70,7 +72,9 @@ class WOTSBasicSignatureItem {
 
     return jsonMap;
   }
+
 }
+
 
 class BasicMessageData {
   String time;
@@ -104,7 +108,9 @@ class BasicMessageData {
 
     return jsonMap;
   }
+
 }
+
 
 class AddressableMessageData {
   String time;
@@ -142,6 +148,7 @@ class AddressableMessageData {
 
     return jsonMap;
   }
+
 }
 
 
@@ -171,7 +178,9 @@ class GigaWOTSSignatureDictionary {
 
     return jsonMap;
   }
+
 }
+
 
 class GigaWOTSSignatureChain {
   String chainId;
@@ -203,7 +212,9 @@ class GigaWOTSSignatureChain {
 
     return jsonMap;
   }
+
 }
+
 
 /// WOTS signature that contains the next public key
 class GigaWOTSSignatureItem {
@@ -239,6 +250,7 @@ class GigaWOTSSignatureItem {
 
     return jsonMap;
   }
+
 }
 
 
@@ -286,7 +298,9 @@ class WOTSMessageData {
 
     return jsonMap;
   }
+
 }
+
 
 // class SignatureAsym {
 //   String r;

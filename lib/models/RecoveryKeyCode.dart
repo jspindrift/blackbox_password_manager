@@ -1,9 +1,10 @@
 import 'dart:convert';
 
-/// TODO: For Recovery Key Scanning in
+
+/// TODO: For Recovery Key Scanning
 class RecoveryKeyCode {
-  String id; // 32 byte hash of pub key exchange
-  String key; // 32 byte hex data
+  String id; // 32 byte hash of pub key exchange, change to base64
+  String key; // 32 byte hex data, change to base64
 
   RecoveryKeyCode({
     required this.id,
@@ -30,4 +31,5 @@ class RecoveryKeyCode {
 
     return jsonMap;
   }
+
 }

@@ -150,6 +150,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
   final _settingsManager = SettingsManager();
   final _geolocationManager = GeoLocationManager();
 
+
   @override
   void initState() {
     super.initState();

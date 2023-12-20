@@ -1,10 +1,8 @@
-import "dart:convert";
 import "dart:typed_data";
 import 'dart:async';
-import "package:blackbox_password_manager/models/WOTSSignatureItem.dart";
+
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 import "package:blackbox_password_manager/managers/Cryptor.dart";
 import "package:blackbox_password_manager/managers/WOTSManager.dart";
 import "package:blackbox_password_manager/merkle/merkle_example.dart";
@@ -15,6 +13,7 @@ import 'package:logger/logger.dart';
 import 'package:ecdsa/ecdsa.dart' as ecdsa;
 import 'package:elliptic/elliptic.dart' as elliptic;
 
+import "../models/WOTSSignatureItem.dart";
 import "LogManager.dart";
 
 

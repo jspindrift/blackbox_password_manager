@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:vibration/vibration.dart';
 
+
 typedef IndexedHeight = double Function(int);
 
 class AlphabetScrollListHeader {

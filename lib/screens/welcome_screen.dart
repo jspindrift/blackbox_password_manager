@@ -64,6 +64,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final _cryptor = Cryptor();
   final _logManager = LogManager();
 
+
   @override
   void initState() {
     super.initState();

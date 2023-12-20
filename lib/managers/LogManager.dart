@@ -15,6 +15,7 @@ import '../managers/SettingsManager.dart';
 /// cant add this as it causes a circular reference
 // import '../managers/KeychainManager.dart';
 
+
 /// get stack trace information
 /// can only be used in debug mode for now since StackTrace info is different!
 class CustomTrace {

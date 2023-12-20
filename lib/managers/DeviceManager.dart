@@ -1,14 +1,13 @@
-import 'dart:async';
-import 'dart:developer' as developer;
 import 'dart:io';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:logger/logger.dart';
 
 /// creates stackOverflow
 // import 'LogManager.dart';
+
 
 class DeviceManager {
   var logger = Logger(

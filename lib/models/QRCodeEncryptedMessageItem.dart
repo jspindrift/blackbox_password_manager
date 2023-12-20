@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+
 class QRCodeEncryptedMessageItem {
   String keyId;  // public key hash
   String message;  // encrypted message
@@ -28,5 +29,6 @@ class QRCodeEncryptedMessageItem {
     };
     return jsonMap;
   }
+
 }
 

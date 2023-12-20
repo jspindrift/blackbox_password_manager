@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+
 /// Item returned from geoEncrypt() function
 ///
 class EncryptedGeoLockItem {
@@ -45,4 +46,5 @@ class EncryptedGeoLockItem {
 
     return jsonMap;
   }
+
 }

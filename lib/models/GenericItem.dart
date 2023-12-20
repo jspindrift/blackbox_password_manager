@@ -2,13 +2,14 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:convert/convert.dart';
+import 'package:logger/logger.dart';
 
 import '../managers/Cryptor.dart';
+import '../merkle/merkle_example.dart';
 import 'KeyItem.dart';
 import 'NoteItem.dart';
 import 'PasswordItem.dart';
-import 'package:logger/logger.dart';
-import '../merkle/merkle_example.dart';
+
 
 var logger = Logger(
   printer: PrettyPrinter(),
@@ -50,6 +51,7 @@ class GenericItem {
   }
 
 }
+
 
 class GenericItemList {
   List<GenericItem> list;
@@ -337,6 +339,7 @@ class GenericObject {
   }
 
 }
+
 
 class GenericObjectList {
   List<GenericObject> items;

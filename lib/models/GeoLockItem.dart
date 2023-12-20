@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+
 class GeoLockItem {
   String iv; // iv used for lat and long position token decryption
   String lat_tokens; // base64 encoded latitude tokens
@@ -39,4 +40,5 @@ class GeoLockItem {
 
     return jsonMap;
   }
+
 }

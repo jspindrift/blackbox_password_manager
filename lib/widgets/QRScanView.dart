@@ -25,8 +25,8 @@ class _QRScanViewState extends State<QRScanView> {
   QRViewController? controller;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
 
-  final settingsManager = SettingsManager();
-  final logManager = LogManager();
+  final _settingsManager = SettingsManager();
+  final _logManager = LogManager();
 
   @override
   void initState() {
@@ -35,7 +35,7 @@ class _QRScanViewState extends State<QRScanView> {
     controller?.resumeCamera();
 
     setState(() {
-      _isDarkModeEnabled = settingsManager.isDarkModeEnabled;
+      _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
     });
   }
 
@@ -250,8 +250,8 @@ class _QRScanViewState extends State<QRScanView> {
     controller.scannedDataStream.listen((scanData) {
       setState(() {
         result = scanData;
-        // logManager.logger.d("got scanned data: ${scanData.code}");
-        // logManager.logger.d("got scanned data bytes: ${scanData.rawBytes}");
+        // _logManager.logger.d("got scanned data: ${scanData.code}");
+        // _logManager.logger.d("got scanned data bytes: ${scanData.rawBytes}");
       });
 
       if (_scannedCodeAlready) {
@@ -268,7 +268,7 @@ class _QRScanViewState extends State<QRScanView> {
           _showErrorDialog("Invalid code format");
         }
       } catch (e) {
-        logManager.logger.e("Exception: $e");
+        _logManager.logger.e("Exception: $e");
         _showErrorDialog("Invalid code format");
       }
     });

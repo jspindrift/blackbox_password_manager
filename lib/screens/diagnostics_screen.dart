@@ -33,6 +33,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
   final _settingsManager = SettingsManager();
   final _keyManager = KeychainManager();
 
+
   @override
   void initState() {
     super.initState();

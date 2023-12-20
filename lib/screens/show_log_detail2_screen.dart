@@ -11,14 +11,12 @@ import '../managers/LogManager.dart';
 import '../managers/FileManager.dart';
 import '../managers/SettingsManager.dart';
 
+
 class ShowLogDetail2Screen extends StatefulWidget {
   const ShowLogDetail2Screen({
     Key? key,
-    // required this.block,
   }) : super(key: key);
   static const routeName = '/show_log_detail2_screen';
-
-  // final Block block;
 
   @override
   State<ShowLogDetail2Screen> createState() => _ShowLogDetail2ScreenState();
@@ -49,6 +47,7 @@ class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
   final _settingsManager = SettingsManager();
   final _cryptor = Cryptor();
   final _digester = Digester();
+
 
   @override
   void initState() {

@@ -1,11 +1,11 @@
 import 'dart:convert';
 
-import '../helpers/AppConstants.dart';
-import '../models/DigitalIdentity.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 
+import '../helpers/AppConstants.dart';
+import '../models/DigitalIdentity.dart';
 import '../models/KeyItem.dart';
 import '../models/MyDigitalIdentity.dart';
 import '../models/VaultItem.dart';

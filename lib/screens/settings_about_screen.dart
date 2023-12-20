@@ -9,6 +9,7 @@ import '../managers/LogManager.dart';
 import '../managers/KeychainManager.dart';
 import 'home_tab_screen.dart';
 
+
 class SettingsAboutScreen extends StatefulWidget {
   const SettingsAboutScreen({
     Key? key,
@@ -34,6 +35,7 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
   final _deviceManager = DeviceManager();
   final _logManager = LogManager();
   final _keyManager = KeychainManager();
+
 
   @override
   void initState() {

@@ -14,6 +14,7 @@ import '../screens/lock_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/favorites_list_screen.dart';
 
+
 class HomeTabScreen extends StatefulWidget {
   const HomeTabScreen({
     Key? key,
@@ -39,10 +40,9 @@ class _HomeTabScreenState extends State<HomeTabScreen>
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
   final _cryptor = Cryptor();
-  // final _geolocationManager = GeoLocationManager();
-
   final _heartbeatTimer = HeartbeatTimer();
   final _inactivityTimer = InactivityTimer();
+
 
   @override
   void initState() {

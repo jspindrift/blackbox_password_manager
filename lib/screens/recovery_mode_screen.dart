@@ -74,6 +74,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
   final _keyManager = KeychainManager();
   final _cryptor = Cryptor();
 
+
   @override
   void initState() {
     super.initState();

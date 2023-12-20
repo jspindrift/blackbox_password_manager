@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+
 class QRCodeItem {
   String name;
   String username;
@@ -32,7 +33,9 @@ class QRCodeItem {
     };
     return jsonMap;
   }
+
 }
+
 
 class QRCodeKeyItem {
   String key;  // base64 encoded key
@@ -62,4 +65,5 @@ class QRCodeKeyItem {
     };
     return jsonMap;
   }
+
 }

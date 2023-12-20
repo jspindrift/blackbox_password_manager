@@ -100,6 +100,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
   final _keyManager = KeychainManager();
   final _cryptor = Cryptor();
 
+
   @override
   void initState() {
     super.initState();

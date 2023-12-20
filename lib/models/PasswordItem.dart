@@ -8,6 +8,7 @@ import '../managers/GeolocationManager.dart';
 import '../managers/SettingsManager.dart';
 import 'GeoLockItem.dart';
 
+
 var logger = Logger(
   printer: PrettyPrinter(),
 );
@@ -404,6 +405,7 @@ class PasswordItem {
 
 }
 
+
 class PreviousPassword {
   String password; // encrypted
   bool isBip39;
@@ -439,6 +441,7 @@ class PreviousPassword {
   }
 
 }
+
 
 class PasswordPolicy {
   int generatedType;  // random, mnemonic, pin
@@ -506,4 +509,5 @@ class PasswordPolicy {
 
     return jsonMap;
   }
+
 }

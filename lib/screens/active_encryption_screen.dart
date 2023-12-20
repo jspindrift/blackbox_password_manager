@@ -101,8 +101,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
   final _settingsManager = SettingsManager();
   final _keyManager = KeychainManager();
   final _cryptor = Cryptor();
-
   final _wotsManager = WOTSManager();
+
 
   @override
   void initState() {

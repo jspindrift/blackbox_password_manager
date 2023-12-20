@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:geolocator/geolocator.dart';
 import 'package:logger/logger.dart';
+
 
 class GeoLocationUpdate {
   Position userLocation;

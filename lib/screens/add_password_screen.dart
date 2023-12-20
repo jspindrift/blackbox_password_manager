@@ -115,6 +115,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
   final _settingsManager = SettingsManager();
   final _geolocationManager = GeoLocationManager();
 
+
   @override
   void initState() {
     super.initState();

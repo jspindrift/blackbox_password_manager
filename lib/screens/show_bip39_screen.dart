@@ -4,6 +4,7 @@ import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import 'home_tab_screen.dart';
 
+
 class ShowBIP39Screen extends StatefulWidget {
   const ShowBIP39Screen({
     Key? key,
@@ -25,6 +26,7 @@ class _ShowBIP39ScreenState extends State<ShowBIP39Screen> {
 
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
+
 
   @override
   void initState() {

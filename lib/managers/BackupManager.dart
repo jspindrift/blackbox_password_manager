@@ -4,7 +4,6 @@ import 'package:convert/convert.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 
 import '../helpers/AppConstants.dart';
-import '../helpers/ivHelper.dart';
 import '../models/MyDigitalIdentity.dart';
 import '../models/KeyItem.dart';
 import '../models/VaultItem.dart';

@@ -17,7 +17,6 @@ import '../screens/add_peer_public_key_screen.dart';
 import 'edit_peer_public_key_screen.dart';
 import 'home_tab_screen.dart';
 
-/// Copied code from NoteListScreen
 
 class PeerPublicKeyListScreen extends StatefulWidget {
   const PeerPublicKeyListScreen({
@@ -71,6 +70,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
   final _cryptor = Cryptor();
+
 
   @override
   void initState() {

@@ -17,6 +17,7 @@ import 'add_password_screen.dart';
 import 'add_public_encryption_key_screen.dart';
 import 'edit_public_encryption_key_screen.dart';
 
+
 class FavoritesListScreen extends StatefulWidget {
   const FavoritesListScreen({
     Key? key,
@@ -40,6 +41,7 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
   final _cryptor = Cryptor();
+
 
   @override
   void initState() {

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+
 class EncryptedPeerMessage {
   int version;
   String from;
@@ -53,4 +54,5 @@ class EncryptedPeerMessage {
 
     return jsonMap;
   }
+
 }

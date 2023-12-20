@@ -8,6 +8,7 @@ import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import 'home_tab_screen.dart';
 
+
 class PreviousPasswordsScreen extends StatefulWidget {
   const PreviousPasswordsScreen({
     Key? key,
@@ -32,6 +33,7 @@ class _PreviousPasswordsScreenState extends State<PreviousPasswordsScreen> {
 
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
+
 
   @override
   void initState() {

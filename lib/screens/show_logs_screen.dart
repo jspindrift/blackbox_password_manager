@@ -6,6 +6,7 @@ import '../managers/LogManager.dart';
 import '../managers/FileManager.dart';
 import '../managers/SettingsManager.dart';
 
+
 class ShowLogsScreen extends StatefulWidget {
   const ShowLogsScreen({
     Key? key,
@@ -28,6 +29,7 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObse
   final _fileManager = FileManager();
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
+
 
   @override
   void initState() {

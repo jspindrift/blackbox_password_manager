@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-///TODO: add this item in
+
 class IdentityItem {
   String id;
   String firstName;
@@ -69,4 +69,5 @@ class IdentityItem {
     };
     return jsonMap;
   }
+
 }

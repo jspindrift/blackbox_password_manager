@@ -1,14 +1,14 @@
 import "dart:math";
+
 import "package:bip39/bip39.dart" as bip39;
 import 'package:logger/logger.dart';
-import '../helpers/WidgetUtils.dart';
-import '../helpers/bip39_dictionary.dart';
 import "package:cryptography/cryptography.dart";
 import "package:convert/convert.dart";
 import 'package:flutter/cupertino.dart';
-import 'package:pointycastle/api.dart' as crypto;
 
-import '../managers/Cryptor.dart';
+import '../helpers/WidgetUtils.dart';
+import '../helpers/bip39_dictionary.dart';
+
 
 final algorithm_nomac = AesCtr.with256bits(macAlgorithm: MacAlgorithm.empty);
 
@@ -28,7 +28,6 @@ class TestKeyGen {
     return _shared;
   }
 
-  final cryptor = Cryptor();
 
   TestKeyGen._internal();
 
