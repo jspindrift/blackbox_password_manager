@@ -80,7 +80,6 @@ class SettingsManager {
   static final _maxBlocks = AppConstants.maxEncryptionBlocks; // pow(2, 10); // per counter 2^10*16 bytes 16 kb
   static final _maxRolloverBlocks = AppConstants.maxRolloverBlocks;
 
-
   bool _isScanningQRCode = false;
   bool _isOnLockScreen = true;
   bool _isCreatingNewAccount = false;

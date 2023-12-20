@@ -47,7 +47,7 @@ class _ReKeyAuthScreenState extends State<ReKeyAuthScreen> {
   void initState() {
     super.initState();
 
-    _logManager.log("ChangePasswordScreen", "initState", "initState");
+    _logManager.log("ReKeyAuthScreen", "initState", "initState");
 
     _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
@@ -255,14 +255,13 @@ class _ReKeyAuthScreenState extends State<ReKeyAuthScreen> {
     final password = _currentPasswordTextController.text;
 
     _logManager.log(
-        "ChangePasswordScreen", "_confirmCurrentMasterPassword", "confirming");
+        "ReKeyAuthScreen", "_confirmCurrentMasterPassword", "confirming");
 
     try {
-      final status = await _cryptor.deriveKeyCheck(password, _keyManager.salt);//.then((value) {
-        _logManager.log("ChangePasswordScreen", "_confirmCurrentMasterPassword",
+      final status = await _cryptor.deriveKeyCheck(password, _keyManager.salt);
+        _logManager.log("ReKeyAuthScreen", "_confirmCurrentMasterPassword",
             "deriveKeyCheck: $status");
 
-        // reset fields
         if (status) {
           _wrongPasswordCount = 0;
           _currentPasswordTextController.text = '';
@@ -289,7 +288,7 @@ class _ReKeyAuthScreenState extends State<ReKeyAuthScreen> {
     } catch (e) {
       _logManager.logger.w(e);
       _logManager.log(
-          "ChangePasswordScreen", "_confirmCurrentMasterPassword", "Error: $e");
+          "ReKeyAuthScreen", "_confirmCurrentMasterPassword", "Error: $e");
       _showErrorDialog('An error occurred');
     }
   }

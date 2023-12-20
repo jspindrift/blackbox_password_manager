@@ -1,3 +1,4 @@
+import 'dart:io';
 import "dart:math";
 import "dart:convert";
 import "dart:typed_data";
@@ -47,14 +48,14 @@ class Cryptor {
 
   var _uuid = Uuid();
 
-  // PBKDF2 derived key parameters
+  /// derived key parameters
   static const _saltLength = 32;
-  static const _rounds = 300000;
+  static const _rounds = 300000; // 200000;
   static const _roundsPin = 100000; // pin code rounds
 
   List<int> _salt = [];
 
-  List<int>? get salt {
+  List<int> get salt {
     return _salt;
   }
 
@@ -794,7 +795,7 @@ class Cryptor {
       );
 
       final myIdMac = await hmac256(myId.toRawJson());
-      myId.mac = myIdMac;
+      myId.mac = base64.encode(hex.decode(myIdMac));
 
       return myId;
     } catch (e) {
@@ -827,7 +828,6 @@ class Cryptor {
       final encryptedKey = await encrypt(hex.encode(randomSeed));
       // logger.d('encryptedKeyExchange: ${encryptedKey}');
 
-
       return encryptedKey;
     } catch (e) {
       // logger.d("Exception: $e");
@@ -852,8 +852,7 @@ class Cryptor {
       final randomSeed = getRandomBytes(32);
       // logger.d('randomSeed X25519: ${randomSeed}');
 
-      final keyIndex = settingsManager.doEncryption(utf8.encode(base64.encode(randomSeed)).length);
-      // logger.d("keyIndex: $keyIndex");
+      settingsManager.doEncryption(utf8.encode(base64.encode(randomSeed)).length);
 
       /// base64 encoded encrypted hex string key
       final encryptedKey = await encrypt(base64.encode(randomSeed));
@@ -888,8 +887,8 @@ class Cryptor {
       var pub = priv.publicKey;
       var xpub = algorithm.publicKeyToCompressedHex(pub);
       // logger.d("pubKey.compressed: ${xpub.length}: ${xpub}");
-      final keyIndex = settingsManager.doEncryption(utf8.encode(hex.encode(priv.bytes)).length);
-      // logger.d("keyIndex: $keyIndex");
+
+      settingsManager.doEncryption(utf8.encode(hex.encode(priv.bytes)).length);
 
       final encryptedKey = await encrypt(hex.encode(priv.bytes));
       // logger.d('encryptedKeySigning: ${encryptedKey}');
@@ -1099,12 +1098,13 @@ class Cryptor {
         final mac = decodedKeyMaterial.sublist(16, 48);
         final cipherText =
             decodedKeyMaterial.sublist(48, decodedKeyMaterial.length);
-        logger.d("iv: ${iv}\nmac: ${mac}\ncipherText: ${cipherText}");
-
+        if (AppConstants.debugKeyData) {
+          logger.d("iv: ${iv}\nmac: ${mac}\ncipherText: ${cipherText}");
+        }
         /// check mac
         final blob = iv + cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
-        logger.d("hashedBlob: ${hashedBlob}");
+        // logger.d("hashedBlob: ${hashedBlob}");
 
         final macCheck = await hmac_algo_256.calculateMac(
           hashedBlob,
@@ -1249,7 +1249,7 @@ class Cryptor {
 
         // var confirmMacPhrase = macWordList[0] + " " + macWordList[1] + " " + macWordList.last;
         var confirmMacPhrase = macWordList[0] + " " + macWordList.last;
-        logger.d("confirmMacPhrase: $confirmMacPhrase");
+        // logger.d("confirmMacPhrase: $confirmMacPhrase");
         // for (var mword in macWordList) {
         //   confirmMacPhrase = confirmMacPhrase + " " + mword;
         // }
@@ -1410,17 +1410,13 @@ class Cryptor {
             encryptionAlgorithm: encryptionAlgo,
             keyMaterial: base64.encode(keyMaterial),
             keyNonce: base64.encode(blob_keyNonce),
-            mac: "",
+            // mac: "",
         );
 
-        final paramsHash = sha256(encryptedKey.toRawJson());
-
-        final keyParamsMac = await hmac_algo_256.calculateMac(
-          hex.decode(paramsHash),
-          secretKey: secretKy,
-        );
-
-        encryptedKey.mac = hex.encode(keyParamsMac.bytes);
+        /// TODO: replace this HMAC function to use derived auth key
+        // final keyParamsMac = await _cryptor.hmac256(encryptedKey.toRawJson());
+        // encryptedKey.mac = base64.encode(hex.decode(keyParamsMac));
+        // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
         if (AppConstants.debugKeyData){
           logger.d("ek.json: ${encryptedKey.toJson()}\n");

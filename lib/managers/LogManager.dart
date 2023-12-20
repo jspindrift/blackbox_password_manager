@@ -301,9 +301,8 @@ class LogManager {
 
   static const _minCreationTime = '2023-11-07T08:28:44.219169';
 
-  static const _logFileExpiryTimeInDays = 30;
-  static const _logFileLimitSize = 4393216; //4 MB //1048576; // 1 MB , //10485760; // 10 MB in bytes
-  static const _logFileLimitSize_1MB = 1048576; // 1 MB in bytes
+  static const _logFileExpiryTimeInDays = 90;
+  static const _logFileLimitSize = 4393216; // 4 MB
 
   int _initialLogSizeInBytes = 0;
   double _initialLogSizeInKilobytes = 0;
@@ -410,10 +409,8 @@ class LogManager {
 
       _logDataString = await _fileManager.readLogDataAppend();
       final blockSplit = _logDataString.split("\n");
-      logger.d("LOG: logData size: ${_logDataString.length}");
-
       _blockHeight = blockSplit.length - 1;
-      logger.d("LOG: _blockHeight: $_blockHeight");
+      logger.d("LOG: _blockHeight: $_blockHeight\nlogData size: ${_logDataString.length}");
 
       int index = 0;
       String appendedString = "";
@@ -433,6 +430,7 @@ class LogManager {
 
             /// expiration date of logs
             final expiryBlockTimeLimit = Duration(days: _logFileExpiryTimeInDays);
+            // final expiryBlockTimeLimit = Duration(minutes: 30);
 
             /// keep Genesis block
             if (thisBlock.blockNumber != 0) {
@@ -508,9 +506,6 @@ class LogManager {
 
       if (_logDataString != null) {
         if (_logDataString.isNotEmpty) {
-          logger.d(
-              'is file size less than 1MB: ${_initialLogSizeInBytes <= _logFileLimitSize_1MB}');
-
           final appVersion = _settingsManager.versionAndBuildNumber();
           final startTime = DateTime.now().toIso8601String();
 
@@ -595,7 +590,7 @@ class LogManager {
         final lastMac = _blocks[checkIndex-1].mac;
 
         final modifiedLogLine = BasicLogLine(
-          time:  newBlock.logList.list.last.time, //DateTime.now().toIso8601String(),
+          time:  newBlock.logList.list.last.time,
           index: newBlock.logList.list.last.index + 1,
           callingFunction:
           "LogManager.initialize.modifyBlock",
@@ -724,17 +719,16 @@ class LogManager {
 
 
     if (didModifyLogs) {
-      logger.wtf("WTF whats the deal?");
+      logger.wtf("didModifyLogs");
+
       /// delete current log file
       await _fileManager.clearLogFileAppend();
-
-      logger.wtf("WTF whats the deal? $modifyAppendedString");
 
       /// write new modified log blocks
       await _fileManager
           .writeLogDataAppend(modifyAppendedString);
 
-      logger.wtf("WTF whats the deal? newBlockList: ${newBlockList.length}");
+      logger.wtf("didModifyLogs: newBlockList.length: ${newBlockList.length}");
       _blocks = newBlockList;
       _blockHeight = _blocks.length;
       _logDataString = await _fileManager.readLogDataAppend();
@@ -844,13 +838,32 @@ class LogManager {
 
   /// save collected logs to the log file
   Future<void> saveLogs() async {
-    logger.d("LOG: save Logs");
+    logger.d("LOG: save Logs: ${_basicLogLineList.list.length}");
     if (_deletedLogs) {
       /// set back after the first time
       _basicLogLineList.list = [];
       // _deletedLogs = false;
       _blocks = [];
       return;
+    }
+
+    if (_basicLogLineList.list.length <= 5) {
+      var shouldIgnore = true;
+      for (var line in _basicLogLineList.list) {
+        // logger.d("LOG: save Logs-loop: ${line.callingFunction}\n${line.message}");
+
+        if (line.callingFunction != "LoginScreen.didChangeAppLifecycleState" &&
+            line.callingFunction != "HeartbeatTimer.stopHeartbeatTimer") {
+          shouldIgnore = false;
+          break;
+        }
+      }
+      logger.wtf("LOG: save Logs-shouldIgnore: ${shouldIgnore}");
+
+      if (shouldIgnore) {
+        _isSavingLogs = false;
+        return;
+      }
     }
 
     _isSavingLogs = true;
@@ -1106,10 +1119,8 @@ class LogManager {
         _initialLogSizeInKilobytes = _logDataString.length / 1024;
         _initialLogSizeInMegabytes = _logDataString.length / 1048576;
         _initialLogSizeInGigabytes = _logDataString.length / 1073741824;
-        logger.d('initialize retrieved data: $_initialLogSizeInBytes bytes\n'
-                '$_initialLogSizeInKilobytes kB\n$_initialLogSizeInMegabytes MB\n'
-                ' $_initialLogSizeInGigabytes Gb');
-
+        logger.wtf('initialize retrieved data: $_initialLogSizeInBytes bytes\n'
+                '$_initialLogSizeInKilobytes kB\n$_initialLogSizeInMegabytes MB\n');
 
         final blockSplit = _logDataString.split("\n");
         final logKey = base64.encode(_cryptor.logSecretKeyBytes);

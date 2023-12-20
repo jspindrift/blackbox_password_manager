@@ -4,6 +4,7 @@ import 'package:convert/convert.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 
 import '../helpers/AppConstants.dart';
+import '../helpers/ivHelper.dart';
 import '../models/MyDigitalIdentity.dart';
 import '../models/KeyItem.dart';
 import '../models/VaultItem.dart';
@@ -40,9 +41,9 @@ class BackupManager {
   static const bool testFail5 = false;  // fail save recovery keys
   static const bool testFail6 = false;  // fail save master password
 
-  int responseStatusCode = 0; // 0 == success, 1 = fail restore, recover success, 2 = fail restore, recover failure
+  int _responseStatusCode = 0; // 0 == success, 1 = fail restore, recover success, 2 = fail restore, recover failure
 
-  String backupErrorMessage = "Backup Restore Failed";
+  String _backupErrorMessage = "";
   String tempHint = "";
   VaultItem? _currentDeviceVault;
   GenericItemList? _currentItemList;
@@ -61,6 +62,13 @@ class BackupManager {
 
   BackupManager._internal();
 
+  get backupErrorMessage {
+    return _backupErrorMessage;
+  }
+
+  get responseStatusCode {
+    return _responseStatusCode;
+  }
 
   /// call this before restoring a backup in case we fail and have to recover
   ///
@@ -74,10 +82,8 @@ class BackupManager {
     }
 
     _tempRootKey = _cryptor.aesRootSecretKeyBytes;
-
     tempHint = _keyManager.hint;
-    _logManager.logger.d("tempHint: $tempHint");
-    // _logManager.logger.d("_cryptor.aesRootSecretKeyBytes: ${hex.encode(_tempRootKey!)}");
+    // _logManager.logger.d("tempHint: $tempHint");
 
     final tempBackupItemString = tempVaultItem.toRawJson();
     // _logManager.logger.d("tempBackupItemString: $tempBackupItemString");
@@ -95,8 +101,7 @@ class BackupManager {
   Future<bool> restoreBackupItem(
       VaultItem vault, String password, String salt) async {
     /// first must check password before restoring
-    // final _keyManager = KeychainManager();
-    // final _cryptor = Cryptor();
+    _backupErrorMessage = "";
 
     _logManager.logger.d("restoreLocalBackupItem:\nvaultId: ${vault.id}:\ndeviceId: ${vault.deviceId}\n"
         "name: ${vault.name}");
@@ -106,14 +111,12 @@ class BackupManager {
         "mdate: ${vault.mdate}\ncdate: ${vault.cdate}");
 
     try {
-      // if (!_keyManager.salt.isEmpty) {
-        final prepareStatus = await _prepareToRestore();
-        if (!prepareStatus) {
-          _logManager.logger.d("here-prepare");
+      final prepareStatus = await _prepareToRestore();
+      if (!prepareStatus) {
+        _logManager.logger.d("here-prepare");
 
-          return false;
-        }
-      // }
+        return false;
+      }
 
       final backupHash = _cryptor.sha256(vault.toRawJson());
       _logManager.log("BackupManager", "restoreLocalBackupItem",
@@ -122,6 +125,7 @@ class BackupManager {
       final ek = vault.encryptedKey;
       final keyMaterial = ek.keyMaterial;
 
+     _logManager.logger.wtf("ek: ${ek.toRawJson()}");
       final result = await _cryptor.deriveKeyCheckAgainst(
         password,
         ek.rounds,
@@ -147,22 +151,9 @@ class BackupManager {
           hint: "",
         );
 
-        /// delete keys
-        ///
         var encryptedBlob = vault.blob;
-
         var idString =
             "${vault.id}-${vault.deviceId}-${vault.version}-${vault.cdate}-${vault.mdate}-${vault.name}";
-
-        if (vault.usedIVs != null) {
-          _logManager.logger.wtf("usedIVs: ${vault.usedIVs}");
-          if (vault.usedIVs!.isNotEmpty) {
-            final ivListHash = _cryptor.sha256(vault.usedIVs.toString());
-
-            idString =
-            "${vault.id}-${vault.deviceId}-${vault.version}-${vault.cdate}-${vault.mdate}-${ivListHash}-${vault.name}";
-          }
-        }
 
         _logManager.logger.d("decryption-idString: ${idString}");
 
@@ -171,18 +162,18 @@ class BackupManager {
 
         if (testFail1) {
           _logManager.logger.d("here1");
-          responseStatusCode = 1;
-          backupErrorMessage = "Backup Restore Failed: Blob Decryption";
+          _responseStatusCode = 1;
+          _backupErrorMessage = "Backup Restore Failed: Blob Decryption";
           return await _recoverVault();
         }
 
         if (decryptedBlob.isNotEmpty) {
-          _logManager.logger.d("here-decryptedBlob no empty");
+          // _logManager.logger.d("here-decryptedBlob not empty");
 
           var genericItems;
           try {
             genericItems = GenericItemList.fromRawJson(decryptedBlob);
-            _logManager.logger.d("GenericItemList protocol");
+            // _logManager.logger.d("GenericItemList protocol");
 
 
             if (genericItems != null) {
@@ -191,19 +182,15 @@ class BackupManager {
               final encryptedKeyNonce = vault.encryptedKey.keyNonce;
               // _logManager.logger.d("encryptedKeyNonce: ${encryptedKeyNonce}");
 
-              final decryptedKeyNonce = await _cryptor.decrypt(encryptedKeyNonce);//.then((value) {
-                // final decryptedKeyNonce = value;
-                // _logManager.logger.d("decryptedKeyNonce: ${decryptedKeyNonce}\n"
-                //     "base64decoded keyNonce: ${hex.decode(decryptedKeyNonce)}");
+              final decryptedKeyNonce = await _cryptor.decrypt(encryptedKeyNonce);
+              final keyNonce = hex.decode(decryptedKeyNonce);
+              final ablock = keyNonce.sublist(8, 12);
+              final bblock = keyNonce.sublist(12, 16);
+              // _logManager.logger.d("ablock: ${ablock}\n"
+              //     "bblock: ${bblock}");
 
-                final keyNonce = hex.decode(decryptedKeyNonce);
-                final ablock = keyNonce.sublist(8, 12);
-                final bblock = keyNonce.sublist(12, 16);
-                // _logManager.logger.d("ablock: ${ablock}\n"
-                //     "bblock: ${bblock}");
-
-                final rolloverBlockCount = int.parse(hex.encode(ablock), radix: 16);
-                final encryptedBlockCount = int.parse(hex.encode(bblock), radix: 16);
+              final rolloverBlockCount = int.parse(hex.encode(ablock), radix: 16);
+              final encryptedBlockCount = int.parse(hex.encode(bblock), radix: 16);
                 // _logManager.logger.d("encryptedBlockCount: ${encryptedBlockCount}\n"
                 //     "rolloverBlockCount: ${rolloverBlockCount}");
 
@@ -227,16 +214,16 @@ class BackupManager {
             } else {
               _logManager.logger.d("here-fail3");
 
-              backupErrorMessage = "Backup Restore Failed: Generic Object Decoding 2";
-              responseStatusCode = 1;
+              _backupErrorMessage = "Backup Restore Failed: Generic Object Decoding 2";
+              _responseStatusCode = 1;
               _logManager.logger.d("object could not be decoded");
               return await _recoverVault();
             }
           } catch(e) {
             _logManager.logger.d("here-Esxception: $e");
 
-            backupErrorMessage = "Backup Restore Failed: Generic Object Decoding";
-            responseStatusCode = 1;
+            _backupErrorMessage = "Backup Restore Failed: Generic Object Decoding";
+            _responseStatusCode = 1;
             _logManager.logger.d("object could not be:$e");
             return await _recoverVault();
           }
@@ -275,16 +262,16 @@ class BackupManager {
               final status = await _keyManager.saveItem(itemId, genericItemString);
               if (testFail2) {
                 _logManager.logger.d("here2");
-                responseStatusCode = 1;
-                backupErrorMessage = "Backup Restore Failed: Saving Vault Item";
+                _responseStatusCode = 1;
+                _backupErrorMessage = "Backup Restore Failed: Saving Vault Item";
                 return await _recoverVault();
               }
 
               if (!status) {
                 _logManager.logger.d("here2");
                 await _keyManager.deleteAllItems();
-                responseStatusCode = 1;
-                backupErrorMessage = "Backup Restore Failed: Saving Vault Item";
+                _responseStatusCode = 1;
+                _backupErrorMessage = "Backup Restore Failed: Saving Vault Item";
                 /// TODO: revert back
                 return await _recoverVault();
               }
@@ -295,8 +282,8 @@ class BackupManager {
         } else if (vault.numItems > 0) {
           // _logManager.logger.d("here-decryptedBlob no empty");
 
-          responseStatusCode = 1;
-          backupErrorMessage = "Backup Restore Failed: Blob is Empty/Decryption";
+          _responseStatusCode = 1;
+          _backupErrorMessage = "Backup Restore Failed: Blob Decryption Failure";
 
           _logManager.logger.d("object could not be decoded2");
           return await _recoverVault();
@@ -312,16 +299,16 @@ class BackupManager {
           if (testFail3) {
             _logManager.logger.d("here-restore myIdentity 1");
 
-            responseStatusCode = 1;
-            backupErrorMessage = "Backup Restore Failed: Saving My Digital Identity";
+            _responseStatusCode = 1;
+            _backupErrorMessage = "Backup Restore Failed: Saving My Digital Identity";
             return await _recoverVault();
           }
           if (!status) {
             _logManager.logger.d("here-restore myIdentity 2");
 
             await _keyManager.deleteAllItems();
-            responseStatusCode = 1;
-            backupErrorMessage = "Backup Restore Failed: Saving My Digital Identity";
+            _responseStatusCode = 1;
+            _backupErrorMessage = "Backup Restore Failed: Saving My Digital Identity";
             /// TODO: revert back
             return await _recoverVault();
           }
@@ -338,11 +325,11 @@ class BackupManager {
             if (testFail4) {
               _logManager.logger.d("here-restore identities 4");
 
-              responseStatusCode = 1;
+              _responseStatusCode = 1;
               await _keyManager.deleteAllItems();
               _keyManager.deleteMyDigitalIdentity();
               await _keyManager.deleteAllPeerIdentities();
-              backupErrorMessage = "Backup Restore Failed: Saving Identity";
+              _backupErrorMessage = "Backup Restore Failed: Saving Identity";
               return await _recoverVault();
             }
             if (!status) {
@@ -352,8 +339,8 @@ class BackupManager {
               await _keyManager.deleteMyDigitalIdentity();
               await _keyManager.deleteAllPeerIdentities();
 
-              responseStatusCode = 1;
-              backupErrorMessage = "Backup Restore Failed: Saving Identity";
+              _responseStatusCode = 1;
+              _backupErrorMessage = "Backup Restore Failed: Saving Identity";
               /// TODO: revert back
               return await _recoverVault();
             }
@@ -371,25 +358,25 @@ class BackupManager {
             if (testFail5) {
               _logManager.logger.d("here-restore recoveryKeys - 5");
 
-              responseStatusCode = 1;
+              _responseStatusCode = 1;
               await _keyManager.deleteAllItems();
               await _keyManager.deleteMyDigitalIdentity();
               await _keyManager.deleteAllPeerIdentities();
               await _keyManager.deleteAllRecoveryKeys();
 
-              backupErrorMessage = "Backup Restore Failed: Saving Recovery Key";
+              _backupErrorMessage = "Backup Restore Failed: Saving Recovery Key";
               return await _recoverVault();
             }
             if (!status) {
               _logManager.logger.d("here-restore recoveryKeys - 5a");
 
-              responseStatusCode = 1;
+              _responseStatusCode = 1;
               await _keyManager.deleteAllItems();
               await _keyManager.deleteMyDigitalIdentity();
               await _keyManager.deleteAllPeerIdentities();
               await _keyManager.deleteAllRecoveryKeys();
 
-              backupErrorMessage = "Backup Restore Failed: Saving Recovery Key";
+              _backupErrorMessage = "Backup Restore Failed: Saving Recovery Key";
               /// TODO: revert back
               return await _recoverVault();
             }
@@ -412,8 +399,8 @@ class BackupManager {
           await _keyManager.deleteAllPeerIdentities();
           await _keyManager.deleteAllRecoveryKeys();
 
-          backupErrorMessage = "Backup Restore Failed: Saving Master Password";
-          responseStatusCode = 1;
+          _backupErrorMessage = "Backup Restore Failed: Saving Master Password";
+          _responseStatusCode = 1;
           return await _recoverVault();
         }
 
@@ -425,9 +412,9 @@ class BackupManager {
           await _keyManager.deleteAllPeerIdentities();
           await _keyManager.deleteAllRecoveryKeys();
 
-          backupErrorMessage = "Backup Restore Failed: Saving Master Password";
+          _backupErrorMessage = "Backup Restore Failed: Saving Master Password";
           /// TODO: revert back
-          responseStatusCode = 1;
+          _responseStatusCode = 1;
           return await _recoverVault();
         }
 
@@ -442,7 +429,7 @@ class BackupManager {
 
         _logManager.logger.w("BackupManager - restoreLocalBackupItem - true");
         _logManager.logger.d("here-restore restoreLocalBackupItem: true");
-        responseStatusCode = 0;
+        _responseStatusCode = 0;
 
         return true;
       }
@@ -450,8 +437,8 @@ class BackupManager {
       _logManager.logger.d("here-restore restoreLocalBackupItem: false: _reExpandCurrentKey");
 
       await _reExpandCurrentKey();
-      responseStatusCode = 1;
-      backupErrorMessage = "Backup Restore Failed: Incorrect Password";
+      _responseStatusCode = 1;
+      _backupErrorMessage = "Backup Restore Failed: Incorrect Password";
       _logManager.logger.w("BackupManager - restoreLocalBackupItem - Failure");
       return false; //await _recoverVault();
     } catch (e) {
@@ -703,33 +690,22 @@ class BackupManager {
     // final uuid = _cryptor.getUUID();
     final vaultId = _keyManager.vaultId;
 
-
-    /// TODO: get iv and add to iv list
-    final iv = _cryptor.getNewNonce();
-
-    List<String>? currentIVList = [];
-
-    currentIVList?.add(base64.encode(iv));
-
-    /// get hash of iv list
-    final ivListHash = _cryptor.sha256(currentIVList.toString());
-
     final idString =
-        "${vaultId}-${deviceId}-${appVersion}-${timestamp}-${timestamp}-${ivListHash}-${backupName}";
+        "${vaultId}-${deviceId}-${appVersion}-${timestamp}-${timestamp}-${backupName}";
     // final idHash = Hasher().sha256Hash(idString);
     // print("idHash: $idHash");
 
+    /// create iv
+    var nonce = _cryptor.getNewNonce();
+    nonce = nonce.sublist(0,8) + [0,0,0,0,0,0,0,0];
+
     var testItems = json.encode(items);
 
-    var encryptedBlob = await _cryptor.encryptBackupVault(testItems, iv, idString);
+    var encryptedBlob = await _cryptor.encryptBackupVault(testItems, nonce, idString);
 
 
     final identities = await _keyManager.getIdentities();
-    // _currentIdentites = identities;
-
     final recoveryKeys = await _keyManager.getRecoveryKeyItems();
-    // _currentRecoveryKeys = recoveryKeys;
-
     final deviceDataString = _settingsManager.deviceManager.deviceData.toString();
     // _logManager.logger.d("deviceDataString: $deviceDataString");
     // _logManager.logger.d("deviceData[utsname.version:]: ${_settingsManager.deviceManager.deviceData["utsname.version:"]}");
@@ -758,11 +734,13 @@ class BackupManager {
       encryptionAlgorithm: encryptionAlgo,
       keyMaterial: keyMaterial,
       keyNonce: encryptedKeyNonce,
-      mac: "",
+      // mac: "",
     );
 
-    final keyParamsMac = await _cryptor.hmac256(encryptedKey.toRawJson());
-    encryptedKey.mac = keyParamsMac;
+    /// TODO: replace this HMAC function to use derived auth key
+    // final keyParamsMac = await _cryptor.hmac256(encryptedKey.toRawJson());
+    // encryptedKey.mac = base64.encode(hex.decode(keyParamsMac));
+    // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
 
     var backupItem = VaultItem(
@@ -780,13 +758,12 @@ class BackupManager {
       cdate: timestamp,
       mdate: timestamp,
       mac: "",
-      usedIVs: currentIVList,
     );
 
     final backupMac = await _cryptor.hmac256(backupItem.toRawJson());
-    backupItem.mac = backupMac;
+    backupItem.mac = base64.encode(hex.decode(backupMac));
 
-    // _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
+    _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
     // print("passwordItems: $passwordItems");
     // print("genericItems: $items");
@@ -868,11 +845,13 @@ class BackupManager {
 
   Future<bool> _recoverVault() async {
     _logManager.logger.w("_recoverVault in action");
+    _logManager.log("BackupManager", "_recoverVault", "start");
 
     if (_currentDeviceVault == null) {
       await _reExpandCurrentKey();
-      responseStatusCode = 2;
+      _responseStatusCode = 2;
       _logManager.logger.w("_currentDeviceVault == null");
+      _logManager.log("BackupManager", "_recoverVault", "_currentDeviceVault == null");
       return false;
     }
 
@@ -919,11 +898,14 @@ class BackupManager {
           && status4 && statusFinal
           && statusMaster);
 
-      responseStatusCode = isAllValid ? 0 : 2;
+      _responseStatusCode = isAllValid ? 0 : 2;
+
+      _logManager.log("BackupManager", "_recoverVault", "isAllValid: $isAllValid");
 
       return status2 && status3 && status4 && statusFinal && statusMaster;
     } catch (e) {
       _logManager.logger.w("_recoverVault failure: $e");
+      _logManager.log("BackupManager", "_recoverVault", "failure: $e");
       return false;
     }
   }
@@ -945,7 +927,7 @@ class BackupManager {
 
     final tempAllGenericItemList = _currentItemList;
     if (tempAllGenericItemList == null) {
-      // responseStatusCode =
+      // _responseStatusCode =
       return false;
     }
 

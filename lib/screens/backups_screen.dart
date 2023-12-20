@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:blackbox_password_manager/helpers/ivHelper.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/services.dart';
@@ -154,11 +155,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
       });
     });
 
-    if (!_isInitState) {
-      WidgetUtils.showSnackBarDuration(
-          context, "Refreshing Backup List...", Duration(seconds: 1));
-    }
-
     _isInitState = false;
     _localVaultItem = null;
     _externalVaultItem = null;
@@ -249,26 +245,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
             }
           }
 
-          List<String>? previousIVList = [];
-          try {
-            if (_localVaultItem!.usedIVs != null) {
-              previousIVList = _localVaultItem!.usedIVs;
-            }
-          } catch (e) {
-            _logManager.logger.wtf("Exception on usedIVs: $e");
-          }
 
-          /// get hash of iv list
-          final ivListHash = _cryptor.sha256(previousIVList.toString());
-
-          var idString = "${vaultId}-${deviceId}-${version}-${cdate}-${mdate}-${name}";
-          if (previousIVList != null) {
-            if (previousIVList.isNotEmpty) {
-              idString =
-              "${vaultId}-${deviceId}-${version}-${cdate}-${mdate}-${ivListHash}-${name}";
-            }
-          }
-
+          final idString = "${vaultId}-${deviceId}-${version}-${cdate}-${mdate}-${name}";
           // _logManager.logger.wtf("idString: $idString");
 
           final decryptedBlob = await _cryptor.decryptBackupVault(
@@ -397,24 +375,14 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
           if (decryptedBlob.isNotEmpty) {
             try {
-              /// TODO: add this in
-              var genericItems = GenericItemList.fromRawJson(decryptedBlob);
-              // _logManager.logger.d("decryption genericItems2: $genericItems2");
+              /// TODO: try decoding, if fail return
+              final tryDecode = GenericItemList.fromRawJson(decryptedBlob);
+              // _logManager.logger.d("decryption genericItems ext: ${genericItems.toRawJson()}");
 
-              if (genericItems != null) {
-                // setState(() {
-                //   _vaultKeyIsDifferent = false;
-                // });
-              }
             } catch (e) {
-              _logManager.logger.e("can not decrypt current external backup vault\n"
+              _logManager.logger.e("can not decode current external backup vault\n"
                   "vaultid: $vaultId: $e");
-
-              // if (mounted) {
-              //   setState(() {
-              //     _hasMatchingLocalVaultId = _keyManager.vaultId == vaultId;
-              //   });
-              // }
+              return;
             }
           } else {
             _logManager.logger.w(
@@ -423,35 +391,24 @@ class _BackupsScreenState extends State<BackupsScreen> {
         }
 
         if (mounted) {
+          final encryptedKeyNonce = (_externalVaultItem?.encryptedKey
+              .keyNonce)!;
+          // _logManager.logger.d("external encryptedKeyNonce: ${encryptedKeyNonce}");
+
+          final decryptedKeyNonce = await _cryptor.decrypt(encryptedKeyNonce);
+          final keyNonce = hex.decode(decryptedKeyNonce);
+          // final ablock = keyNonce.sublist(8, 12);
+          final bblock = keyNonce.sublist(12, 16);
+          // _logManager.logger.d("ablock: ${ablock}\n"
+          //     "bblock: ${bblock}");
+
+          // final rolloverBlockCount = int.parse(
+          //     hex.encode(ablock), radix: 16);
+          final encryptedBlockCount = int.parse(
+              hex.encode(bblock), radix: 16);
+
           setState(() {
-            final encryptedKeyNonce = (_externalVaultItem?.encryptedKey
-                .keyNonce)!;
-            // _logManager.logger.d("external encryptedKeyNonce: ${encryptedKeyNonce}");
-
-            _cryptor.decrypt(encryptedKeyNonce).then((value) {
-              final decryptedKeyNonce = value;
-              // _logManager.logger.d("decryptedKeyNonce: ${decryptedKeyNonce}\n"
-              //     "base64decoded keyNonce: ${hex.decode(decryptedKeyNonce)}");
-
-              final keyNonce = hex.decode(decryptedKeyNonce);
-              // final ablock = keyNonce.sublist(8, 12);
-              final bblock = keyNonce.sublist(12, 16);
-
-              // _logManager.logger.d("ablock: ${ablock}\n"
-              //     "bblock: ${bblock}");
-
-              // final rolloverBlockCount = int.parse(
-              //     hex.encode(ablock), radix: 16);
-              final encryptedBlockCount = int.parse(
-                  hex.encode(bblock), radix: 16);
-              // _logManager.logger.d(
-              //     "encryptedBlockCount: ${encryptedBlockCount}\n"
-              //         "rolloverBlockCount: ${rolloverBlockCount}");
-
-              setState(() {
-                _externalVaultNumEncryptedBlocks = encryptedBlockCount;
-              });
-            });
+            _externalVaultNumEncryptedBlocks = encryptedBlockCount;
 
             if ((_externalVaultItem?.recoveryKeys)! != null) {
               _externalVaultRecoveryKeys = (_externalVaultItem?.recoveryKeys)!;
@@ -1275,7 +1232,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
   }
 
 
-  /// create a backup with a user specified name
+  /// create a backup
+  ///
   Future<bool> _createBackup() async {
 
     EasyLoading.show(status: "Creating Backup...");
@@ -1318,15 +1276,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
             EnumToString.convertToString(EncryptionAlgorithm.aes_ctr_256);
         final keyMaterial = _keyManager.encryptedKeyMaterial;
 
-        List<String>? currentIVList = [];
-        try {
-          if (currentVault!.usedIVs != null) {
-            currentIVList = currentVault!.usedIVs;
-          }
-        } catch (e) {
-          _logManager.logger.wtf("Exception on usedIVs: $e");
-        }
-
         var items = await _keyManager.getAllItemsForBackup() as GenericItemList;
         final numItems = items.list.length;
         var testItems = json.encode(items);
@@ -1337,19 +1286,21 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
         final uuid = _keyManager.vaultId;
 
-        /// create iv and add to iv list
-        final iv = _cryptor.getNewNonce();
-
-        currentIVList?.add(base64.encode(iv));
-
-        /// get hash of iv list
-        final ivListHash = _cryptor.sha256(currentIVList.toString());
+        /// create iv
+        var nonce = _cryptor.getNewNonce();
+        nonce = nonce.sublist(0,12) + [0,0,0,0];
+        //
+        // final currentNonce = base64.decode(currentVault!.blob).sublist(0,16);
+        // if (currentNonce != null) {
+        //   nonce = ivHelper().incrementSequencedNonce(currentNonce);
+        // }
+        _logManager.logger.wtf("backupNonce: ${nonce}");
 
         final idString =
-            "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${ivListHash}-${backupName}";
-        // _logManager.logger.d("idString: $idString ");
+            "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${backupName}";
+        _logManager.logger.wtf("idString: $idString ");
 
-        var encryptedBlob = await _cryptor.encryptBackupVault(testItems, iv, idString);
+        var encryptedBlob = await _cryptor.encryptBackupVault(testItems, nonce, idString);
         // _logManager.logger.d('encryptedBlob: ${encryptedBlob.length}: $encryptedBlob');
 
         final identities = await _keyManager.getIdentities();
@@ -1380,11 +1331,12 @@ class _BackupsScreenState extends State<BackupsScreen> {
           encryptionAlgorithm: encryptionAlgo,
           keyMaterial: keyMaterial,
           keyNonce: encryptedKeyNonce,
-          mac: "",
+          // mac: "",
         );
 
-        final keyParamsMac = await _cryptor.hmac256(encryptedKey.toRawJson());
-        encryptedKey.mac = keyParamsMac;
+        // /// TODO: replace this HMAC function to use derived auth key
+        // final keyParamsMac = await _cryptor.hmac256(encryptedKey.toRawJson());
+        // encryptedKey.mac = base64.encode(hex.decode(keyParamsMac));
         // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
         var backupItem = VaultItem(
@@ -1402,14 +1354,13 @@ class _BackupsScreenState extends State<BackupsScreen> {
           cdate: cdate,
           mdate: mdate,
           mac: "",
-          usedIVs: currentIVList,
         );
 
         final backupMac = await _cryptor.hmac256(backupItem.toRawJson());
-        backupItem.mac = backupMac;
+        backupItem.mac = base64.encode(hex.decode(backupMac));
         // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
-        // _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
+        _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
         // log("backupItemJson: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
         final backupItemString = backupItem.toRawJson();
@@ -1427,7 +1378,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         if (Platform.isAndroid && _shouldSaveToSDCard
             || Platform.isAndroid && _shouldSaveToSDCardOnly) {
 
-          await _createExternalBackup(mdate);
+          await _createExternalBackup(backupName, mdate);
         }
 
         if (!_shouldSaveToSDCardOnly) {
@@ -1446,9 +1397,11 @@ class _BackupsScreenState extends State<BackupsScreen> {
     }
   }
 
-  Future<bool> _createExternalBackup(String modifiedDateString) async {
+  /// create external SD card backup
+  ///
+  Future<bool> _createExternalBackup(String userBackupName, String modifiedDateString) async {
 
-    var backupName = _dialogTextFieldController.text;
+    var backupName = userBackupName.isEmpty ? _dialogTextFieldController.text : userBackupName;
 
     var cdate = DateTime.now().toIso8601String();
     var mdate = modifiedDateString;
@@ -1456,16 +1409,14 @@ class _BackupsScreenState extends State<BackupsScreen> {
     var localKeyId = _keyManager.keyId;
     var keyId = localKeyId;
 
-    if (_externalVaultItem != null &&
-        _externalVaultItem?.id == _keyManager.vaultId &&
-        _hasMatchingExternalVaultKeyData) {
-      if (backupName.isEmpty) {
-        backupName = (_externalVaultItem?.name)!;
-      }
-      cdate = (_externalVaultItem?.cdate)!;
-      keyId = _externalVaultItem?.encryptedKey.keyId ?? "";
-      // logger.d("keyId: ${_externalVaultItem?.encryptedKey.keyId}");
-    }
+    // if (_externalVaultItem != null &&
+    //     _externalVaultItem?.id == _keyManager.vaultId &&
+    //     _hasMatchingExternalVaultKeyData) {
+    //
+    //   backupName = (_externalVaultItem?.name)!;
+    //   cdate = (_externalVaultItem?.cdate)!;
+    //   keyId = _externalVaultItem?.encryptedKey.keyId ?? "";
+    // }
 
     if (localKeyId != keyId) {
       logger.wtf("keyId != localKeyId");
@@ -1478,12 +1429,11 @@ class _BackupsScreenState extends State<BackupsScreen> {
         _logManager.logger.d("BackupsScreen-create backup external");
 
         var currentVault = _externalVaultItem;
-        // var keyId = _keyManager.keyId;
-        print("keyId-2: ${keyId}");
+        cdate = (_externalVaultItem?.cdate)!;
+        keyId = _externalVaultItem?.encryptedKey.keyId ?? "";
 
         if (currentVault != null) {
           cdate = currentVault.cdate;
-          // keyId = currentVault?.encryptedKey.keyId;
           if (backupName.isEmpty) {
             backupName = currentVault.name;
           }
@@ -1511,28 +1461,21 @@ class _BackupsScreenState extends State<BackupsScreen> {
         // _logManager.logger.d('test4: ${appVersion}');
         final uuid = _keyManager.vaultId;
 
-        List<String>? currentIVList = [];
-        try {
-          if (currentVault!.usedIVs != null) {
-            currentIVList = currentVault!.usedIVs;
-          }
-        } catch (e) {
-          _logManager.logger.wtf("Exception on usedIVs: $e");
-        }
+        /// create iv
+        var nonce = _cryptor.getNewNonce();
+        nonce = nonce.sublist(0,12) + [0,0,0,0];
 
-        /// create iv and add to iv list
-        final iv = _cryptor.getNewNonce();
-
-        currentIVList?.add(base64.encode(iv));
-
-        /// get hash of iv list
-        final ivListHash = _cryptor.sha256(currentIVList.toString());
+        // final currentNonce = base64.decode(currentVault!.blob).sublist(0,16);
+        // if (currentNonce != null) {
+        //   nonce = ivHelper().incrementSequencedNonce(currentNonce);
+        // }
+        _logManager.logger.wtf("backupNonce: ${nonce}");
 
         final idString =
-            "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${ivListHash}-${backupName}";
+            "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${backupName}";
         _logManager.logger.wtf("idString: $idString");
 
-        var encryptedBlob = await _cryptor.encryptBackupVault(testItems, iv, idString);
+        var encryptedBlob = await _cryptor.encryptBackupVault(testItems, nonce, idString);
         // _logManager.logger.d('encryptedBlob: ${encryptedBlob.length}: $encryptedBlob');
 
         final identities = await _keyManager.getIdentities();
@@ -1562,11 +1505,12 @@ class _BackupsScreenState extends State<BackupsScreen> {
           encryptionAlgorithm: encryptionAlgo,
           keyMaterial: keyMaterial,
           keyNonce: encryptedKeyNonce,
-          mac: "",
+          // mac: "",
         );
 
-        final keyParamsMac = await _cryptor.hmac256(encryptedKey.toRawJson());
-        encryptedKey.mac = keyParamsMac;
+        /// TODO: replace this HMAC function to use derived auth key
+        // final keyParamsMac = await _cryptor.hmac256(encryptedKey.toRawJson());
+        // encryptedKey.mac = base64.encode(hex.decode(keyParamsMac));
         // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
         final backupItem = VaultItem(
@@ -1584,21 +1528,15 @@ class _BackupsScreenState extends State<BackupsScreen> {
           cdate: cdate,
           mdate: mdate,
           mac: "",
-          usedIVs: currentIVList,
         );
 
         final backupMac = await _cryptor.hmac256(backupItem.toRawJson());
-        backupItem.mac = backupMac;
+        backupItem.mac = base64.encode(hex.decode(backupMac));
 
-        // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
-
-        // _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
-        // log("backupItemJson: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
+        _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
         final backupItemString = backupItem.toRawJson();
-        // _logManager.logger.d('backupItemString: $backupItemString');
         final backupHash = _cryptor.sha256(backupItemString);
-        // _logManager.logger.d("backup hash: $backupHash");
 
         _logManager.log(
             "BackupsScreen", "_createBackup", "backup hash:\n$backupHash\n\nvault id: ${uuid}");
@@ -1818,7 +1756,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
         });
   }
 
-
   _showChangeExternalBackupNameDialog() async {
     _enableBackupNameOkayButton = false;
     return showDialog(
@@ -1881,14 +1818,14 @@ class _BackupsScreenState extends State<BackupsScreen> {
         });
   }
 
-  /// create a backup with a user specified name
+  /// change local backup name
+  ///
   Future<bool> _changeLocalBackupName(String newName) async {
     if (newName.isEmpty) {
       return false;
     }
 
     var backupName = newName;
-    // print('backupName: $backupName');
 
     if (_keyManager.hasPasswordItems) {
       _logManager.log(
@@ -1903,27 +1840,11 @@ class _BackupsScreenState extends State<BackupsScreen> {
       final cdate = currentVault!.cdate;
       final mdate = DateTime.now().toIso8601String();
 
-      List<String>? currentIVList = [];
-      try {
-        if (currentVault!.usedIVs != null) {
-          currentIVList = currentVault!.usedIVs;
-        }
-      } catch (e) {
-        _logManager.logger.wtf("Exception on usedIVs: $e");
-      }
-
-      final ivListHashPrevious = _cryptor.sha256(currentIVList.toString());
-
-      /// get hash of iv list
-      // final ivListHash = _cryptor.sha256(currentIVList.toString());
-
-      // final appVersion = _settingsManager.packageInfo.version;
       final appVersion = _settingsManager.versionAndBuildNumber();
-
       final uuid = _keyManager.vaultId;
 
       final idStringPrevious =
-          "${uuid}-${currentVault!.deviceId}-${currentVault!.version}-${cdate}-${currentVault!.mdate}-${ivListHashPrevious}-${currentVault!.name}";
+          "${uuid}-${currentVault!.deviceId}-${currentVault!.version}-${cdate}-${currentVault!.mdate}-${currentVault!.name}";
       // _logManager.logger.wtf("idStringPrevious: $idStringPrevious");
 
       var tempDecryptedBlob =
@@ -1954,33 +1875,34 @@ class _BackupsScreenState extends State<BackupsScreen> {
         encryptionAlgorithm: currentVault!.encryptedKey.encryptionAlgorithm,
         keyMaterial: currentVault!.encryptedKey.keyMaterial,
         keyNonce: currentVault!.encryptedKey.keyNonce,
-        mac: currentVault!.encryptedKey.mac,
+        // mac: currentVault!.encryptedKey.mac,
       );
 
-      final iv = _cryptor.getNewNonce();
-      currentIVList?.add(base64.encode(iv));
+      /// create iv
+      var nonce = _cryptor.getNewNonce();
+      nonce = nonce.sublist(0,12) + [0,0,0,0];
 
-      /// get hash of iv list
-      final ivListHash = _cryptor.sha256(currentIVList.toString());
+      // final currentNonce = base64.decode(currentVault!.blob).sublist(0,16);
+      // if (currentNonce != null) {
+      //   nonce = ivHelper().incrementSequencedNonce(currentNonce);
+      // }
+      _logManager.logger.wtf("backupNonce: ${nonce}");
 
       final idStringUpdated =
-          "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${ivListHash}-${backupName}";
+          "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${backupName}";
       // _logManager.logger.wtf("idStringUpdated: $idStringUpdated");
 
       var encryptedBlobUpdated =
-          await _cryptor.encryptBackupVault(tempDecryptedBlob, iv, idStringUpdated);
+          await _cryptor.encryptBackupVault(tempDecryptedBlob, nonce, idStringUpdated);
       // print("encryptedBlobUpdated: $encryptedBlobUpdated");
-
 
       final deviceDataString = _settingsManager.deviceManager.deviceData.toString();
       // _logManager.logger.d("deviceDataString: $deviceDataString");
-      // _logManager.logger.d("deviceData[utsname.version:]: ${_settingsManager._deviceManager.deviceData["utsname.version:"]}");
 
       _settingsManager.doEncryption(utf8.encode(deviceDataString).length);
       final encryptedDeviceData = await _cryptor.encrypt(deviceDataString);
       // _logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
 
-      // final backupNameFinal = '$backupName - ${items.list.length} items, v${_settingsManager.packageInfo.version}';
       /// TODO: add in updatedBlob, remove blobDigest
       final backupItem = VaultItem(
         id: uuid,
@@ -1997,14 +1919,13 @@ class _BackupsScreenState extends State<BackupsScreen> {
         cdate: cdate,
         mdate: mdate,
         mac: "",
-        usedIVs: currentIVList,
       );
 
       final backupMac = await _cryptor.hmac256(backupItem.toRawJson());
-      backupItem.mac = backupMac;
+      backupItem.mac = base64.encode(hex.decode(backupMac));
 
       final backupItemString = backupItem.toRawJson();
-      // print('backupItemString: $backupItemString');
+      // _logManager.logger.d('backupItemString: $backupItemString');
 
       final backupHash =
           Hasher().sha256Hash(backupItemString);
@@ -2016,11 +1937,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
       final normDate = mdate.replaceAll(":", "_");
       final backupFileName = "Blackbox-$backupName-(${numItems} items, ${currentVault!.recoveryKeys?.length} recovery keys)-${normDate}";
 
-      if (Platform.isAndroid && _shouldSaveToSDCard) {
-        /// write backup to SD card
-        await _fileManager.writeVaultDataSDCard(backupFileName, backupItemString);
-      }
-
       await _fileManager.writeNamedVaultData(backupFileName, backupItemString);
 
       return true;
@@ -2028,13 +1944,14 @@ class _BackupsScreenState extends State<BackupsScreen> {
     return false;
   }
 
+  /// change external SD card backup name
+  ///
   Future<bool> _changeExternalBackupName(String newName) async {
     if (newName.isEmpty) {
       return false;
     }
 
     var backupName = newName;
-    // print('backupName: $backupName');
 
     if (_keyManager.hasPasswordItems) {
       _logManager.log(
@@ -2052,24 +1969,13 @@ class _BackupsScreenState extends State<BackupsScreen> {
       final appVersion = _settingsManager.versionAndBuildNumber();
       final uuid = _keyManager.vaultId;
 
-
-      /// get current iv and previous iv list
-      List<String>? currentIVList = [];
-      try {
-        if (currentVault!.usedIVs != null) {
-          currentIVList = currentVault!.usedIVs;
-        }
-      } catch (e) {
-        _logManager.logger.wtf("Exception on usedIVs: $e");
-      }
-
-      final ivListHashPrevious = _cryptor.sha256(currentIVList.toString());
+      // _logManager.logger.wtf("ivListHash: ${ivListHashPrevious}");
 
       final idStringPrevious =
-          "${uuid}-${currentVault!.deviceId}-${currentVault!.version}-${cdate}-${currentVault!.mdate}-${ivListHashPrevious}-${currentVault!.name}";
+          "${uuid}-${currentVault!.deviceId}-${currentVault!.version}-${cdate}-${currentVault!.mdate}-${currentVault!.name}";
       // _logManager.logger.wtf("idStringPrevious: $idStringPrevious");
 
-      var tempDecryptedBlob =
+      final tempDecryptedBlob =
       await _cryptor.decryptBackupVault(currentVault!.blob, idStringPrevious);
       // print("tempDecryptedBlob: $tempDecryptedBlob");
 
@@ -2098,22 +2004,20 @@ class _BackupsScreenState extends State<BackupsScreen> {
         encryptionAlgorithm: currentVault!.encryptedKey.encryptionAlgorithm,
         keyMaterial: currentVault!.encryptedKey.keyMaterial,
         keyNonce: currentVault!.encryptedKey.keyNonce,
-        mac: currentVault!.encryptedKey.mac,
+        // mac: currentVault!.encryptedKey.mac,
       );
 
-      /// create new iv
-      final iv = _cryptor.getNewNonce();
-      currentIVList?.add(base64.encode(iv));
-
-      /// get hash of iv list
-      final ivListHash = _cryptor.sha256(currentIVList.toString());
+      /// create iv
+      var nonce = _cryptor.getNewNonce();
+      nonce = nonce.sublist(0,12) + [0,0,0,0];
+      _logManager.logger.wtf("backupNonce: ${nonce}");
 
       final idStringUpdated =
-          "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${ivListHash}-${backupName}";
+          "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${backupName}";
       // _logManager.logger.wtf("idStringUpdated: $idStringUpdated");
 
-      var encryptedBlobUpdated =
-      await _cryptor.encryptBackupVault(tempDecryptedBlob, iv, idStringUpdated);
+      final encryptedBlobUpdated =
+      await _cryptor.encryptBackupVault(tempDecryptedBlob, nonce, idStringUpdated);
       // print("encryptedBlobUpdated: $encryptedBlobUpdated");
 
       final deviceDataString = _settingsManager.deviceManager.deviceData.toString();
@@ -2138,11 +2042,10 @@ class _BackupsScreenState extends State<BackupsScreen> {
         cdate: cdate,
         mdate: mdate,
         mac: "",
-        usedIVs: currentIVList,
       );
 
       final backupMac = await _cryptor.hmac256(backupItem.toRawJson());
-      backupItem.mac = backupMac;
+      backupItem.mac = base64.encode(hex.decode(backupMac));
 
       final backupItemString = backupItem.toRawJson();
       // print('backupItemString: $backupItemString');
@@ -2166,12 +2069,14 @@ class _BackupsScreenState extends State<BackupsScreen> {
   }
 
 
+  /// restore local backup
+  ///
   Future<bool> _restoreLocalBackup(String salt) async {
     _logManager.logger.d("_restoreLocalBackup");
 
     final password = _dialogRestoreTextFieldController.text;
     if (password.isNotEmpty) {
-      // final status = await _backupManager.restoreBackupItem(password, id, salt);
+
       final status = await _backupManager.restoreBackupItem(
           _localVaultItem!,
           password,
@@ -2183,19 +2088,20 @@ class _BackupsScreenState extends State<BackupsScreen> {
           "BackupsScreen", "_restoreLocalBackup", "restore: $status");
 
       if (_backupManager.responseStatusCode == 0) {
+        if (_backupManager.backupErrorMessage.isNotEmpty) {
+          EasyLoading.showToast(
+              _backupManager.backupErrorMessage,
+              duration: Duration(seconds: 5));
+        } else {
+          EasyLoading.showToast(
+              'Backup Restored Successfully',
+              duration: Duration(seconds: 3));
+        }
         return status;
       } else {
         WidgetUtils.showSnackBar(context, _backupManager.backupErrorMessage + ": " + _backupManager.responseStatusCode.toString());
         return false;
       }
-      if (!status) {
-        // _fetchBackups();
-      // } else {
-      //   WidgetUtils.showSnackBar(context, _backupManager.backupErrorMessage);
-      }
-      WidgetUtils.showSnackBar(context, _backupManager.backupErrorMessage + ": " + _backupManager.responseStatusCode.toString());
-
-      return status;
     } else {
       return false;
     }
@@ -2206,32 +2112,32 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
     final password = _dialogRestoreTextFieldController.text;
     if (password.isNotEmpty) {
-      // final status = await _backupManager.restoreBackupItem(password, id, salt);
+
       final status = await _backupManager.restoreBackupItem(
         _externalVaultItem!,
         password,
         salt,
       );
 
-
       _logManager.logger.d("status: ${status}, code: ${_backupManager.responseStatusCode}");
       _logManager.log(
           "BackupsScreen", "_restoreExternalBackup", "restore: $status");
 
       if (_backupManager.responseStatusCode == 0) {
+        if (_backupManager.backupErrorMessage.isNotEmpty) {
+          EasyLoading.showToast(
+              _backupManager.backupErrorMessage,
+              duration: Duration(seconds: 5));
+        } else {
+          EasyLoading.showToast(
+              'Backup Restored Successfully',
+              duration: Duration(seconds: 3));
+        }
         return status;
       } else {
         WidgetUtils.showSnackBar(context, _backupManager.backupErrorMessage + ": " + _backupManager.responseStatusCode.toString());
         return false;
       }
-      if (!status) {
-        // _fetchBackups();
-        // } else {
-        //   WidgetUtils.showSnackBar(context, _backupManager.backupErrorMessage);
-      }
-      WidgetUtils.showSnackBar(context, _backupManager.backupErrorMessage + ": " + _backupManager.responseStatusCode.toString());
-
-      return status;
     } else {
       return false;
     }
@@ -2366,9 +2272,9 @@ class _BackupsScreenState extends State<BackupsScreen> {
                           // EasyLoading.dismiss();
 
                           if (status) {
-                            EasyLoading.showToast(
-                                'Backup Restored Successfully',
-                                duration: Duration(seconds: 3));
+                            // EasyLoading.showToast(
+                            //     'Backup Restored Successfully',
+                            //     duration: Duration(seconds: 3));
                             if (_loginScreenFlow) {
                               // print("login screen flow");
                               Navigator.of(context).pop();

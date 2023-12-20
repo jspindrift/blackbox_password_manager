@@ -27,7 +27,7 @@ class EncryptedKey {
   String encryptionAlgorithm; // encryption algo used on master root key
   String keyMaterial; // master root key data
   String keyNonce; // encrypted nonce that tracks number of encrypted blocks used by master encryption key
-  String mac;  // mac of data model with empty mac string (using own auth key)
+  // String mac;  // mac of data model with empty mac string (using own auth key)
 
   EncryptedKey({
     required this.keyId,
@@ -40,7 +40,7 @@ class EncryptedKey {
     required this.encryptionAlgorithm,
     required this.keyMaterial,
     required this.keyNonce,
-    required this.mac,
+    // required this.mac,
   });
 
   factory EncryptedKey.fromRawJson(String str) =>
@@ -60,7 +60,7 @@ class EncryptedKey {
       encryptionAlgorithm: json['encryptionAlgorithm'],
       keyMaterial: json['keyMaterial'],
       keyNonce: json['keyNonce'],
-      mac: json['mac'],
+      // mac: json['mac'],
     );
   }
 
@@ -76,7 +76,7 @@ class EncryptedKey {
       "encryptionAlgorithm": encryptionAlgorithm,
       "keyMaterial": keyMaterial,
       "keyNonce": keyNonce,
-      "mac": mac,
+      // "mac": mac,
     };
 
     return jsonMap;
@@ -101,7 +101,6 @@ class VaultItem {
   String mac;                 // mac of VaultItem model with empty string as initial mac value (using auth key)
   String cdate;               // created date
   String mdate;               // modified date
-  List<String>? usedIVs; // used initialization vectors
 
   VaultItem({
     required this.id,
@@ -118,17 +117,12 @@ class VaultItem {
     required this.mac,
     required this.cdate,
     required this.mdate,
-    required this.usedIVs,
   });
 
   factory VaultItem.fromRawJson(String str) =>
       VaultItem.fromJson(json.decode(str));
 
   String toRawJson() => json.encode(toJson());
-
-  Map<String, dynamic> toJsonUsedIVs() => {
-    "usedIVs": usedIVs!,
-  };
 
   Map<String, dynamic> toJsonIdentities() => {
         "identities": identities!,
@@ -170,7 +164,6 @@ class VaultItem {
       mac: json['mac'],
       cdate: json['cdate'],
       mdate: json['mdate'],
-      usedIVs: json["usedIVs"] == null ? null : List<String>.from(json["usedIVs"]),
     );
   }
 
@@ -202,10 +195,6 @@ class VaultItem {
 
     if (deviceData != null) {
       jsonMap.addAll(toJsonDeviceData());
-    }
-
-    if (usedIVs != null) {
-      jsonMap.addAll(toJsonUsedIVs());
     }
 
     return jsonMap;

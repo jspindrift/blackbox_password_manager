@@ -1774,7 +1774,7 @@ class KeychainManager {
       _encryptedKeyMaterial = '';
       _vaultId = "";
 
-      logManager.deleteLogFile();
+      // logManager.deleteLogFile();
 
       return true;
     } catch (e) {

@@ -572,11 +572,9 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
     );
 
     _Kmac = checkMac.bytes;
-
     _Kxor = cryptor.xor(Uint8List.fromList(_Kenc), Uint8List.fromList(_Kauth));
     // logManager.logger.d("KXOR: ${hex.encode(_Kxor)}");
     // logManager.logger.d("KEYMAC: ${hex.encode(_Kmac)}");
-
 
     _calculateOTPToken();
     // final otpTimeInterval = 30; // seconds

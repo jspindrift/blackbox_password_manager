@@ -703,9 +703,11 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                         });
 
                         _keyManager.readPinCodeKey().then((value) {
-                          setState(() {
-                            _isPinCodeEnabled = value;
-                          });
+                          if (mounted) {
+                            setState(() {
+                              _isPinCodeEnabled = value;
+                            });
+                          }
                         });
                       });
                     },

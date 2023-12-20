@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:convert/convert.dart';
 import 'package:logger/logger.dart';
 
 import '../managers/Cryptor.dart';
@@ -118,7 +119,10 @@ class NoteItem {
     name = encryptedName;
     notes = encryptedNotes;
     mac = "";
-    mac = await cryptor.hmac256(toRawJson());
+
+    /// compute mac of JSON object with empty mac
+    final computedMac = await cryptor.hmac256(toRawJson());
+    mac = base64.encode(hex.decode(computedMac));
     // logger.d("toJSON final: ${toJson()}");
   }
 
@@ -131,7 +135,7 @@ class NoteItem {
       final computedMac = await cryptor.hmac256(objString);
       // logger.d("macCheck: $macCheck\ncomputedMac: $computedMac");
 
-      if (computedMac != macCheck && macCheck.isNotEmpty) {
+      if (base64.encode(hex.decode(computedMac)) != macCheck && macCheck.isNotEmpty) {
         logger.wtf("incorrect mac");
         return;
       }
@@ -183,7 +187,11 @@ class NoteItem {
     mac = checkMac;
     // logger.d("toRawJson()-added back: ${toRawJson()}");
 
-    return checkMac == computedMac;
+    if (checkMac == base64.encode(hex.decode(computedMac))){
+      return true;
+    }
+
+    return false;
   }
 
 }

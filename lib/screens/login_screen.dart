@@ -1380,6 +1380,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           _enterPasswordTextController.text = '';
           _confirmPasswordTextController.text = '';
 
+          settingsManager.setCurrentTabIndex(1);
+
           Navigator.of(context)
               .pushNamed(HomeTabScreen.routeName)
               .then((value) {

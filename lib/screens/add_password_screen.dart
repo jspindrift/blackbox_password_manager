@@ -46,6 +46,7 @@ class AddPasswordScreen extends StatefulWidget {
 class _AddPasswordScreenState extends State<AddPasswordScreen> {
   /// test geo-lock
   static const bool _testGeoLock = true;
+  static const bool _debugRand = false;
 
   final _nameTextController = TextEditingController();
   final _usernameTextController = TextEditingController();
@@ -1775,15 +1776,18 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
           uppercase: _isWithUppercase);
     } else if (_selectedSegment == PasswordType.mnemonic) {
       if (_numberWordsLabel == 12) {
-        final mnemonic = bip39.generateMnemonic(strength: 128);
-        // var a = mnemonic;
-        // final randNumber = 269;
-        // for (var index = 0; index < randNumber; index++) {
-        //   a = _cryptor.sha256(a);
-        // }
-        // final words = bip39.entropyToMnemonic(a.substring(0,32));
-//         newPassword = _delimeterConversion(words);
-        newPassword = _delimeterConversion(mnemonic);
+        var mnemonic = bip39.generateMnemonic(strength: 128);
+        if (_debugRand) {
+          var a = mnemonic;
+          final randNumber = 269;
+          for (var index = 0; index < randNumber; index++) {
+            a = _cryptor.sha256(a);
+          }
+          final words = bip39.entropyToMnemonic(a.substring(0, 32));
+          newPassword = _delimeterConversion(words);
+        } else {
+          newPassword = _delimeterConversion(mnemonic);
+        }
       } else if (_numberWordsLabel == 15) {
         final mnemonic = bip39.generateMnemonic(strength: 160);
         newPassword = _delimeterConversion(mnemonic);
@@ -1794,16 +1798,19 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
         final mnemonic = bip39.generateMnemonic(strength: 224);
         newPassword = _delimeterConversion(mnemonic);
       } else if (_numberWordsLabel == 24) {
-        final mnemonic = bip39.generateMnemonic(strength: 256);
-//         final mnemonic = bip39.generateMnemonic(strength: 256);
-//         var a = mnemonic;
-//         final randNumber = 269;
-//         for (var index = 0; index < randNumber; index++) {
-//           a = _cryptor.sha256(a);
-//         }
-//         final words = bip39.entropyToMnemonic(a);
-//         newPassword = _delimeterConversion(words);
-        newPassword = _delimeterConversion(mnemonic);
+        var mnemonic = bip39.generateMnemonic(strength: 256);
+        if (_debugRand) {
+          mnemonic = bip39.generateMnemonic(strength: 256);
+          var a = mnemonic;
+          final randNumber = 269;
+          for (var index = 0; index < randNumber; index++) {
+            a = _cryptor.sha256(a);
+          }
+          final words = bip39.entropyToMnemonic(a);
+          newPassword = _delimeterConversion(words);
+        } else {
+          newPassword = _delimeterConversion(mnemonic);
+        }
       } else {
         final mnemonic = bip39.generateMnemonic(strength: 256);
         newPassword = _delimeterConversion(mnemonic);

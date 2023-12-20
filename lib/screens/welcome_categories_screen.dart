@@ -118,7 +118,6 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
       } else if (item.type == "note") {
         /// TODO: increment favorite counts
         final noteItem = NoteItem.fromRawJson(item.data);
-        // final keyIndex = (noteItem?.keyIndex)!;
 
         if (!_availableCategories.contains("Notes")) {
           _availableCategories.add("All");

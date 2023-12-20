@@ -310,19 +310,15 @@ class KeyScheduler {
 
     var testItems = json.encode(items);
 
-    final iv = _cryptor.getNewNonce();
-    List<String>? currentIVList = [];
-
-    currentIVList.add(base64.encode(iv));
-
-    /// get hash of iv list
-    final ivListHash = _cryptor.sha256(currentIVList.toString());
 
     final idString =
-        "${vaultId}-${deviceId}-${appVersion}-${timestamp}-${timestamp}-${ivListHash}-${backupName}";
+        "${vaultId}-${deviceId}-${appVersion}-${timestamp}-${timestamp}-${backupName}";
 
+    /// create iv
+    var nonce = _cryptor.getNewNonce();
+    nonce = nonce.sublist(0,12) + [0,0,0,0];
 
-    var encryptedBlob = await _cryptor.encryptBackupVault(testItems, iv, idString);
+    var encryptedBlob = await _cryptor.encryptBackupVault(testItems, nonce, idString);
 
     /// TODO: implement this outside of this function
     _settingsManager.doEncryption(utf8.encode(testItems).length);
@@ -336,7 +332,6 @@ class KeyScheduler {
     final encryptedKeyNonce = await _cryptor.encrypt(keyNonce);
     _logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
 
-
     final encryptedKey = EncryptedKey(
       keyId: keyId,
       derivationAlgorithm: kdfAlgo,
@@ -348,11 +343,12 @@ class KeyScheduler {
       encryptionAlgorithm: encryptionAlgo,
       keyMaterial: keyMaterial,
       keyNonce: encryptedKeyNonce,
-      mac: "",
+      // mac: "",
     );
 
-    final keyParamsMac = await _cryptor.hmac256(encryptedKey.toRawJson());
-    encryptedKey.mac = keyParamsMac;
+    /// TODO: replace this HMAC function to use derived auth key
+    // final keyParamsMac = await _cryptor.hmac256(encryptedKey.toRawJson());
+    // encryptedKey.mac = base64.encode(hex.decode(keyParamsMac));
 
     /// identities
     final identities = await _keyManager.getIdentities();
@@ -365,12 +361,10 @@ class KeyScheduler {
 
     final deviceDataString = _settingsManager.deviceManager.deviceData.toString();
     // _logManager.logger.d("deviceDataString: $deviceDataString");
-    // _logManager.logger.d("deviceData[utsname.version:]: ${_settingsManager.deviceManager.deviceData["utsname.version:"]}");
 
     _settingsManager.doEncryption(utf8.encode(deviceDataString).length);
     final encryptedDeviceData = await _cryptor.encrypt(deviceDataString);
     // _logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
-
 
     final backupItem = VaultItem(
       id: vaultId,
@@ -387,11 +381,10 @@ class KeyScheduler {
       cdate: timestamp,
       mdate: timestamp,
       mac: "",
-      usedIVs: currentIVList,
     );
 
     final backupMac = await _cryptor.hmac256(backupItem.toRawJson());
-    backupItem.mac = backupMac;
+    backupItem.mac = base64.encode(hex.decode(backupMac));
 
     _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 

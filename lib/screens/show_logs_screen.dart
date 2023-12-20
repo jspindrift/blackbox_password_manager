@@ -18,7 +18,7 @@ class ShowLogsScreen extends StatefulWidget {
 
 class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObserver {
   List<Block> _blocks = [];
-  List<String> timeLapses = [];
+  List<String> _timeLapses = [];
   List<int> sessionTimes = [];
 
   bool _isDarkModeEnabled = false;
@@ -99,7 +99,7 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObse
     int timeLapseIndex = 0;
     int blockIndex = 0;
     String currentTimeLapseString = '';
-    timeLapses = [];
+    _timeLapses = [];
     List<int> timeIntervals = [];
     List<int> windowTimeIntervals = [];
 
@@ -161,7 +161,7 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObse
 
         timeLapseIndex += 1;
       }
-      timeLapses.add(currentTimeLapseString);
+      _timeLapses.add(currentTimeLapseString);
       currentTimeLapseString = '';
       timeLapseIndex = 0;
     }
@@ -253,11 +253,11 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObse
         separatorBuilder: (context, index) => Divider(
           color: _isDarkModeEnabled ? Colors.greenAccent : null,
         ),
-        itemCount: _blocks.length,
+        itemCount: _timeLapses.length,
         controller: _controller,
         itemBuilder: (context, index) {
           return ListTile(
-            isThreeLine: timeLapses[index].isNotEmpty ? true : false,
+            isThreeLine: _timeLapses[index].isNotEmpty ? true : false,
             title: Text(
               '#${index + 1}: ${DateFormat('yyyy-MM-dd  hh:mm a').format(DateTime.parse(_blocks[index].time))}\n'
                   '${sessionTimes[index]} seconds\n'
@@ -266,8 +266,8 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObse
                 color: _isDarkModeEnabled ? Colors.white : null,
               ),
             ),
-            subtitle: timeLapses[index].isNotEmpty ? Text(
-              timeLapses.length > 0 ? timeLapses[index] : "",
+            subtitle: _timeLapses[index].isNotEmpty ? Text(
+              _timeLapses.length > 0 ? _timeLapses[index] : "",
               style: TextStyle(
                 color: _isDarkModeEnabled ? Colors.white : null,
               ),
