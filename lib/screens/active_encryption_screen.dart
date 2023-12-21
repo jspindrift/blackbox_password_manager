@@ -24,31 +24,24 @@ import 'home_tab_screen.dart';
 
 
 /// This is where encryption and decryption of messages with a set key takes place
-///
-/// Copied from EditEncryptionKeyScreen
-
-
 class ActiveEncryptionScreen extends StatefulWidget {
   const ActiveEncryptionScreen({
     Key? key,
     required this.id,
     KeyItem? this.keyItem,
-    // required this.state,
-
   }) : super(key: key);
   static const routeName = '/active_encryption_key_screen';
 
   final String id;
   final KeyItem? keyItem;
-  // final StateBuilder state;
 
   @override
   State<ActiveEncryptionScreen> createState() => _ActiveEncryptionScreenState();
 }
 
+
 class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
   final _messageTextController = TextEditingController();
-
   final _messageFocusNode = FocusNode();
 
   final _debugTestWots = false;
@@ -57,14 +50,12 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
   bool _isDarkModeEnabled = false;
   bool _fieldsAreValid = false;
-
   bool _isRootSymmetric = false;
   bool _didEncrypt = false;
   bool _isDecrypting = false;
   bool _didDecryptSuccessfully = false;
   bool _showShareMessageAsQRCode = false;
   bool _hasEmbeddedMessageObject = false;
-
   bool _isUsingWOTS = false;
 
   List<int> _mainPrivateKey = [];
@@ -76,7 +67,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
   String _toAddr = "";
 
   List<int> _peerPublicKey = [];
-
   List<int> _seedKey = [];
   List<int> _Kenc = [];
   List<int> _Kauth = [];
@@ -381,6 +371,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       _logManager.logger.d('secret _Kauth_sendend: ${hex.encode(_Kauth_send)}');
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -973,10 +964,10 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                 Spacer(),
                 IconButton(
                   onPressed: ((_didEncrypt && _showShareMessageAsQRCode) || (!_didEncrypt && _hasEmbeddedMessageObject))
-                      ? () async {
+                      ? () {
                     /// Show Message QR Code
                     /// can only hold ~2KB
-                    await _pressedShareEncryptedMessage();
+                    _pressedShareEncryptedMessage();
                   }
                       : null,
                   icon: Icon(
@@ -1002,10 +993,10 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                     ),
                   ),
                   onPressed: ((_didEncrypt && _showShareMessageAsQRCode) || (!_didEncrypt && _hasEmbeddedMessageObject))
-                      ? () async {
+                      ? () {
                     /// Show Message QR Code
                     /// can only hold ~2KB
-                    await _pressedShareEncryptedMessage();
+                    _pressedShareEncryptedMessage();
                   } : null,
                 ),
                 Spacer(),
@@ -1124,22 +1115,19 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
   }
 
 
-  _pressedShareEncryptedMessage() {
-
+  void _pressedShareEncryptedMessage() {
     if (_qrMessageItem == null) {
       _logManager.logger.e("QR item empty 1");
       return;
     }
 
     final qrItemString = _qrMessageItem?.toRawJson();
-
     if (qrItemString == null) {
       _logManager.logger.e("QR item empty 2");
       return;
     }
 
     if (qrItemString.length >= 1286) {
-      // print("too much data");
       _showErrorDialog("Too much data for QR code.\n\nLimit is 1286 bytes.");
     } else {
       Navigator.push(
@@ -1171,7 +1159,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
      return;
     }
 
-    // print("message length: ${message.length}");
     /// TODO: need to encrypt with shared secret key
     ///
     final encryptedMessage = await _cryptor.encryptWithKey(_Kenc_send, _Kauth_send, message);
@@ -1180,16 +1167,12 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     final iv = encryptedBlobBytes.sublist(0,16);
     final mac = encryptedBlobBytes.sublist(16,48);
     final blob = encryptedBlobBytes.sublist(48,encryptedBlobBytes.length);
-
     _logManager.logger.d("iv: ${hex.encode(iv)}\nmac: ${hex.encode(mac)}\nblob: ${hex.encode(blob)}");
-    // _logManager.logger.d("mac: ${hex.encode(mac)}");
-    // _logManager.logger.d("blob: ${hex.encode(blob)}");
 
     final toAddr = _cryptor.sha256(hex.encode(_peerPublicKey)).substring(0, 40);
-    final fromAddr = _cryptor.sha256(hex.encode(_mainPublicKey)).substring(0,40);
+    final fromAddr = _cryptor.sha256(hex.encode(_mainPublicKey)).substring(0, 40);
 
     // final appendedMessage = "to:" + toAddr + ":" + encryptedMessage;
-
     final timestamp = DateTime.now().toIso8601String();
 
     EncryptedPeerMessage message_send_plain = EncryptedPeerMessage(
@@ -1210,7 +1193,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       secretKey: msgHashKey!,
     );
 
-
     EncryptedPeerMessage message_send_mac = EncryptedPeerMessage(
       version: messageVersionNumber,
       from: fromAddr,
@@ -1220,7 +1202,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       jmac: base64.encode(mac_msg.bytes),
     );
 
-    /// TODO: get kek, lastBlockHash, thisSigatureIndex, and msgObject
+    /// TODO: get kek, lastBlockHash, thisSignatureIndex, and msgObject
     // final msg = BasicMessageData(
     //     time: timestamp,
     //     message: message_send_mac.toRawJson(),
@@ -1244,7 +1226,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
     if (_isUsingWOTS && _debugTestWots) {
       _wotsSigningCounter++;
-      // final kek = List.filled(32, 0);
 
       wotsSignature1 = await _wotsManager.signGigaWotMessage(
           _Kwots_send,
@@ -1253,11 +1234,11 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
           _wotsSigningCounter,
           msgObject,
           256,
+          false,
       );
 
       _logManager.logger.d("wotsSignature1: ${wotsSignature1?.toRawJson()}");
     }
-
 
     setState(() {
       _didEncrypt = true;
@@ -1383,7 +1364,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       Kuse_a,
       secretKey: msgRecHashKey!,
     );
-    // print("mac_rec_msg: ${base64.encode(mac_rec_msg.bytes)}");
 
     if (messageItem.jmac != base64.encode(mac_rec_msg.bytes)) {
       setState(() {
@@ -1394,10 +1374,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       _logManager.logger.w("JMACs DO NOT Equal!!");
       return;
     }
-
-    // print("mac_rec_msg: ${mac_rec_msg}");
-
-
 
     /// need to decrypt with shared secret key
     final decryptedMessage = await _cryptor.decryptWithKey(Kuse_e, Kuse_a, messageItem.message);
@@ -1420,20 +1396,16 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       return;
     }
 
-
     setState(() {
       _didEncrypt = false;
       _didDecryptSuccessfully = true;
-      // _hasEmbeddedMessageObject = false;
       _messageTextController.text = decryptedMessage;
    });
-
 
     _qrMessageItem = QRCodeEncryptedMessageItem(
         keyId: base64.encode(hex.decode(toAddr)),
         message: decryptedMessage,
     );
-
 
     final qrItemString = _qrMessageItem?.toRawJson();
     if (qrItemString != null) {
@@ -1444,8 +1416,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
         setState((){
           _showShareMessageAsQRCode = false;
         });
-        // print("too much data");
-        // _showErrorDialog("Too much data for QR code.\n\nLimit is 1286 bytes.");
       } else {
         setState((){
           _showShareMessageAsQRCode = true;
@@ -1496,5 +1466,6 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       ),
     );
   }
+
 }
 

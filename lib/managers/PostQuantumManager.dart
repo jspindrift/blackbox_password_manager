@@ -3,9 +3,6 @@ import 'dart:async';
 
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import "package:blackbox_password_manager/managers/Cryptor.dart";
-import "package:blackbox_password_manager/managers/WOTSManager.dart";
-import "package:blackbox_password_manager/merkle/merkle_example.dart";
 import "package:convert/convert.dart";
 import "package:cryptography/cryptography.dart" as crypto;
 import "package:elliptic/src/publickey.dart";
@@ -13,6 +10,9 @@ import 'package:logger/logger.dart';
 import 'package:ecdsa/ecdsa.dart' as ecdsa;
 import 'package:elliptic/elliptic.dart' as elliptic;
 
+import "../managers/Cryptor.dart";
+import "../managers/WOTSManager.dart";
+import "../merkle/merkle_example.dart";
 import "../models/WOTSSignatureItem.dart";
 import "LogManager.dart";
 
@@ -20,16 +20,13 @@ import "LogManager.dart";
 class PostQuantumManager {
   static final PostQuantumManager _shared = PostQuantumManager._internal();
 
-  /// logging
   var logger = Logger(
     printer: PrettyPrinter(),
   );
 
-
   factory PostQuantumManager() {
     return _shared;
   }
-
 
   List<String> _privateKeys = [];
   List<String> _publicKeys = [];
@@ -42,7 +39,6 @@ class PostQuantumManager {
   List<String> get publicKeyTree {
     return _publicKeyTree;
   }
-
 
   /// Encryption Algorithm
   final algorithm_nomac = crypto.AesCtr.with256bits(macAlgorithm: crypto.MacAlgorithm.empty);
@@ -76,7 +72,7 @@ class PostQuantumManager {
     return await rootBundle.loadString('assets/files/project_file_hashes.txt');
   }
 
-  Future<String> loadAssetSignature() async {
+  Future<String> loadPQSignature() async {
     return await rootBundle.loadString('assets/files/post_quantum_signature.txt');
   }
 
@@ -109,7 +105,16 @@ class PostQuantumManager {
       // );
 
       final keyEnv = dotenv.env["KEY_SECP256K1_SIGN_1"];
-      final privGen = _cryptor.sha256("$keyEnv.$index");
+      if (keyEnv == null) {
+        return;
+      }
+
+      if (keyEnv.isEmpty) {
+        return;
+      }
+
+      final converted = _cryptor.mnemonicToEntropy(keyEnv!);
+      final privGen = _cryptor.sha256("${converted}.$index");
       // logger.d("privGen: $privGen");
 
       _privateKeys.add(privGen);
@@ -187,8 +192,7 @@ class PostQuantumManager {
     return result;
   }
 
-  Future<void> postQuantumProjectIntegrityTest(int bitSecurity) async {
-
+  Future<void> postQuantumProjectIntegrityTest(int bitSecurity, bool doRecovery) async {
     final fileHashList = await loadAsset();
     // _logManager.logLongMessage("fileHashes:\n\n${fileHashList}");
 
@@ -202,12 +206,9 @@ class PostQuantumManager {
     }
 
 
-    // final kek = List.filled(32, 0);
-    // final kek = hex.encode(_cryptor.getRandomBytes(32));
     final keyEnvWots = dotenv.env["KEY_GIGA_WOTS_ROOT"];
-    // final kekx = _cryptor.sha256(keyEnvWots);
     final kek = hex.decode(_cryptor.sha256(keyEnvWots));
-    // logger.d("kekx: $kekx");
+    // logger.d("kek: $kek");
 
     var keyIndex_secp256k1 = 0;
 
@@ -219,9 +220,6 @@ class PostQuantumManager {
       keyIndex_secp256k1 = 0;
     }
 
-    // var messageString = "publicKeyHashTree.secp256k1: ${publicKeyTree},"
-    //     " publicKey.secp256k1: ${publicKeys[keyIndex_secp256k1]},"
-    //     " project_file_hashes.txt: ${fileHash}";
     var messageString = "project_file_hashes.txt: ${fileHash}";
     // final msgObjectHash = _cryptor.sha256(messageString);
 
@@ -238,7 +236,7 @@ class PostQuantumManager {
     // msgObject.signature = msgSignature!.toCompactHex();
 
     /// decode the post_quantum_signature object to get values for next signature
-    var storedSignature = await loadAssetSignature();
+    var storedSignature = await loadPQSignature();
     _logManager.logLongMessage("storedSignature:\n\n${storedSignature.replaceAll(" ", "").replaceAll("\n", "")}");
 
     var storedSignatureFormatted = storedSignature.replaceAll("\n", "");
@@ -276,8 +274,15 @@ class PostQuantumManager {
     );
 
     /// compute WOTS signature on message object
-    // await _wotsManager.signMessage(kek, 1, msgObject.toRawJson());
-    await _wotsManager.signGigaWotMessage(kek, chainId, lastBlockHash, thisSigatureIndex, msgObject, bitSecurity);
+    await _wotsManager.signGigaWotMessage(
+        kek,
+        chainId,
+        lastBlockHash,
+        thisSigatureIndex,
+        msgObject,
+        bitSecurity,
+        doRecovery,
+    );
   }
 
   Future<void> postQuantumProjectIntegrityTestVerify() async {
@@ -286,7 +291,7 @@ class PostQuantumManager {
       await createKeyTree(2);
     }
 
-    var storedSignature = await loadAssetSignature();
+    var storedSignature = await loadPQSignature();
     _logManager.logLongMessage("storedSignature:\n\n${storedSignature.replaceAll(" ", "").replaceAll("\n", "")}");
 
     var storedSignatureFormatted = storedSignature.replaceAll("\n", "");

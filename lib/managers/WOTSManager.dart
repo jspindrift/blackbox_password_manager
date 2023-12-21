@@ -4,12 +4,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import "package:cryptography/cryptography.dart";
 import "package:convert/convert.dart";
 import 'package:logger/logger.dart';
+import 'package:elliptic/elliptic.dart' as elliptic;
 
 import "../merkle/merkle_example.dart";
 import "../helpers/ivHelper.dart";
 import "../managers/Cryptor.dart";
 import "../models/WOTSSignatureItem.dart";
-
 import "LogManager.dart";
 
 
@@ -114,6 +114,11 @@ class WOTSManager {
   GigaWOTSSignatureChain _wotsSimpleJoinChain = GigaWOTSSignatureChain(chainId: "main", blocks: []);
 
   GigaWOTSSignatureDictionary _wotsSimpleChainDictionary = GigaWOTSSignatureDictionary(chains: []);
+
+
+  /// Asymmetric digital signature algorithm
+  final algorithm_secp256k1 = elliptic.getS256();
+
 
   int get messageIndex {
     return _messageIndex;
@@ -424,14 +429,14 @@ class WOTSManager {
 
 
 
-  /// BEGIN - WOTS Simple Overlapping Chain (next top public key)
+  /// BEGIN - Giga-WOTS (next top public key protocol) -------------------------
   ///
-  Future<void> createGigaWotTopPubKey(List<int> rootKey, int msgIndex, int bitSecurity) async {
-      await _createGigaWotTopPubKey(rootKey, msgIndex, bitSecurity);
+  Future<void> createGigaWotTopPubKey(List<int> rootKey, int msgIndex, int bitSecurity, bool doRecovery) async {
+    await _createGigaWotTopPubKey(rootKey, msgIndex, bitSecurity, doRecovery);
   }
 
-    /// create private and public values for signing and verifying
-  Future<void> _createGigaWotTopPubKey(List<int> rootKey, int msgIndex, int bitSecurity) async {
+  /// create private and public values for signing and verifying
+  Future<void> _createGigaWotTopPubKey(List<int> rootKey, int msgIndex, int bitSecurity, bool doRecovery) async {
     logger.d("\n\t\t--------------------------_createGigaWotTopPubKey START - [${msgIndex}]--------------------------");
     final startTime = DateTime.now();
 
@@ -472,18 +477,40 @@ class WOTSManager {
     List<int> publicPad = [];
     List<Uint8List> pubData = [];
 
+    /// TODO: modify this logic for recovery
+    String xpub_recovery = "";
+    // if (msgIndex == 1 && doRecovery) {
+    //   final keyRecoveryWots = dotenv.env["KEY_GIGA_WOTS_ROOT_RECOVERY"];
+    //   var key_recovery = _cryptor.sha256(keyRecoveryWots);
+    //
+    //   final privateKeyGen = elliptic.PrivateKey(
+    //     algorithm_secp256k1,
+    //     BigInt.parse(key_recovery, radix: 16),
+    //   );
+    //
+    //   final pubGen = privateKeyGen.publicKey;
+    //   xpub_recovery = algorithm_secp256k1.publicKeyToCompressedHex(pubGen);
+    //   // logger.d("xpub_recovery: ${xpub_recovery}");
+    // }
+
     final numLeaves = secretBox.cipherText.length / _leafKeySize;
 
     /// compute the public leaves from private hashes
     for (var index = 0; index < numLeaves; index++) {
       /// get private leaf block
-      final leaf = secretBox.cipherText.sublist(
+      var leaf = secretBox.cipherText.sublist(
         index * _leafKeySize,
         _leafKeySize * (index + 1),
       );
 
+      if (index == 0 && xpub_recovery.isNotEmpty) {
+        final leaf_rec = _cryptor.sha256(xpub_recovery);
+        leaf = hex.decode(leaf_rec);
+        _privLeaves.add(hex.encode(leaf));
+      } else {
+        _privLeaves.add(hex.encode(leaf));
+      }
       /// add private leaf block
-      _privLeaves.add(hex.encode(leaf));
 
       /// compute the public leaf hash
       var leafHash = hex.encode(leaf);
@@ -504,7 +531,6 @@ class WOTSManager {
     }
 
     /// Compute the public checksum leaf value
-    // var pubChecksumLeaf = _pubLeaves.last;
     for (var i = 0; i < _checksumSize-1; i++) {
       if (bitSecurity == 256) {
         _pubLeaves.last = _cryptor.sha256(_pubLeaves.last);
@@ -512,39 +538,17 @@ class WOTSManager {
         _pubLeaves.last = _cryptor.sha512(_pubLeaves.last);
       }
     }
+
     publicPad.addAll(hex.decode(_pubLeaves.last));
     pubData.add(Uint8List.fromList(hex.decode(_pubLeaves.last)));
 
-
-    // logger.d("checksumLeaf: ${_pubLeaves.last}");
-
-    /// add checksum public leaf value to public leaf array
-    // publicPad.addAll(hex.decode(pubChecksumLeaf));
-
-    // _logManager.logLongMessage("\nmessageIndex: $msgIndex\n"
-    //     "_privLeaves: $_privLeaves\n\n"
-    //     "_pubLeaves: $_pubLeaves");
-    _logManager.logLongMessage("\nmessageIndex: $msgIndex\n"
-        "_pubLeaves: $_pubLeaves");
-    /// hash public leaf values with checksum to get top pub hash
-
-    // String topPublicKeyMerkle;
+    logger.d("\nmessageIndex: $msgIndex\n_pubLeaves: $_pubLeaves");
     if (bitSecurity == 256) {
-      // _topPublicKey = _cryptor.sha256(hex.encode(publicPad));
-      // topPublicKeyMerkle = getTree(pubData, 256).last;
       _topPublicKey = getTree(pubData, 256).last;
-
-      // logger.d("_topPublicKey: ${_topPublicKey}\ntopPublicKeyMerkle: $topPublicKeyMerkle");
     } else {
-      // _topPublicKey = _cryptor.sha512(hex.encode(publicPad));
-      // topPublicKeyMerkle = getTree(pubData, 512).last;
       _topPublicKey = getTree(pubData, 512).last;
-
-      // logger.d("_topPublicKey: ${_topPublicKey}\ntopPublicKeyMerkle: $topPublicKeyMerkle");
     }
-
     logger.d("_topPublicKey: ${_topPublicKey}");
-
 
     _nextTopPublicKey = await _createNextGigaWotTopPubKey(rootKey, msgIndex, bitSecurity);
 
@@ -578,7 +582,6 @@ class WOTSManager {
       _numberOfLeaves = _leafKeySize;
     }
 
-
     if (rootKey.isEmpty || rootKey.length != _keySize) {
       rootKey = List<int>.filled(_keySize, 0);
     }
@@ -597,10 +600,6 @@ class WOTSManager {
       nonce: nonce,
     );
 
-    /// hash the private keys together to get checksum leaf
-    // final privateChecksumLeaf = _cryptor.sha256(hex.encode(secretBox.cipherText));
-    // _privChecksumLeaf = hex.encode(cryptor.getRandomBytes(32));
-
     List<int> publicPad = [];
     List<Uint8List> pubData = [];
 
@@ -608,7 +607,6 @@ class WOTSManager {
 
     /// compute the public leaves from private hashes
     for (var index = 0; index < numLeaves; index++) {
-
       /// get private leaf block
       final leaf = secretBox.cipherText.sublist(
         index * _leafKeySize,
@@ -630,7 +628,6 @@ class WOTSManager {
 
       /// add public leaf hash
       pubLeaves.add(leafHash);
-
       if (index < numLeaves-1) {
         publicPad.addAll(hex.decode(leafHash));
         pubData.add(Uint8List.fromList(hex.decode(leafHash)));
@@ -648,41 +645,33 @@ class WOTSManager {
 
     publicPad.addAll(hex.decode(pubLeaves.last));
     pubData.add(Uint8List.fromList(hex.decode(pubLeaves.last)));
-    // logger.d("pubChecksumLeaf: ${pubLeaves.last}");
 
     /// add checksum public leaf value to public leaf array
-
-    // _logManager.logLongMessage("\nnextMessageIndex: $nextMessageIndex\n"
-    //     "privLeaves: $privLeaves\n\n"
-    //     "pubLeaves: $pubLeaves");
-    _logManager.logLongMessage("\nmessageIndex: $msgIndex\n"
+    logger.d("\nmessageIndex: $msgIndex\n"
         "pubLeaves: $pubLeaves");
 
     /// hash public leaf values with checksum to get top pub hash
     if (bitSecurity == 256) {
-      final nextTopPublicKey = _cryptor.sha256(hex.encode(publicPad));
+      // final nextTopPublicKey = _cryptor.sha256(hex.encode(publicPad));
       final nextTopPublicKeyMerkle = getTree(pubData, 256).last;
-
-      logger.d("nextTopPublicKey: ${nextTopPublicKey}\nnextTopPublicKeyMerkle: $nextTopPublicKeyMerkle");
+      logger.d("nextTopPublicKeyMerkle: $nextTopPublicKeyMerkle");
 
       final endTime = DateTime.now();
       final timeDiff = endTime.difference(startTime);
       logger.d("createPubKeyWOTS: time diff: ${timeDiff.inMilliseconds} ms");
 
       logger.d("\n\t\t--------------------------_createNextGigaWotTopPubKey END - [${msgIndex}]--------------------------");
-      return nextTopPublicKeyMerkle;//nextTopPublicKey;
+      return nextTopPublicKeyMerkle;
     } else {
-      final nextTopPublicKey = _cryptor.sha512(hex.encode(publicPad));
       final nextTopPublicKeyMerkle = getTree(pubData, 512).last;
-
-      logger.d("nextTopPublicKey: ${nextTopPublicKey}\nnextTopPublicKeyMerkle: $nextTopPublicKeyMerkle");
+      logger.d("nextTopPublicKeyMerkle: $nextTopPublicKeyMerkle");
 
       final endTime = DateTime.now();
       final timeDiff = endTime.difference(startTime);
       logger.d("createPubKeyWOTS: time diff: ${timeDiff.inMilliseconds} ms");
 
       logger.d("\n\t\t--------------------------_createNextGigaWotTopPubKey END - [${msgIndex}]--------------------------");
-      return nextTopPublicKeyMerkle;//nextTopPublicKey;
+      return nextTopPublicKeyMerkle;
     }
 
   }
@@ -694,7 +683,8 @@ class WOTSManager {
       String inputLastBlockHash,
       int msgIndex,
       WOTSMessageData message,
-      int bitSecurity
+      int bitSecurity,
+      bool doRecovery,
       ) async {
     logger.d("\n\t\t--------------------------START: signGigaWotMessage--------------------------");
     logger.d("signMessage[$msgIndex]: ${message.toRawJson()}");
@@ -719,12 +709,12 @@ class WOTSManager {
     }
 
     /// create private/public key leaves
-    await _createGigaWotTopPubKey(key, msgIndex, bitSecurity);
+    await _createGigaWotTopPubKey(key, msgIndex, bitSecurity, doRecovery);
 
     message.nextPublicKey = _nextTopPublicKey;
     message.publicKey = _topPublicKey;
 
-    _logManager.logLongMessage("message to hash 1: ${message.toRawJson()}");
+    logger.d("message to hash 1: ${message.toRawJson()}");
 
     List<int> messageHashBytes;
     if (bitSecurity == 256) {
@@ -736,7 +726,6 @@ class WOTSManager {
       logger.d("messageHashHex: $messageHash");
       messageHashBytes = hex.decode(messageHash);
     }
-
 
     List<String> signature = [];
     int index = 0;
@@ -758,8 +747,7 @@ class WOTSManager {
     }
     // logger.d("checksum int value: $checksum");
 
-    /// Compute the checksum leaf value, 32x256 = 8192
-    // var checksumHash = _privChecksumLeaf;
+    /// Compute the checksum leaf value, 32x256 = 8192, OR 64*512 = 32768
     for (var i = 1; i < _checksumSize-checksum; i++) {
       if (bitSecurity == 256) {
         signature.last = _cryptor.sha256(signature.last);
@@ -776,11 +764,7 @@ class WOTSManager {
       message: message,
     );
 
-    // _logManager.logLongMessage("wotsItem: ${wotsItem.toRawJson()}");
-
-
     GigaWOTSSignatureChain currentChain = GigaWOTSSignatureChain(chainId: chainId, blocks: []);
-    // _wotsSimpleJoinChain.blocks.add(wotsItem);
 
     if (_wotsSimpleChainDictionary.chains.length == 0) {
       currentChain.chainId = wotsItem.id;
@@ -808,37 +792,11 @@ class WOTSManager {
       }
     }
 
-    // if (_wotsSimpleJoinChain.blocks.length == 0) {
-    //   currentChain.chainId = wotsItem.id;
-    //   currentChain.blocks.add(wotsItem);
-    //
-    //   _wotsSimpleJoinChain.chainId = wotsItem.id;
-    //   _wotsSimpleJoinChain.blocks.add(wotsItem);
-    //   _wotsSimpleJoinChain = currentChain;
-    // } else {
-    //   try {
-    //     _wotsSimpleJoinChain.chainId = chainId;
-    //     _wotsSimpleJoinChain.blocks.add(wotsItem);
-    //     _wotsSimpleChainDictionary.chains.add(currentChain);
-    //   } catch (e) {
-    //     currentChain.chainId = wotsItem.id;
-    //     currentChain.blocks.add(wotsItem);
-    //     _wotsSimpleJoinChain.chainId = chainId;
-    //     _wotsSimpleJoinChain.blocks.add(wotsItem);
-    //     _wotsSimpleChainDictionary.chains.add(currentChain);
-    //   }
-    // }
-
     // _logManager.logLongMessage("test _wotsSimpleChainDictionary: ${_wotsSimpleChainDictionary.toRawJson()}");
-
 
     /// sort blocks in the chain by index
     _wotsSimpleJoinChain.blocks.sort((a, b) => a.message.messageIndex.compareTo(b.message.messageIndex));
-    _logManager.logLongMessage("_wotsSimpleJoinChain: ${_wotsSimpleJoinChain.toRawJson()}");
-
-    // _logManager.logLongMessage("WOTSManager.signMessage:\n_wotsChain[${_wotsSimpleJoinChain.blocks.length}]\n"
-    //     "[${_wotsSimpleJoinChain.toRawJson().length} bytes] | [${(_wotsSimpleJoinChain.toRawJson().length/1024).toStringAsFixed(2)} KB]\n"
-    //     "chain: ${_wotsSimpleJoinChain.toRawJson()}");
+    logger.d("_wotsSimpleJoinChain: ${_wotsSimpleJoinChain.toRawJson()}");
 
     /// get last block hash in the chain
     if (bitSecurity == 256) {
@@ -851,7 +809,6 @@ class WOTSManager {
     final endTime = DateTime.now();
     final timeDiff = endTime.difference(startTime);
     logger.d("signMessage: time diff: ${timeDiff.inMilliseconds} ms");
-
     logger.d("\n\t\t--------------------------END: signGigaWotMessage--------------------------");
 
     return wotsItem;
@@ -899,16 +856,16 @@ class WOTSManager {
 
     final sig = item.signature;
     final message = item.message;
-    _logManager.logLongMessage("message to hash verify: ${message.toRawJson()}");
+    logger.d("message to hash verify: ${message.toRawJson()}");
 
     List<int> messageHashBytes;
     if (bitSecurity == 256) {
       final messageHash = _cryptor.sha256(message.toRawJson());
-      _logManager.logLongMessage("messageHash: ${messageHash}");
+      logger.d("messageHash: ${messageHash}");
       messageHashBytes = hex.decode(messageHash);
     } else {
       final messageHash = _cryptor.sha512(message.toRawJson());
-      _logManager.logLongMessage("messageHash: ${messageHash}");
+      logger.d("messageHash: ${messageHash}");
       messageHashBytes = hex.decode(messageHash);
     }
 
