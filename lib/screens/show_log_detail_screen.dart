@@ -38,7 +38,7 @@ class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
+      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.white70, //Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Block #${widget.block.blockNumber + 1}'),
         automaticallyImplyLeading: false,
@@ -82,7 +82,7 @@ class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
       ),
       body: ListView.separated(
           separatorBuilder: (context, index) => Divider(
-            color: _isDarkModeEnabled ? Colors.greenAccent : null,
+            color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
           ),
           controller: _controller,
           itemCount: widget.block.logList.list.length,

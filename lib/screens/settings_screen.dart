@@ -221,7 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         title: Text('Settings'),
@@ -433,8 +433,14 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     ),
                   ),
                 ),),
-              Divider(
-                color: _isDarkModeEnabled ? Colors.grey[900] : Colors.white,
+              // Divider(
+              //   color: _isDarkModeEnabled ? Colors.grey[900] : Colors.white,
+              // ),
+              Visibility(
+                visible: _isBiometricSupported,
+                child: Divider(
+                  color: _isDarkModeEnabled ? Colors.grey[900] : Colors.grey,
+                ),
               ),
               Padding(
                 padding: EdgeInsets.all(0.0),

@@ -323,7 +323,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ],
             ),
             child: ListTile(
-              tileColor: _isDarkModeEnabled ? Colors.black54 : Colors.white,
+              tileColor: _isDarkModeEnabled ? Colors.black54 : Colors.white,// Colors.blue[50],
               onTap: () {
                 Navigator.push(
                   context,
@@ -426,7 +426,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ],
             ),
             child: ListTile(
-              tileColor: _isDarkModeEnabled ? Colors.black54 : Colors.white,
+              tileColor: _isDarkModeEnabled ? Colors.black54 : Colors.white, //Colors.blue[50],
               onTap: () {
                 Navigator.push(
                   context,
@@ -559,7 +559,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[100],// Colors.grey[50],
       appBar: AppBar(
         title: Text(
           "Passwords",
@@ -633,10 +633,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   ),
                   decoration: InputDecoration(
                     labelText: "Search",
+                    hintText: "Name",
                     border: OutlineInputBorder(),
                     hintStyle: TextStyle(
                       fontSize: 18.0,
-                      color: _isDarkModeEnabled ? Colors.white : null,
+                      color: Colors.grey, //_isDarkModeEnabled ? Colors.grey : null,
                     ),
                     labelStyle: TextStyle(
                       fontSize: 18.0,

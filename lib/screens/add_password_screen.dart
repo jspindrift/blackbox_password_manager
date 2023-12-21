@@ -146,7 +146,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
+      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Password'),
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
@@ -487,7 +487,9 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                   ],
                 ),
               ),
-              Divider(color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey),
+              Divider(
+                  color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
+              ),
               Visibility(
                 visible: _testGeoLock,
                 child: Padding(
@@ -567,7 +569,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                   child: ListView.separated(
                     itemCount: _passwordTags.length + 1,
                     separatorBuilder: (context, index) => Divider(
-                      color: _isDarkModeEnabled ? Colors.greenAccent : null,
+                      color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
                     ),
                     scrollDirection: Axis.horizontal,
                     itemBuilder: (context, index) {
@@ -678,7 +680,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                 ),
               ),
               Divider(
-                color: _isDarkModeEnabled ? Colors.greenAccent : null,
+                color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
               ),
               Padding(
                 padding: EdgeInsets.all(16.0),

@@ -203,7 +203,7 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       // bottomSheet: ,
       appBar: AppBar(
         title: Text('Categories'),
@@ -224,7 +224,7 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
       body: ListView.separated(
         itemCount: _availableCategories.length,
         separatorBuilder: (context, index) => Divider(
-          color: _isDarkModeEnabled ? Colors.greenAccent : null,
+          color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
         ),
         itemBuilder: (context, index) {
           var categoryIcon = IconButton(
@@ -307,6 +307,7 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
               style: TextStyle(
                 color: _isDarkModeEnabled ? Colors.white : null,
                 fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
             subtitle: Text(
@@ -317,6 +318,7 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
               style: TextStyle(
                 color: _isDarkModeEnabled ? Colors.grey[200] : Colors.grey,
                 fontSize: 16,
+                // fontWeight: FontWeight.bold,
               ),
             ),
             leading: categoryIcon,

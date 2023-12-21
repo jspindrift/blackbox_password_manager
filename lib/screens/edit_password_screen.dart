@@ -629,7 +629,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
+      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Password'),
         automaticallyImplyLeading: false,
@@ -714,7 +714,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                   enabled: _isEditing,
                   style: TextStyle(
                     fontSize: 18.0,
-                    color: _isDarkModeEnabled ? Colors.white : null,
+                    color: _isDarkModeEnabled ? Colors.white : (_isEditing ? Colors.black : Colors.grey[700]),
                   ),
                   decoration: InputDecoration(
                     labelText: 'Name',
@@ -776,7 +776,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                   readOnly: false,
                   style: TextStyle(
                     fontSize: 18.0,
-                    color: _isDarkModeEnabled ? Colors.white : null,
+                    color: _isDarkModeEnabled ? Colors.white : (_isEditing ? Colors.black : Colors.grey[700]),
                   ),
                   decoration: InputDecoration(
                     labelText: 'Username/Email',
@@ -847,7 +847,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                           maxLines: _hidePasswordField ? 1 : 8,
                           style: TextStyle(
                             fontSize: 18.0,
-                            color: _isDarkModeEnabled ? Colors.white : null,
+                            color: _isDarkModeEnabled ? Colors.white : (_isEditing ? Colors.black : Colors.grey[700]),
                           ),
                           decoration: InputDecoration(
                             labelText: 'Password',
@@ -1358,7 +1358,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                   child: ListView.separated(
                     itemCount: _passwordTags.length + 1,
                     separatorBuilder: (context, index) => Divider(
-                      color: _isDarkModeEnabled ? Colors.greenAccent : null,
+                      color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
                     ),
                     scrollDirection: Axis.horizontal,
                     itemBuilder: (context, index) {
@@ -1478,7 +1478,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
               ),
               // if (_hasNotes)
               Divider(
-                color: _isDarkModeEnabled ? Colors.greenAccent : null,
+                color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
               ),
               Padding(
                 padding: EdgeInsets.all(16.0),
@@ -1492,7 +1492,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                   maxLines: 8,
                   style: TextStyle(
                     fontSize: 18.0,
-                    color: _isDarkModeEnabled ? Colors.white : null,
+                    color: _isDarkModeEnabled ? Colors.white : (_isEditing ? Colors.black : Colors.grey[700]),
                   ),
                   decoration: InputDecoration(
                     labelText: 'Notes',
@@ -1602,7 +1602,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                 ),
               ),
               Divider(
-                color: _isDarkModeEnabled ? Colors.greenAccent : null,
+                color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
               ),
               Padding(
                 padding: EdgeInsets.all(16.0),

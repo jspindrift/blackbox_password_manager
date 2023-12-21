@@ -130,7 +130,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
+      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Note'),
         automaticallyImplyLeading: false,
@@ -146,6 +146,11 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
             setState((){
               _isEditing = false;
             });
+
+            if (widget.note == null) {
+              Navigator.of(context).pop();
+              return;
+            }
 
             /// need to hold the widget.note as an item and hold onto it,
             /// widget.note is only needed for initState...
@@ -272,7 +277,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                   ),
                   style: TextStyle(
                     fontSize: 18.0,
-                    color: _isDarkModeEnabled ? Colors.white : null,
+                    color: _isDarkModeEnabled ? Colors.white : (_isEditing ? Colors.black : Colors.grey[700]),
                   ),
                   onChanged: (_) {
                     _validateFields();
@@ -337,7 +342,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                   ),
                   style: TextStyle(
                     fontSize: 18.0,
-                    color: _isDarkModeEnabled ? Colors.white : null,
+                    color: _isDarkModeEnabled ? Colors.white : (_isEditing ? Colors.black : Colors.grey[700]),
                   ),
                   onChanged: (_) {
                     _validateFields();
@@ -424,7 +429,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                   child: ListView.separated(
                     itemCount: _noteTags.length + 1,
                     separatorBuilder: (context, index) => Divider(
-                      color: _isDarkModeEnabled ? Colors.greenAccent : null,
+                      color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
                     ),
                     scrollDirection: Axis.horizontal,
                     itemBuilder: (context, index) {
@@ -543,7 +548,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                 ),
               ),
               Divider(
-                color: _isDarkModeEnabled ? Colors.greenAccent : null,
+                color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
               ),
               if (!_isNewNote)
                 Padding(
@@ -620,7 +625,6 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
       bottomNavigationBar: BottomNavigationBar(
         elevation: 2.0,
         backgroundColor: _isDarkModeEnabled ? Colors.black12 : Colors.white,
-        // fixedColor: Colors.white,
         currentIndex: _selectedIndex,
         selectedItemColor:
             _isDarkModeEnabled ? Colors.white : Colors.blueAccent,

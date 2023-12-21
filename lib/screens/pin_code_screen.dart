@@ -83,7 +83,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
         return Future.value(false);
       },
       child: Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
+      backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
       appBar: AppBar(
         backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
         automaticallyImplyLeading:

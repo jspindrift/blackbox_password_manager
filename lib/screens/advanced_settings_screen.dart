@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'dart:async';
+import 'package:dynamic_themes/dynamic_themes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:pin_code_view/pin_code_view.dart';
 
 import '../managers/PostQuantumManager.dart';
 import '../managers/WOTSManager.dart';
@@ -27,6 +29,8 @@ class AdvancedSettingsScreen extends StatefulWidget {
 }
 
 class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
+  final _bugNotesTextController = TextEditingController();
+
   bool _isDarkModeEnabled = false;
 
   int _selectedIndex = 3;
@@ -66,7 +70,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black : null,
+      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Advanced Settings'),
         automaticallyImplyLeading: false,
@@ -216,6 +220,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                       });
 
                       await _settingsManager.saveDarkMode(_isDarkModeEnabled);
+
+                      DynamicTheme.of(context)?.setTheme(_isDarkModeEnabled ? 1 : 0);
 
                       /// broadcast dark mode change to HomeTabScreen
                       _settingsManager.processDarkModeChange(_isDarkModeEnabled);
@@ -493,13 +499,13 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                 ),
               ),
               Visibility(
-                visible: kDebugMode,
+                visible: false, //kDebugMode,
                 child: Divider(
                   color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
                 ),
               ),
               Visibility(
-                visible: kDebugMode,
+                visible: false, //kDebugMode,
                 child: Padding(
                   padding: EdgeInsets.all(0.0),
                   child: ListTile(
@@ -563,7 +569,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               Padding(
                 padding: EdgeInsets.fromLTRB(16.0, 0, 16, 8),
                 child: Text(
-                  'Remove all Blackbox vault items and settings from this device.',
+                  'Remove all Blackbox vault data from this device.',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: _isDarkModeEnabled ? Colors.white : Colors.black,
                   ),
@@ -874,20 +881,43 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     );
   }
 
-  void _confirmedFoundABug() {
-    _logManager.log(
-        "AdvancedSettingsScreen", "_confirmedFoundABug", "BUG REPORTED 🐞");
-
-    Navigator.of(context).pop();
-  }
-
   void _showConfirmFoundABugDialog() {
-    showDialog(
+    // showDialog<String>(
+    //   context: context,
+    //   builder: (BuildContext context) => AlertDialog(
+    //     title: const Text('Remove Account?'),
+    //     content: const Text(
+    //       'Do you want to permanently remove your account and sign out?',
+    //     ),
+    //     actions: <Widget>[
+    //       TextButton(
+    //         onPressed: () => Navigator.pop(context, 'Cancel'),
+    //         child: const Text('Cancel'),
+    //       ),
+    //       TextButton(
+    //         onPressed: _pressedRemoveAccount2,
+    //         child: const Text('Yes'),
+    //       ),
+    //     ],
+    //   ),
+    // );
+
+    showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('You found a bug?'),
-        content:
-            Text('Confirm you found a bug during your current login session'),
+      builder: (BuildContext context) => AlertDialog(
+        // backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+        title: Text('Report a bug'),
+      content: TextField(
+          controller: _bugNotesTextController,
+          autofocus: true,
+          maxLines: 4,
+          keyboardType: TextInputType.text,
+          maxLength: 120,
+          minLines: 3,
+          decoration: InputDecoration(
+              hintText: "Notes",
+          ),
+       ),
         actions: <Widget>[
           OutlinedButton(
             onPressed: () {
@@ -900,14 +930,23 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               primary: Colors.redAccent,
             ),
             onPressed: () {
-              _confirmedFoundABug();
+              _confirmedFoundABug(_bugNotesTextController.text);
+              Navigator.of(context).pop();
+
+              _bugNotesTextController.text = "";
             },
-            child: Text('Confirm'),
+            child: Text('Submit'),
           ),
         ],
       ),
     );
   }
+
+  void _confirmedFoundABug(String notes) {
+    _logManager.log(
+        "AdvancedSettingsScreen", "_confirmedFoundABug", "BUG REPORTED 🐞${(notes.length > 0 ? "\n\nNotes: $notes" : "")}");
+  }
+
 
   void _showErrorDialog(String message) {
     showDialog(

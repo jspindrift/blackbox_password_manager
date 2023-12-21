@@ -311,7 +311,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
+      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Peer Public Keys'),
         automaticallyImplyLeading: false,

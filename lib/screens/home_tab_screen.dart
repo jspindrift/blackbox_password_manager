@@ -295,7 +295,7 @@ class _HomeTabScreenState extends State<HomeTabScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.grey : null,
+      backgroundColor: _isDarkModeEnabled ? Colors.grey : Colors.blue[50],//Colors.grey[100],
       // appBar: AppBar(
       //   title: Text('BlackBox'),
       //   automaticallyImplyLeading: false,

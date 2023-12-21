@@ -86,7 +86,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
+      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Notes'),
         automaticallyImplyLeading: false,
@@ -120,6 +120,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
       ),
       body: ListView.separated(
         itemCount: _notes.length,
+
         separatorBuilder: (context, index) => Divider(
           color: _isDarkModeEnabled ? Colors.greenAccent : null,
         ),

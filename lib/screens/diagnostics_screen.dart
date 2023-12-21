@@ -151,7 +151,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
     }
 
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
+      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text(''),
         automaticallyImplyLeading: false,
@@ -186,7 +186,9 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
         children: <Widget>[
           Padding(
             padding: EdgeInsets.all(8.0),
-            child: ListTile(
+            child: Card(
+              color: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+              child: ListTile(
               tileColor: _isDarkModeEnabled ? Colors.black54 : null,
               title: Text(
                 "Logs",
@@ -235,7 +237,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
                 );
               },
             ),
-          ),
+          ),),
           Divider(
             color: _isDarkModeEnabled ? Colors.greenAccent : null,
           ),

@@ -544,10 +544,10 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       return Future.value(false);
     },
     child: Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
+      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[200]!,//Colors.grey[100],
       appBar: AppBar(
         title: Text('Blackbox'),
-        backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
+        backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
         leading: Icon(
             Icons.home,
           color: _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
@@ -581,13 +581,13 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       body: SingleChildScrollView(
         child: Center(
           child: Card(
-            color: _isDarkModeEnabled ? Colors.black54 : null,
+            color: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
             child: Form(
               autovalidateMode: AutovalidateMode.onUserInteraction,
               child: NeonContainer(
-                borderColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+                borderColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[100]!,
                 containerColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
-                spreadColor: _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+                spreadColor: _isDarkModeEnabled ? Colors.greenAccent : Colors.blue[100]!,
                 lightBlurRadius: 80,
                 lightSpreadRadius: 5,
                 child: Column(
@@ -887,8 +887,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                       child: IconButton(
                         icon: Image.asset(
                           _biometricManager.biometricIcon,
-                          width: 100,
-                          height: 100,
+                          // width: 150,
+                          // height: 150,
                         ),
                         onPressed: () async {
                           _pressedBiometricButton();
