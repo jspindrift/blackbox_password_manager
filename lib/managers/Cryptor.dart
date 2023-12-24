@@ -1888,7 +1888,6 @@ class Cryptor {
     // logger.d("encryptBackupVault");
     try {
       if (_aesEncryptionKey != null && _aesAuthKey != null) {
-        // final iv = algorithm_nomac.newNonce();
         final encodedPlaintext = utf8.encode(plaintext);
 
         /// Encrypt
@@ -1902,7 +1901,6 @@ class Cryptor {
         final blob = iv + secretBox.cipherText;
         final hashedBlob = hex.decode(sha256(base64.encode(blob)));
         final idHashBytes = hex.decode(sha256(id));
-        // logger.d("idHashBytes: ${sha256(id)}");
 
         final Kmeta = await hmac_algo_256.calculateMac(
           idHashBytes,
@@ -1925,7 +1923,6 @@ class Cryptor {
         await settingsManager.saveNumBytesEncrypted(settingsManager.numBytesEncrypted);
 
         var encyptedMaterial = iv + mac_meta.bytes + secretBox.cipherText;
-        // logger.d("encyptedMaterial: ${encyptedMaterial.length} : encyptedMaterial");
         return base64.encode(encyptedMaterial);
       } else {
         return "";
@@ -2963,18 +2960,15 @@ class Cryptor {
   /// decrypt vault items with generated Metadata key
   ///
   Future<String> decryptBackupVault(String blob, String id) async {
-    logger.d("decryptBackupVault");
+    // logger.d("decryptBackupVault");
     try {
       var keyMaterial = base64.decode(blob);
       if (_aesEncryptionKey != null && _aesAuthKey != null) {
         final iv = keyMaterial.sublist(0, 16);
-
-        // this is the xor_mac result
         final mac = keyMaterial.sublist(16, 48);
         final cipherText = keyMaterial.sublist(48, keyMaterial.length);
 
         final idHash = sha256(id);
-        // logger.d("idHash: ${idHash} | idHash2: ${idHash2}");
         var idHashBytes = hex.decode(idHash);
 
         final Kmeta1 = await hmac_algo_256.calculateMac(
@@ -3004,9 +2998,6 @@ class Cryptor {
               "\ncheck mac: ${encodedMac == encodedMacCheck}"
               "\nblob: ${hex.encode(blob)}\nmac: $mac");
         }
-        // logger.d("_aesEncryptionKeyBytes: $_aesEncryptionKeyBytes\n_aesAuthKeyBytes: $_aesAuthKeyBytes\n"
-        //     "check mac: ${encodedMac == encodedMacCheck}"
-        //     "blob: ${blob}\nmac: $mac");
 
         if (encodedMac == encodedMacCheck) {
           List<int> empty_mac = [];
@@ -3023,7 +3014,6 @@ class Cryptor {
           final plainText = utf8.decode(plainTextBytes);
           return plainText;
         }
-
       }
       return "";
     } catch (e) {

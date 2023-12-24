@@ -163,12 +163,6 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
 
     _filteredTags = _settingsManager.itemTags;
 
-    if (_testGeoLock) {
-      if (_geolocationManager.geoLocationUpdate == null) {
-        _geolocationManager.initialize();
-      }
-    }
-
     _isLocationSettingsEnabled = _geolocationManager.isLocationSettingsEnabled;
 
     _getPasswordItem();

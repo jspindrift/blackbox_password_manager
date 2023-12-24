@@ -386,7 +386,7 @@ class KeyScheduler {
     final backupMac = await _cryptor.hmac256(backupItem.toRawJson());
     backupItem.mac = base64.encode(hex.decode(backupMac));
 
-    _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
+    // _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
     return backupItem;
   }

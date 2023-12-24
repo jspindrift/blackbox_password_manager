@@ -89,32 +89,38 @@ class ivHelper {
   }
 
   List<int> incrementSequencedNonce(List<int> nonce) {
-    print("input nonce: $nonce");
+    try {
+      if (nonce.length < 12) {
+        return [];
+      }
 
-    if (nonce.length < 12) {
+      final rndPart = nonce.sublist(0, 8);
+      var seq = nonce.sublist(8, 12);
+
+      var seqjoin = seq.join('');
+      int numseq = int.parse(seqjoin);
+
+      numseq += 1;
+
+      var hex_seq = numseq.toRadixString(16);
+      if (hex_seq.length % 2 == 1) {
+        hex_seq = "0" + hex_seq;
+      }
+
+      if (hex_seq.length != 8) {
+        hex_seq = "00000000".substring(0,8 - hex_seq.length) + hex_seq;
+      }
+
+      final seqBytes = hex.decode(hex_seq);
+      final plank = rndPart + seqBytes;
+
+      final result = plank + zero16bytes.sublist(0, 4);
+
+      return result;
+    } catch(e) {
+      // print("exception: $e");
       return [];
     }
-
-    final rndPart = nonce.sublist(0,8);
-    var seq = nonce.sublist(8, 4);
-
-    var seqjoin = seq.join('');
-    int numseq = int.parse(seqjoin);
-
-    numseq += 1;
-
-    var hex_seq = numseq.toRadixString(16);
-    if (hex_seq.length % 2 == 1) {
-      hex_seq = "0" + hex_seq;
-    }
-
-    final seqBytes = hex.decode(hex_seq);
-    final plank = rndPart + seqBytes;
-
-    final result = plank + zero16bytes.sublist(0, 4);
-    print("${result.length}: $result");
-
-    return result;
   }
 
 }

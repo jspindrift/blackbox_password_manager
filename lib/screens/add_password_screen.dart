@@ -109,6 +109,8 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
 
   String _dropdownValue = delimeterList.first;
 
+  late StreamSubscription onLocationSettingsChangeSubscription;
+
   final _cryptor = Cryptor();
   final _keyManager = KeychainManager();
   final _logManager = LogManager();
@@ -126,14 +128,16 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
     _selectedIndex = _settingsManager.currentTabIndex;
     _filteredTags = _settingsManager.itemTags;
 
-    if (_testGeoLock) {
-      if (_geolocationManager.geoLocationUpdate == null) {
-        _geolocationManager.initialize();
-      }
-    }
-
     _isLocationSettingsEnabled = _geolocationManager.isLocationSettingsEnabled;
     _logManager.logger.d("_isLocationSettingsEnabled: $_isLocationSettingsEnabled");
+
+    onLocationSettingsChangeSubscription =
+        _geolocationManager.onLocationSettingsChange.listen((event) {
+          _logManager.logger.d("onLocationSettingsChangeSubscription: $event");
+          setState(() {
+            _isLocationSettingsEnabled = event;
+          });
+        });
 
     /// We do this so tags show up in the UI when added.
     /// Not sure why this works but it does
@@ -142,6 +146,14 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
       FocusScope.of(context).requestFocus(_nameFocusNode);
     });
   }
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    onLocationSettingsChangeSubscription.cancel();
+  }
+
 
   @override
   Widget build(BuildContext context) {

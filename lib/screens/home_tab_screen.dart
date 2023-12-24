@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:blackbox_password_manager/managers/GeolocationManager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -42,6 +43,7 @@ class _HomeTabScreenState extends State<HomeTabScreen>
   final _cryptor = Cryptor();
   final _heartbeatTimer = HeartbeatTimer();
   final _inactivityTimer = InactivityTimer();
+  final _geolocationManager = GeoLocationManager();
 
 
   @override
@@ -49,26 +51,16 @@ class _HomeTabScreenState extends State<HomeTabScreen>
     super.initState();
 
     _logManager.log("HomeTabScreen", "initState", "initState");
-    // _logManager.logger.d("HomeTabScreen - initState");
-
-    // DeviceManager().initialize();
-
-    // _logManager.logger.d("deviceData: ${DeviceManager().deviceData}");
-    // _logManager.logger.d("deviceData: ${_settingsManager.deviceManager.deviceData}");
 
     _settingsManager.setIsOnLockScreen(false);
 
     _heartbeatTimer.initialize();
+    _geolocationManager.initialize();
 
     _inactivityTimer.startInactivityTimer();
 
-    /// TODO: un/comment this for geo location feature
-    // if (_geolocationManager.geoLocationUpdate == null) {
-    //   _geolocationManager.initialize();
-    // }
 
     if (_settingsManager.isRecoveredSession) {
-
       Future.delayed(Duration.zero, () {
         _showRecoveryInfoDialog();
       });
@@ -92,7 +84,6 @@ class _HomeTabScreenState extends State<HomeTabScreen>
 
     darkModeChangedSubscription =
         _settingsManager.onDarkModeEnabledChanged.listen((darkModeEnabled) {
-      // print("darkModeChangedSubscription: $darkModeEnabled");
       /// refresh UI
       if (mounted) {
         setState(() {
@@ -189,6 +180,8 @@ class _HomeTabScreenState extends State<HomeTabScreen>
     darkModeChangedSubscription.cancel();
     selectRouteSubscription.cancel();
     inactivityLogoutSubscription.cancel();
+
+    _geolocationManager.shutdown();
   }
 
   /// track the lifecycle of the app

@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
+import '../helpers/ivHelper.dart';
 import '../helpers/AppConstants.dart';
 import '../helpers/WidgetUtils.dart';
 import '../managers/FileManager.dart';
@@ -59,10 +60,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
   String _externalVaultHash = "";
   bool _hasMatchingExternalVaultKeyData = false;
 
-
   VaultItem? _localVaultItem;
   int _localVaultItemSize = 0;
-
 
   bool _hasMatchingLocalVaultKeyData = false;
   bool _localVaultHasRecoveryKeys = false;
@@ -128,23 +127,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
     });
 
     _fetchBackups();
-  }
-
-  Future<GenericItemList> _getKeychainVaultState() async {
-    var finalGenericItemList = GenericItemList(list: []);
-    var localGenericItemList = await _keyManager.getAllItemsForBackup() as GenericItemList;
-    var list = localGenericItemList.list;
-    if (list == null) {
-      return finalGenericItemList;
-    }
-    list.sort((a, b) {
-      return b.data.compareTo(a.data);
-    });
-
-    final itree = await localGenericItemList.calculateMerkleTree();
-    finalGenericItemList = GenericItemList(list: list);
-
-    return finalGenericItemList;
   }
 
   _fetchBackups() async {
@@ -1288,17 +1270,20 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
         /// create iv
         var nonce = _cryptor.getNewNonce();
-        nonce = nonce.sublist(0,12) + [0,0,0,0];
-        //
-        // final currentNonce = base64.decode(currentVault!.blob).sublist(0,16);
-        // if (currentNonce != null) {
-        //   nonce = ivHelper().incrementSequencedNonce(currentNonce);
-        // }
+        nonce = nonce.sublist(0,8) + [0,0,0,1] + [0,0,0,0];
+
+        if (_localVaultItem?.blob != null) {
+          final blobData = base64.decode(_localVaultItem!.blob);
+          var currentNonce = blobData.sublist(0,16);
+          // _logManager.logger.d('currentNonce: ${currentNonce}');
+          final updatedNoncc = ivHelper().incrementSequencedNonce(currentNonce);
+          nonce = updatedNoncc;
+        }
         _logManager.logger.wtf("backupNonce: ${nonce}");
 
         final idString =
             "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${backupName}";
-        _logManager.logger.wtf("idString: $idString ");
+        // _logManager.logger.wtf("idString: $idString ");
 
         var encryptedBlob = await _cryptor.encryptBackupVault(testItems, nonce, idString);
         // _logManager.logger.d('encryptedBlob: ${encryptedBlob.length}: $encryptedBlob');
@@ -1360,7 +1345,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         backupItem.mac = base64.encode(hex.decode(backupMac));
         // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
-        _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
+        // _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
         // log("backupItemJson: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
         final backupItemString = backupItem.toRawJson();
@@ -1462,13 +1447,19 @@ class _BackupsScreenState extends State<BackupsScreen> {
         final uuid = _keyManager.vaultId;
 
         /// create iv
+        // var nonce = _cryptor.getNewNonce();
+        // nonce = nonce.sublist(0,12) + [0,0,0,0];
+        /// create iv
         var nonce = _cryptor.getNewNonce();
-        nonce = nonce.sublist(0,12) + [0,0,0,0];
+        nonce = nonce.sublist(0,8) + [0,0,0,1] + [0,0,0,0];
 
-        // final currentNonce = base64.decode(currentVault!.blob).sublist(0,16);
-        // if (currentNonce != null) {
-        //   nonce = ivHelper().incrementSequencedNonce(currentNonce);
-        // }
+        if (_externalVaultItem?.blob != null) {
+          final blobData = base64.decode(_externalVaultItem!.blob);
+          var currentNonce = blobData.sublist(0,16);
+          // _logManager.logger.d('currentNonce: ${currentNonce}');
+          final updatedNoncc = ivHelper().incrementSequencedNonce(currentNonce);
+          nonce = updatedNoncc;
+        }
         _logManager.logger.wtf("backupNonce: ${nonce}");
 
         final idString =
@@ -1533,7 +1524,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         final backupMac = await _cryptor.hmac256(backupItem.toRawJson());
         backupItem.mac = base64.encode(hex.decode(backupMac));
 
-        _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
+        // _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
         final backupItemString = backupItem.toRawJson();
         final backupHash = _cryptor.sha256(backupItemString);
@@ -1880,12 +1871,16 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
       /// create iv
       var nonce = _cryptor.getNewNonce();
-      nonce = nonce.sublist(0,12) + [0,0,0,0];
+      nonce = nonce.sublist(0,8) + [0,0,0,1] + [0,0,0,0];
 
-      // final currentNonce = base64.decode(currentVault!.blob).sublist(0,16);
-      // if (currentNonce != null) {
-      //   nonce = ivHelper().incrementSequencedNonce(currentNonce);
-      // }
+      if (currentVault?.blob != null) {
+        final blobData = base64.decode(currentVault!.blob);
+        var currentNonce = blobData.sublist(0,16);
+        // _logManager.logger.d('currentNonce: ${currentNonce}');
+        final updatedNoncc = ivHelper().incrementSequencedNonce(currentNonce);
+        nonce = updatedNoncc;
+      }
+
       _logManager.logger.wtf("backupNonce: ${nonce}");
 
       final idStringUpdated =
@@ -2009,12 +2004,18 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
       /// create iv
       var nonce = _cryptor.getNewNonce();
-      nonce = nonce.sublist(0,12) + [0,0,0,0];
-      _logManager.logger.wtf("backupNonce: ${nonce}");
+      nonce = nonce.sublist(0,8) + [0,0,0,1] + [0,0,0,0];
+
+      if (currentVault?.blob != null) {
+        final blobData = base64.decode(currentVault!.blob);
+        var currentNonce = blobData.sublist(0,16);
+        // _logManager.logger.d('currentNonce: ${currentNonce}');
+        final updatedNoncc = ivHelper().incrementSequencedNonce(currentNonce);
+        nonce = updatedNoncc;
+      }
 
       final idStringUpdated =
           "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${backupName}";
-      // _logManager.logger.wtf("idStringUpdated: $idStringUpdated");
 
       final encryptedBlobUpdated =
       await _cryptor.encryptBackupVault(tempDecryptedBlob, nonce, idStringUpdated);
@@ -2210,7 +2211,10 @@ class _BackupsScreenState extends State<BackupsScreen> {
                 },
                 controller: _dialogTextFieldController,
                 focusNode: _dialogTextFieldFocusNode,
-                decoration: InputDecoration(hintText: "Backup Name"),
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: "Backup Name",
+                ),
               )]) : TextField(
                 onChanged: (value) {
                   if (value.isNotEmpty) {
@@ -2225,7 +2229,10 @@ class _BackupsScreenState extends State<BackupsScreen> {
                 },
                 controller: _dialogTextFieldController,
                 focusNode: _dialogTextFieldFocusNode,
-                decoration: InputDecoration(hintText: "Backup Name"),
+                autofocus: true,
+                decoration: InputDecoration(
+                    hintText: "Backup Name",
+                ),
               ),
             );
           });
@@ -2521,12 +2528,16 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
     await _fileManager.clearNamedVaultFile();
 
+    _localVaultItem = null;
+
     _fetchBackups();
   }
 
   void _confirmDeleteExternalBackup() async {
 
     await _fileManager.clearVaultFileSDCard();
+
+    _externalVaultItem = null;
 
     _fetchBackups();
   }
