@@ -318,12 +318,8 @@ class KeyScheduler {
     var nonce = _cryptor.getNewNonce();
     nonce = nonce.sublist(0,12) + [0,0,0,0];
 
-    var encryptedBlob = await _cryptor.encryptBackupVault(testItems, nonce, idString);
-
     /// TODO: implement this outside of this function
     _settingsManager.doEncryption(utf8.encode(testItems).length);
-    // _cryptor.setTempKeyIndex(keyIndex);
-    // _logManager.logger.d("keyIndex: $keyIndex");
 
     final keyNonce = _convertEncryptedBlocksNonce();
     _logManager.logger.d("keyNonce: ${keyNonce.length}: ${keyNonce}\n"
@@ -331,6 +327,8 @@ class KeyScheduler {
 
     final encryptedKeyNonce = await _cryptor.encrypt(keyNonce);
     _logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
+
+    var encryptedBlob = await _cryptor.encryptBackupVault(testItems, nonce, idString);
 
     final encryptedKey = EncryptedKey(
       keyId: keyId,

@@ -144,7 +144,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         },
                       ),
                     ),
-                    textInputAction: TextInputAction.done,
+                    textInputAction: TextInputAction.go,
                     onChanged: (_) {
                       _validateCurrentField();
                     },
@@ -366,7 +366,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                       ),
                     ),
-                    textInputAction: TextInputAction.done,
+                    textInputAction: TextInputAction.go,
                     onChanged: (_) {
                       _validateNewFields();
                     },

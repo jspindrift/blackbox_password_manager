@@ -658,7 +658,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                       ),
                       textInputAction: _isSigningUp
                           ? TextInputAction.next
-                          : TextInputAction.done,
+                          : TextInputAction.go,
                       autocorrect: false,
                       onChanged: (_) {
                         _validateFields();

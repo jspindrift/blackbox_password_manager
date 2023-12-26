@@ -1848,6 +1848,53 @@ class Cryptor {
   }
 
 
+  Future<List<int>> generateKeyWithKey(List<int> Kroot, List<int> iv) async {
+    logger.d("generateKeyWithKey");
+    try {
+      if (Kroot != null && Kroot.length == 32) {
+        final blankText = List<int>.filled(32, 0);
+        final Skroot = SecretKey(Kroot);
+        // final Skauth = SecretKey(Kauth);
+
+        final firstPart = iv.sublist(0, 12);
+        var seq = iv.sublist(12, 16);
+
+        var seqjoin = seq.join('');
+        int numseq = int.parse(seqjoin);
+
+        /// increment nonce x2 to account for 2 blocks covered
+        numseq = numseq * 2;
+
+        var hex_seq = numseq.toRadixString(16);
+        if (hex_seq.length % 2 == 1) {
+          hex_seq = "0" + hex_seq;
+        }
+
+        if (hex_seq.length != 8) {
+          hex_seq = "00000000".substring(0,8 - hex_seq.length) + hex_seq;
+        }
+
+        final seqBytes = hex.decode(hex_seq);
+        final iv2 = firstPart + seqBytes;
+
+        /// Encrypt
+        final secretBox = await algorithm_nomac.encrypt(
+          blankText,
+          secretKey: Skroot,
+          nonce: iv2,
+        );
+
+        return secretBox.cipherText;
+      } else {
+        return [];
+      }
+    } catch (e) {
+      logger.w(e);
+      return [];
+    }
+  }
+
+
   /// generic key encryption
   Future<String> encryptWithKeyNoMac(List<int> Kenc, String plaintext) async {
     logger.d("encryptWithKeyNoMac");
@@ -2588,6 +2635,9 @@ class Cryptor {
 
         final base64ATokens = base64.encode(Ka_tokens);
         final base64BTokens = base64.encode(Kb_tokens);
+
+        settingsManager.doEncryption(base64.decode(base64ATokens).length);
+        settingsManager.doEncryption(base64.decode(base64BTokens).length);
 
         /// encrypt our key arrays with the lat/long iv values
         final Eka = await encryptGeoToken(base64ATokens, iv_lat);

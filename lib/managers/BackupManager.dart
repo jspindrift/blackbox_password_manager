@@ -656,6 +656,9 @@ class BackupManager {
   Future<VaultItem?> _backupCurrentVaultState() async {
     _logManager.logger.d("_backupCurrentVaultState");
 
+    final timestamp = DateTime.now().toIso8601String();
+    final backupName = "temp-vault";
+
     /// create EncryptedKey object
     var keyId = _keyManager.keyId;
 
@@ -668,45 +671,36 @@ class BackupManager {
     final encryptionAlgo = EnumToString.convertToString(EncryptionAlgorithm.aes_ctr_256);
     final keyMaterial = _keyManager.encryptedKeyMaterial;
 
-    // var items = await _keyManager.getAllItemsForBackup() as GenericItemList;
     var items = await _getKeychainGenericItemListState();
-
     _currentItemList = items;
 
-    /// TODO: Digital ID
     final myId = await _keyManager.getMyDigitalIdentity();
-    // _currentMyDigitalIdentity = myId; // await _keyManager.getMyDigitalIdentity();
 
     final deviceId = await _deviceManager.getDeviceId();
     if (deviceId == null) {
       return null;
     }
 
-    final timestamp = DateTime.now().toIso8601String();
-    final backupName = "temp-vault";
-
-    final appVersion = _settingsManager.versionAndBuildNumber();//"v" + AppConstants.appVersion + " (${AppConstants.appBuildNumber})";
-    // final uuid = _cryptor.getUUID();
-    final vaultId = _keyManager.vaultId;
+    final appVersion = _settingsManager.versionAndBuildNumber();
 
     final idString =
-        "${vaultId}-${deviceId}-${appVersion}-${timestamp}-${timestamp}-${backupName}";
-    // final idHash = Hasher().sha256Hash(idString);
-    // print("idHash: $idHash");
+        "${_keyManager.vaultId}-${deviceId}-${appVersion}-${timestamp}-${timestamp}-${backupName}";
 
     /// create iv
     var nonce = _cryptor.getNewNonce();
-    nonce = nonce.sublist(0,8) + [0,0,0,0,0,0,0,0];
+    nonce = nonce.sublist(0,12) + [0,0,0,0];
 
     var testItems = json.encode(items);
 
+    _logManager.logger.d("testItems.length: ${testItems.length}\n"
+        "utf8.encode(keyNonce).length: ${utf8.encode(testItems).length}");
     var encryptedBlob = await _cryptor.encryptBackupVault(testItems, nonce, idString);
 
 
     final identities = await _keyManager.getIdentities();
     final recoveryKeys = await _keyManager.getRecoveryKeyItems();
     final deviceDataString = _settingsManager.deviceManager.deviceData.toString();
-    // _logManager.logger.d("deviceDataString: $deviceDataString");
+    _logManager.logger.d("deviceDataString.length: ${deviceDataString.length}");
     // _logManager.logger.d("deviceData[utsname.version:]: ${_settingsManager.deviceManager.deviceData["utsname.version:"]}");
 
     _settingsManager.doEncryption(utf8.encode(deviceDataString).length);
@@ -743,7 +737,7 @@ class BackupManager {
 
 
     var backupItem = VaultItem(
-      id: vaultId,
+      id: _keyManager.vaultId,
       version: appVersion,
       name: backupName,
       deviceId: deviceId,

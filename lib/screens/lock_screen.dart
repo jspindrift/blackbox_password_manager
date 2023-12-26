@@ -203,7 +203,7 @@ class _LockScreenState extends State<LockScreen> {
 
                         ),
                       ),
-                      textInputAction: TextInputAction.done,
+                      textInputAction: TextInputAction.go,
                       autocorrect: false,
                       onChanged: (_) {
                         _validateField();
