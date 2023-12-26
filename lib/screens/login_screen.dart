@@ -1411,10 +1411,11 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       try {
         barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
             "#ff6666", "Cancel", true, ScanMode.QR);
-        // _logManager.logger.d(barcodeScanRes);
+        _logManager.logger.d(barcodeScanRes);
 
         try {
           RecoveryKeyCode keyCode = RecoveryKeyCode.fromRawJson(barcodeScanRes);
+          // _logManager.logger.wtf("keyCode: ${keyCode.toRawJson()}");
 
           if (keyCode != null) {
             /// try to decrypt item
@@ -1455,24 +1456,31 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   }
 
   _decryptWithRecoveryKey(RecoveryKeyCode key) async {
-    // print("_decryptWithRecoveryKey");
+    // _logManager.logger.d("_decryptWithRecoveryKey: ${key.toRawJson()}");
 
     EasyLoading.show(status: "Decrypting...");
 
-    final keyId = key.id;
+    final pubkKeyId = key.id;
     final keyData = key.key;
-    _logManager.logger.d("vaultId: ${_keyManager.vaultId}");
-    // _logManager.logger.d("keyData: ${keyData}");
 
-    final recoveryItem = await _keyManager.getRecoveryKeyItem(keyId);
+    /// TODO: check keyId
+    // if (key.keyId != _keyManager.keyId) {
+    //   _logManager.logger.e("keyId does not match");
+    //   _showErrorDialog("Recovery Key Failure.  The keyId does not match.");
+    //   return;
+    // }
+
+    // _logManager.logger.d("vaultId: ${_keyManager.vaultId}");
+
+    final recoveryItem = await _keyManager.getRecoveryKeyItem(pubkKeyId);
 
     if (recoveryItem != null) {
       SecretKey skey = SecretKey(base64.decode(keyData));
       final encryptedKeys = recoveryItem.data;
-      _logManager.logger.d("encryptedKeys: ${encryptedKeys}");
+      // _logManager.logger.d("encryptedKeys: ${encryptedKeys}");
 
       final decryptedKeys = await _cryptor.decryptRecoveryKey(skey, encryptedKeys);
-      // print("decrypted4Keys: ${decryptedKeys}");
+      // _logManager.logger.d("decryptedKeys: ${decryptedKeys}");
 
       if (decryptedKeys.length == 32) {
         _cryptor.setAesRootKeyBytes(decryptedKeys);

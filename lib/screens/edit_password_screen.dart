@@ -438,7 +438,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
 
           _validateFields();
         } else {
-          print("geo update is null");
+          _logManager.logger.d("geo update is null");
         }
       }
 

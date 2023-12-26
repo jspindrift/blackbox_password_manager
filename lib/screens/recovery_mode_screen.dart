@@ -51,7 +51,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
   List<String> _decryptedPublicKeysE = [];
 
   List<DigitalIdentity> _publicIds = [];
-  List<DigitalIdentity> _decryptdePublicIdentities = [];
+  List<DigitalIdentity> _decryptedPublicIdentities = [];
 
   List<String> _publicKeyHashes = [];
   List<String> _recoveryKeyIds = [];
@@ -106,9 +106,10 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         setState(() {
           _pubSigningKey = base64.encode(hex.decode(privateSigningKey.publicKey.toCompressedHex()));
           _pubExchangeKeyPublic = base64.encode(pubExchange.bytes);
-          _pubExchangeKeyAddress = _cryptor.sha256(_pubExchangeKeyPublic).substring(0,32);
+          _pubExchangeKeyAddress = _cryptor.sha256(_pubExchangeKeyPublic).substring(0,40);
 
           _myCode = DigitalIdentityCode(
+            keyId: myIdentity!.keyId,
             pubKeyExchange: _pubExchangeKeyPublic,
             pubKeySignature: _pubSigningKey,
           );
@@ -124,22 +125,25 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     _publicKeyHashes = [];
     _decryptedPublicKeysS = [];
     _decryptedPublicKeysE = [];
-    _decryptdePublicIdentities = [];
+    _decryptedPublicIdentities = [];
 
     final ids = await _keyManager.getIdentities();
+
 
     if (ids != null) {
       ids.sort((a, b) {
         return b.cdate.compareTo(a.cdate);
       });
       for (var id in ids) {
+        // _logManager.logLongMessage(id.toRawJson());
         final xpub = await _cryptor.decrypt(id.pubKeySignature);
         final ypub = await _cryptor.decrypt(id.pubKeyExchange);
         final dname = await _cryptor.decrypt(id.name);
+        final dkeyId = await _cryptor.decrypt(id.keyId);
 
         var digitalIdentity = DigitalIdentity(
             id: id.id,
-            keyId: id.keyId,
+            keyId: dkeyId,
             index: id.index,
             name: dname,
             version: id.version,
@@ -153,7 +157,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         final identityMac = await _cryptor.hmac256(digitalIdentity.toRawJson());
         digitalIdentity.mac = identityMac;
 
-        _decryptdePublicIdentities.add(digitalIdentity);
+        _decryptedPublicIdentities.add(digitalIdentity);
 
         /// hash of public exchange key
         final phash = _cryptor.sha256(ypub);
@@ -196,6 +200,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     setState(() {});
 
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -346,7 +351,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                     title: Padding(
                       padding: EdgeInsets.fromLTRB(0, 4, 4, 4),
                       child: Text(
-                        'Name: ${_decryptdePublicIdentities[index - 1].name}',
+                        'Name: ${_decryptedPublicIdentities[index - 1].name}',
                         style: TextStyle(
                           color: _isDarkModeEnabled ? Colors.white : null,
                         ),
@@ -355,9 +360,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                     subtitle: Padding(
                       padding: EdgeInsets.fromLTRB(0, 4, 4, 8),
                       child: Text(
-                        // "pubKeyExchange: ${_decryptedPublicKeysE[index - 1]}\n\naddress: ${_cryptor.sha256(_decryptedPublicKeysE[index - 1])}",
-                        // "address: ${_cryptor.sha256(_decryptedPublicKeysE[index - 1]).substring(0,32)}",
-                        "Address: ${_publicKeyHashes[index-1].substring(0, 32)}",
+                        "Address: ${_publicKeyHashes[index-1].substring(0, 32)}\nkeyID: ${_decryptedPublicIdentities[index-1].keyId}",
                         style: TextStyle(
                           color: _isDarkModeEnabled ? Colors.white : null,
                           fontSize: 14,
@@ -431,7 +434,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                                 : Colors.blueAccent,
                           ),
                           onPressed: () {
-                            _computeAndShowRecoveryCode(_decryptdePublicIdentities[index - 1]);
+                            _computeAndShowRecoveryCode(_decryptedPublicIdentities[index - 1]);
                           },
                         ),
                         Spacer(),
@@ -576,9 +579,10 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
     final recoveryCode = RecoveryKeyCode(
       id: ahash,
+      keyId: identity.keyId,
       key: base64.encode(sharedSecretBytes),
     );
-    // print("secret key: ${hex.encode(sharedSecretBytes)}");
+    _logManager.logger.d("recoveryCode key: ${recoveryCode.toRawJson()}");
 
     Navigator.push(
       context,
@@ -592,254 +596,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     );
   }
 
-  // _showModalImportPublicKeyView() async {
-  //   showModalBottomSheet(
-  //       backgroundColor: _isDarkModeEnabled ? Colors.blueGrey : null,
-  //       elevation: 8,
-  //       context: context,
-  //       isScrollControlled: true,
-  //       shape: RoundedRectangleBorder(
-  //         borderRadius: BorderRadius.vertical(
-  //           top: Radius.circular(20),
-  //         ),
-  //       ),
-  //       builder: (context) {
-  //         return StatefulBuilder(
-  //             builder: (BuildContext context, StateSetter state) {
-  //           return Center(
-  //             child: Column(
-  //               children: <Widget>[
-  //                 SizedBox(
-  //                   height: 64,
-  //                 ),
-  //                 Padding(
-  //                   padding: EdgeInsets.all(32),
-  //                   child: ElevatedButton(
-  //                     style: ButtonStyle(
-  //                       backgroundColor: _isDarkModeEnabled
-  //                           ? MaterialStateProperty.all<Color>(
-  //                               Colors.greenAccent)
-  //                           : null,
-  //                     ),
-  //                     child: Text(
-  //                       "Close",
-  //                       style: TextStyle(
-  //                         color:
-  //                             _isDarkModeEnabled ? Colors.black : Colors.white,
-  //                       ),
-  //                     ),
-  //                     onPressed: () async {
-  //                       FocusScope.of(context).unfocus();
-  //                       state(() {
-  //                         _importPublicKeyDataTextFieldController.text = "";
-  //                         _importPublicKeyNameTextFieldController.text = "";
-  //                       });
-  //                       Navigator.of(context).pop();
-  //                     },
-  //                   ),
-  //                 ),
-  //                 Padding(
-  //                   padding: EdgeInsets.all(16.0),
-  //                   child: TextFormField(
-  //                     cursorColor:
-  //                         _isDarkModeEnabled ? Colors.greenAccent : null,
-  //                     autocorrect: false,
-  //                     obscureText: false,
-  //                     minLines: 1,
-  //                     // maxLines: _hidePasscodeField ? 1 : 8,
-  //                     decoration: InputDecoration(
-  //                       labelText: 'Name',
-  //                       hintStyle: TextStyle(
-  //                         fontSize: 18.0,
-  //                         color: _isDarkModeEnabled ? Colors.white : null,
-  //                       ),
-  //                       labelStyle: TextStyle(
-  //                         fontSize: 18.0,
-  //                         color: _isDarkModeEnabled ? Colors.white : null,
-  //                       ),
-  //                       enabledBorder: OutlineInputBorder(
-  //                         borderSide: BorderSide(
-  //                           color: _isDarkModeEnabled
-  //                               ? Colors.greenAccent
-  //                               : Colors.grey,
-  //                           width: 0.0,
-  //                         ),
-  //                       ),
-  //                       focusedBorder: OutlineInputBorder(
-  //                         borderSide: BorderSide(
-  //                           color: _isDarkModeEnabled
-  //                               ? Colors.greenAccent
-  //                               : Colors.grey,
-  //                           width: 0.0,
-  //                         ),
-  //                       ),
-  //                     ),
-  //                     style: TextStyle(
-  //                       fontSize: 18.0,
-  //                       color: _isDarkModeEnabled ? Colors.white : null,
-  //                     ),
-  //                     onChanged: (pwd) {
-  //                       _validateField(state);
-  //                     },
-  //                     onTap: () {
-  //                       _validateField(state);
-  //                     },
-  //                     onFieldSubmitted: (_) {
-  //                       _validateField(state);
-  //                     },
-  //                     keyboardType: TextInputType.visiblePassword,
-  //                     textInputAction: TextInputAction.done,
-  //                     controller: _importPublicKeyNameTextFieldController,
-  //                   ),
-  //                 ),
-  //                 Padding(
-  //                   padding: EdgeInsets.all(16.0),
-  //                   child: TextFormField(
-  //                     cursorColor:
-  //                         _isDarkModeEnabled ? Colors.greenAccent : null,
-  //                     autocorrect: false,
-  //                     obscureText: false,
-  //                     minLines: 1,
-  //                     // maxLines: _hidePasscodeField ? 1 : 8,
-  //                     decoration: InputDecoration(
-  //                       labelText: 'Public Key (Hex)',
-  //                       hintStyle: TextStyle(
-  //                         fontSize: 18.0,
-  //                         color: _isDarkModeEnabled ? Colors.white : null,
-  //                       ),
-  //                       labelStyle: TextStyle(
-  //                         fontSize: 18.0,
-  //                         color: _isDarkModeEnabled ? Colors.white : null,
-  //                       ),
-  //                       enabledBorder: OutlineInputBorder(
-  //                         borderSide: BorderSide(
-  //                           color: _isDarkModeEnabled
-  //                               ? Colors.greenAccent
-  //                               : Colors.grey,
-  //                           width: 0.0,
-  //                         ),
-  //                       ),
-  //                       focusedBorder: OutlineInputBorder(
-  //                         borderSide: BorderSide(
-  //                           color: _isDarkModeEnabled
-  //                               ? Colors.greenAccent
-  //                               : Colors.grey,
-  //                           width: 0.0,
-  //                         ),
-  //                       ),
-  //                       // prefixIcon: Icon(
-  //                       //   Icons.security,
-  //                       //   color: _isDarkModeEnabled ? Colors.grey : null,
-  //                       // ),
-  //                       // suffixIcon: IconButton(
-  //                       //   icon: Icon(
-  //                       //     Icons.remove_red_eye,
-  //                       //     color: _hidePasscodeField
-  //                       //         ? Colors.grey
-  //                       //         : _isDarkModeEnabled
-  //                       //         ? Colors.greenAccent
-  //                       //         : Colors.blueAccent,
-  //                       //   ),
-  //                       //   onPressed: () {
-  //                       //     setState(
-  //                       //             () => _hidePasscodeField = !_hidePasscodeField);
-  //                       //   },
-  //                       // ),
-  //                     ),
-  //                     style: TextStyle(
-  //                       fontSize: 18.0,
-  //                       color: _isDarkModeEnabled ? Colors.white : null,
-  //                     ),
-  //                     onChanged: (pwd) {
-  //                       _validateField(state);
-  //                     },
-  //                     onTap: () {
-  //                       _validateField(state);
-  //                     },
-  //                     onFieldSubmitted: (_) {
-  //                       _validateField(state);
-  //                     },
-  //                     keyboardType: TextInputType.text,
-  //                     textInputAction: TextInputAction.done,
-  //                     // focusNode: _passwordFocusNode,
-  //                     controller: _importPublicKeyDataTextFieldController,
-  //                   ),
-  //                 ),
-  //                 Visibility(
-  //                   visible: _hasImportWarningMessage,
-  //                   child: Padding(
-  //                     padding: EdgeInsets.all(16),
-  //                     child: Text(
-  //                       "Invalid Format",
-  //                       style: TextStyle(
-  //                         color:
-  //                             _isDarkModeEnabled ? Colors.white : Colors.black,
-  //                       ),
-  //                     ),
-  //                   ),
-  //                 ),
-  //                 Padding(
-  //                   padding: EdgeInsets.all(16),
-  //                   child: ElevatedButton(
-  //                     style: ButtonStyle(
-  //                       backgroundColor: _isDarkModeEnabled
-  //                           ? MaterialStateProperty.all<Color>(
-  //                               Colors.greenAccent)
-  //                           : null,
-  //                     ),
-  //                     child: Text(
-  //                       "Import",
-  //                       style: TextStyle(
-  //                         color:
-  //                             _isDarkModeEnabled ? Colors.black : Colors.white,
-  //                       ),
-  //                     ),
-  //                     onPressed: _importFieldIsValid
-  //                         ? () async {
-  //                             FocusScope.of(context).unfocus();
-  //
-  //                             // print("import identity");
-  //
-  //                             DigitalIdentityCode code = DigitalIdentityCode(
-  //                               pubKeyExchange:
-  //                                   _importPublicKeyDataTextFieldController
-  //                                       .text,
-  //                               pubKeySignature: "",
-  //                             );
-  //
-  //                             await _saveScannedIdentity(code,
-  //                                 _importPublicKeyNameTextFieldController.text);
-  //
-  //                             state(() {
-  //                               _importPublicKeyDataTextFieldController.text =
-  //                                   "";
-  //                               _importPublicKeyNameTextFieldController.text =
-  //                                   "";
-  //                             });
-  //
-  //                             Navigator.of(context).pop();
-  //                           }
-  //                         : null,
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           );
-  //         });
-  //       });
-  // }
-
-  // void _validateField(StateSetter state) {
-  //   state(() {
-  //     _importFieldIsValid = _importPublicKeyNameTextFieldController
-  //             .text.isNotEmpty &&
-  //         _importPublicKeyDataTextFieldController.text.isNotEmpty &&
-  //         _importPublicKeyDataTextFieldController.text.length == 64 &&
-  //         _importPublicKeyDataTextFieldController.text != _pubExchangeKeyPublic;
-  //
-  //     _hasImportWarningMessage = !_importFieldIsValid;
-  //   });
-  // }
 
   void _displayMyIdentityInfo() async {
     /// show modal bottom sheet
@@ -911,7 +667,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
                             : BorderSide(color: Colors.blueAccent),
                       ),
                       onPressed: () {
-                        print("_myCode: ${_myCode?.toRawJson()}");
                         Navigator.of(context).pop();
 
                         if (_myCode != null) {
@@ -1043,6 +798,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
                         _logManager.logger.d("pubE: $pubE");
                         final identity = DigitalIdentityCode(
+                            keyId: _keyManager.keyId,
                             pubKeyExchange: pubE,
                             pubKeySignature: pubS,
                             // intermediateKey: intKey,
@@ -1180,6 +936,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     final encryptedPubS = await _cryptor.encrypt(pubS);
     final encryptedPubE = await _cryptor.encrypt(pubE);
     final encryptedName = await _cryptor.encrypt(name);
+    final encryptedKeyId = await _cryptor.encrypt(item.keyId);
 
     // final encryptedIntKey = await _cryptor.encrypt(intKey);
 
@@ -1187,7 +944,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     /// TODO: change to encryptParams method for object
     var identity = DigitalIdentity(
       id: uuid,
-      keyId: _keyManager.keyId,
+      keyId: encryptedKeyId,
       index: 1,
       version: AppConstants.digitalIdentityVersion,
       name: encryptedName,
@@ -1202,7 +959,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     identity.mac = identityMac;
 
     final identityObjectString = identity.toRawJson();
-    // print("identityObjectString: $identityObjectString");
+    print("identityObjectString: $identityObjectString");
 
     final statusId = await _keyManager.saveIdentity(uuid, identityObjectString);
 
@@ -1214,7 +971,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     }
   }
 
-  Future<void> _createRecoveryKey(String pubKeyExchange, int keyIndex) async {
+  Future<void> _createRecoveryKey(String pubKeyExchange, String keyId) async {
     final algorithm = X25519();
 
     // final pubBytes = hex.decode(pubKeyExchange);
@@ -1246,15 +1003,16 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     final rootKey = _cryptor.aesRootSecretKeyBytes;
 
     final encryptedRootKey = await _cryptor.encryptRecoveryKey(sharedSecretKey, rootKey);
-    // final encryptedRootKeyIndexed = await _cryptor.encryptRecoveryKey(sharedSecretKey, rootKey);
+    final encryptedKeyId = await _cryptor.encrypt(keyId);
     _logManager.logger.d('encryptedRootKey:[${encryptedRootKey.length}]: ${encryptedRootKey}');
-    // _logManager.logger.d('encryptedRootKeyIndexed:[${keyIndex}]:${encryptedRootKeyIndexed.length}: ${encryptedRootKeyIndexed}');
-    
+    _logManager.logger.d('encryptedKeyId:[${encryptedKeyId.length}]: ${encryptedKeyId}');
+
     final pubKeyHash = _cryptor.sha256(pubKeyExchange);
     _publicKeyHashes.add(pubKeyHash);
 
     final recoveryKey = RecoveryKey(
       id: pubKeyHash,
+      keyId: encryptedKeyId,
       data: encryptedRootKey,
       cdate: DateTime.now().toIso8601String(),
     );
@@ -1346,14 +1104,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              // print("add recovery key");
-
-              await _createRecoveryKey(pubKeyExchange, index);
-
-              // fetchIdentities();
-              // setState(() {
-              //   _matchingRecoveryKeyIndexes.add(index);
-              // });
+              await _createRecoveryKey(pubKeyExchange, _decryptedPublicIdentities[index-1].keyId);
 
               Navigator.of(ctx).pop();
             },

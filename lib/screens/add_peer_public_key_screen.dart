@@ -1523,10 +1523,6 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
     _Kmac = checkMac.bytes;
     _Kxor = _cryptor.xor(Uint8List.fromList(_Kenc), Uint8List.fromList(_Kauth));
 
-    // _logManager.logger.d("KXOR: ${hex.encode(_Kxor)}");
-    // _logManager.logger.d("KMAC: ${hex.encode(_Kmac)}");
-
-
     _calculateOTPToken();
 
   }

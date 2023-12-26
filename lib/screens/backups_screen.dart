@@ -62,6 +62,11 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
   VaultItem? _localVaultItem;
   int _localVaultItemSize = 0;
+  int _localVaultNonceSequenceNumber = 0;
+  int _externalVaultNonceSequenceNumber = 0;
+
+  bool _shouldReKeyLocalVault = false;
+  bool _shouldReKeyExternalVault = false;
 
   bool _hasMatchingLocalVaultKeyData = false;
   bool _localVaultHasRecoveryKeys = false;
@@ -157,16 +162,13 @@ class _BackupsScreenState extends State<BackupsScreen> {
       }
     } else {
       vaultFileString = await _fileManager.readNamedVaultData();
-      // _logManager.logger.d("read named vault file: ${vaultFileString}");
     }
-
-    // _logManager.logger.d("read vault file: ${vaultFileString}");
 
     _localVaultHash = _cryptor.sha256(vaultFileString);
     _localVaultRecoveryKeys = [];
     _backups = [];
 
-    _decryptLocalVault(vaultFileString);
+    await _decryptLocalVault(vaultFileString);
 
 
     setState(() {
@@ -175,7 +177,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
       List<VaultItem> tempBackups = [];
 
       for (var backup in _backups) {
-        // print("backup ${backup.id}");
         if (!backupIds.contains(backup.id)) {
           backupIds.add(backup.id);
           tempBackups.add(backup);
@@ -198,11 +199,50 @@ class _BackupsScreenState extends State<BackupsScreen> {
     });
   }
 
-  _decryptLocalVault(String vaultItemString) async {
+  bool _checkBackupNonceValidity(VaultItem backup) {
+    if (backup?.blob != null) {
+      final blobData = base64.decode(backup!.blob);
+      var nonce = blobData.sublist(0,16);
+
+      // final rndPart = nonce.sublist(0, 8);
+      var seq = nonce.sublist(8, 12);
+      var seqjoin = seq.join('');
+      int numseq = int.parse(seqjoin);
+
+      if (numseq < pow(2,31)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  int _getBackupNonceSequenceNumber(VaultItem backup) {
+    if (backup?.blob != null) {
+      final blobData = base64.decode(backup!.blob);
+      var nonce = blobData.sublist(0,16);
+
+      var seq = nonce.sublist(8, 12);
+      var seqjoin = seq.join('');
+      int numseq = int.parse(seqjoin);
+
+      return numseq;
+    }
+
+    return 0;
+  }
+
+  Future<void> _decryptLocalVault(String vaultItemString) async {
     if (vaultItemString.isNotEmpty) {
       try {
         _localVaultItem = VaultItem.fromRawJson(vaultItemString);
         if (_localVaultItem != null) {
+
+          final isLocalVaultNonceValid = _checkBackupNonceValidity(_localVaultItem!);
+          _shouldReKeyLocalVault = !isLocalVaultNonceValid;
+
+          _localVaultNonceSequenceNumber = _getBackupNonceSequenceNumber(_localVaultItem!);
+
           _backups.add(_localVaultItem!);
 
           final encryptedBlob = (_localVaultItem?.blob)!;
@@ -326,6 +366,11 @@ class _BackupsScreenState extends State<BackupsScreen> {
         if (_externalVaultItem != null) {
           _backups.add(_externalVaultItem!);
 
+          final isExternalVaultNonceValid = _checkBackupNonceValidity(_externalVaultItem!);
+          _shouldReKeyExternalVault = !isExternalVaultNonceValid;
+
+          _externalVaultNonceSequenceNumber = _getBackupNonceSequenceNumber(_externalVaultItem!);
+
           final encryptedBlob = (_externalVaultItem?.blob)!;
           final vaultId = (_externalVaultItem?.id)!;
           final deviceId = (_externalVaultItem?.deviceId)!;
@@ -425,7 +470,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
     /// current key material to check against to signify same password backup
     final checkKeyMaterial = _keyManager.encryptedKeyMaterial;
-    // print('checkKeyMaterial: $checkKeyMaterial');
 
     _backups.forEach((element) {
       final encryptedKey = element.encryptedKey;
@@ -476,7 +520,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
             ),
               subtitle: Text(
                 _localVaultItem?.id != null
-                    ? "name: ${(_localVaultItem?.name)!}\n${(_localVaultItem?.numItems)!} items" : "",
+                    ? "Name: ${(_localVaultItem?.name)!}" : "",
                 style: TextStyle(
                   color: _isDarkModeEnabled ? Colors.white : null,
                   fontSize: 16,
@@ -489,9 +533,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
           child: ListTile(
             subtitle: Text(
               _localVaultItem?.id != null
-                  ? "created: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse((_localVaultItem?.cdate)!))}\nmodified: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse((_localVaultItem?.mdate)!))}\n\nvault id: ${(_localVaultItem?.id)!.toUpperCase()}"
-                  // "\nencryptedBlocks: ${(_localVaultNumEncryptedBlocks > 0 ? _localVaultNumEncryptedBlocks: "?")}\nkey health: ${(100* (AppConstants.maxEncryptionBlocks-_localVaultNumEncryptedBlocks)/AppConstants.maxEncryptionBlocks).toStringAsFixed(6)} %\n\n"
-                  "\n\nfingerprint: ${_localVaultHash.substring(0, 32)}"
+                  ? "${(_localVaultItem?.numItems)!} items\ncreated: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse((_localVaultItem?.cdate)!))}\nmodified: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse((_localVaultItem?.mdate)!))}\n\nvault id: ${(_localVaultItem?.id)!.toUpperCase()}"
+                  "\n\nfingerprint: ${_localVaultHash.substring(0, 32)}\nsequence #: $_localVaultNonceSequenceNumber\n"
                   : "",
               style: TextStyle(
                 color: _isDarkModeEnabled ? Colors.white : null,
@@ -638,7 +681,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
           ),
           subtitle: Text(
             _externalVaultItem?.id != null
-                ? "name: ${(_externalVaultItem?.name)!}\n${(_externalVaultItem?.numItems)!} items" : "",
+                ? "name: ${(_externalVaultItem?.name)!}" : "",
             style: TextStyle(
               color: _isDarkModeEnabled ? Colors.white : null,
               fontSize: 16,
@@ -651,10 +694,10 @@ class _BackupsScreenState extends State<BackupsScreen> {
         child: ListTile(
           subtitle: Text(
             _externalVaultItem?.id != null
-                ? "created: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse((_externalVaultItem?.cdate)!))}"
+                ? "${(_externalVaultItem?.numItems)!} items\ncreated: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse((_externalVaultItem?.cdate)!))}"
                 "\nmodified: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse((_externalVaultItem?.mdate)!))}"
                 "\n\nvault id: ${(_externalVaultItem?.id)!.toUpperCase()}"
-                  "\n\nfingerprint: ${_externalVaultHash.substring(0, 32)}"
+                  "\n\nfingerprint: ${_externalVaultHash.substring(0, 32)}\nsequence #: $_externalVaultNonceSequenceNumber\n"
                 : "",
             style: TextStyle(
               color: _isDarkModeEnabled ? Colors.white : null,
@@ -853,6 +896,63 @@ class _BackupsScreenState extends State<BackupsScreen> {
                             } else {
                               _showErrorDialog("Could not backup vault.");
                             }
+                          } else {
+                            _displayCreateBackupDialog(context, true, true);
+                          }
+                        } else {
+                          _displayCreateBackupDialog(context, true, false);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              Visibility(
+                visible: _shouldReKeyLocalVault || (_shouldReKeyExternalVault && _shouldSaveToSDCard),
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(
+                    child: ElevatedButton(
+                      style: ButtonStyle(
+                        backgroundColor: _isDarkModeEnabled
+                            ? MaterialStateProperty.all<Color>(
+                            Colors.greenAccent)
+                            : null,
+                      ),
+                      child: Text(
+                        "ReKey and Create Backup",
+                        style: TextStyle(
+                          color:
+                          _isDarkModeEnabled ? Colors.black : Colors.white,
+                        ),
+                      ),
+                      onPressed: () async {
+                        if (_localVaultItem != null) {
+                          WidgetUtils.showSnackBarDuration(context, "Re-Keying and Backing Up Vault...", Duration(seconds: 2));
+
+                          if ((_localVaultItem?.id)! == _keyManager.vaultId &&
+                              _hasMatchingLocalVaultKeyData) {
+
+                            /// TODO: add rekey functionality here
+                            ///
+
+                            /// check master password
+                            ///
+                            /// re-key and backup vault
+
+                            // WidgetUtils.showSnackBarDuration(context, "Backing Up Vault...", Duration(seconds: 2));
+                            // final status = await _createBackup();
+
+                            EasyLoading.dismiss();
+
+                            _fetchBackups();
+
+                            EasyLoading.showToast("Implement this.");
+                            // if (status) {
+                            //   EasyLoading.showToast("Backup Successful");
+                            // } else {
+                            //   _showErrorDialog("Could not backup vault.");
+                            // }
                           } else {
                             _displayCreateBackupDialog(context, true, true);
                           }
@@ -1065,7 +1165,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
 
   _scanForRecoveryKey(bool isLocal) async {
-    print("_scanForRecoveryKey: $isLocal");
+    // logger.d("_scanForRecoveryKey: $isLocal");
     _settingsManager.setIsScanningQRCode(true);
 
     if (Platform.isIOS) {
@@ -1076,8 +1176,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
             "#ff6666", "Cancel", true, ScanMode.QR);
 
-        // print("barcodeScanRes: ${barcodeScanRes}");
-
+        // logger.d("barcodeScanRes: ${barcodeScanRes}");
         _settingsManager.setIsScanningQRCode(false);
 
         /// user pressed cancel
@@ -1102,7 +1201,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
             .push(MaterialPageRoute(
           builder: (context) => QRScanView(),
         )).then((value) async {
-          print("returned value: $value");
+          // logger.d("returned value: $value");
           _settingsManager.setIsScanningQRCode(false);
 
           if (isLocal) {
@@ -1117,18 +1216,18 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
   _decryptWithScannedRecoveryItem(String recoveryItem) async {
     EasyLoading.show(status: "Decrypting...");
-    print("_decryptWithScannedRecoveryItem: $recoveryItem");
-
+    // logger.d("_decryptWithScannedRecoveryItem: $recoveryItem");
     try {
       RecoveryKeyCode key = RecoveryKeyCode.fromRawJson(recoveryItem);
       if (key != null && _localVaultRecoveryKeys != null) {
         for (var rkey in _localVaultRecoveryKeys!) {
-          print("rkey: ${rkey.toRawJson()}");
-
+          // logger.d("rkey: ${rkey.toRawJson()}");
           if (rkey.id == key.id) {
-            SecretKey skey = SecretKey(base64.decode(key.key));
+            // if (rkey.id == key.id && rkey.keyId == _localVaultItem?.encryptedKey.keyId) {
+            // if (rkey.id == key.id && rkey.keyId == _keyManager.keyId) {
+              SecretKey skey = SecretKey(base64.decode(key.key));
             final decryptedRootKey = await _cryptor.decryptRecoveryKey(skey, rkey.data);
-            print("decryptedRootKey: ${decryptedRootKey.length}: ${decryptedRootKey}");
+            // logger.d("decryptedRootKey: ${decryptedRootKey.length}: ${decryptedRootKey}");
 
             if (!decryptedRootKey.isEmpty) {
               _cryptor.setAesRootKeyBytes(decryptedRootKey);
@@ -1136,7 +1235,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
               final status = await _backupManager
                   .restoreLocalBackupItemRecovery(_localVaultItem!);
-              print("restoreLocalBackupItemRecovery status: ${status}");
+              // logger.d("restoreLocalBackupItemRecovery status: ${status}");
 
               if (status) {
                 if (_loginScreenFlow) {
@@ -1150,8 +1249,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
             } else {
               _showErrorDialog("could not decrypt vault");
             }
-          } else {
-            logger.d("nothing");
           }
         }
       } else {
@@ -1166,27 +1263,28 @@ class _BackupsScreenState extends State<BackupsScreen> {
   }
 
   _decryptExternalWithScannedRecoveryItem(String recoveryItem) async {
-    EasyLoading.show(status: "Decrypting...");
+    logger.d("_decryptExternalWithScannedRecoveryItem");
 
-    print("_decryptExternalWithScannedRecoveryItem");
+    EasyLoading.show(status: "Decrypting...");
 
     try {
       RecoveryKeyCode key = RecoveryKeyCode.fromRawJson(recoveryItem);
       if (key != null && _externalVaultRecoveryKeys != null) {
         for (var rkey in _externalVaultRecoveryKeys!) {
-          print("rkey: ${rkey.toJson()}");
+          // logger.d("rkey: ${rkey.toJson()}");
           if (rkey.id == key.id) {
+            // if (rkey.id == key.id && rkey.keyId == _externalVaultItem?.encryptedKey.keyId) {
+            // if (rkey.id == key.id && rkey.keyId == _keyManager.keyId) {
             SecretKey skey = SecretKey(base64.decode(key.key));
             final decryptedRootKey = await _cryptor.decryptRecoveryKey(skey, rkey.data);
-            print("decryptedRootKey: ${decryptedRootKey.length}: ${decryptedRootKey}");
-
+            // logger.d("decryptedRootKey: ${decryptedRootKey.length}: ${decryptedRootKey}");
             if (!decryptedRootKey.isEmpty) {
               _cryptor.setAesRootKeyBytes(decryptedRootKey);
               await _cryptor.expandSecretRootKey(decryptedRootKey);
 
               final status = await _backupManager
                   .restoreLocalBackupItemRecovery(_externalVaultItem!);
-              print("restoreLocalBackupItemRecovery status: ${status}");
+              // logger.d("restoreLocalBackupItemRecovery status: ${status}");
 
               if (status) {
                 if (_loginScreenFlow) {
@@ -1206,7 +1304,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         _showErrorDialog("Invalid code format");
       }
     } catch (e) {
-      print(e);
+      logger.e(e);
       _settingsManager.setIsScanningQRCode(false);
     }
 
@@ -1343,14 +1441,10 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
         final backupMac = await _cryptor.hmac256(backupItem.toRawJson());
         backupItem.mac = base64.encode(hex.decode(backupMac));
-        // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
-
-        // _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
-        // log("backupItemJson: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
         final backupItemString = backupItem.toRawJson();
-        // _logManager.logger.d('backupItemString: $backupItemString');
         final backupHash = _cryptor.sha256(backupItemString);
+        // _logManager.logLongMessage("backupItemJson-long: ${backupItemString.length}: ${backupItemString}");
         // _logManager.logger.d("backup hash: $backupHash");
 
         _logManager.log(
@@ -1460,11 +1554,11 @@ class _BackupsScreenState extends State<BackupsScreen> {
           final updatedNoncc = ivHelper().incrementSequencedNonce(currentNonce);
           nonce = updatedNoncc;
         }
-        _logManager.logger.wtf("backupNonce: ${nonce}");
+        // _logManager.logger.wtf("backupNonce: ${nonce}");
 
         final idString =
             "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${backupName}";
-        _logManager.logger.wtf("idString: $idString");
+        // _logManager.logger.wtf("idString: $idString");
 
         var encryptedBlob = await _cryptor.encryptBackupVault(testItems, nonce, idString);
         // _logManager.logger.d('encryptedBlob: ${encryptedBlob.length}: $encryptedBlob');
@@ -1524,10 +1618,9 @@ class _BackupsScreenState extends State<BackupsScreen> {
         final backupMac = await _cryptor.hmac256(backupItem.toRawJson());
         backupItem.mac = base64.encode(hex.decode(backupMac));
 
-        // _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
-
         final backupItemString = backupItem.toRawJson();
         final backupHash = _cryptor.sha256(backupItemString);
+        // _logManager.logLongMessage("backupItemJson-long: ${backupItemString.length}: ${backupItemString}");
 
         _logManager.log(
             "BackupsScreen", "_createBackup", "backup hash:\n$backupHash\n\nvault id: ${uuid}");
@@ -1840,7 +1933,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
       var tempDecryptedBlob =
           await _cryptor.decryptBackupVault(currentVault!.blob, idStringPrevious);
-      // print("tempDecryptedBlob: $tempDecryptedBlob");
 
       if (tempDecryptedBlob == null || tempDecryptedBlob.isEmpty) {
         return false;
@@ -1889,7 +1981,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
       var encryptedBlobUpdated =
           await _cryptor.encryptBackupVault(tempDecryptedBlob, nonce, idStringUpdated);
-      // print("encryptedBlobUpdated: $encryptedBlobUpdated");
 
       final deviceDataString = _settingsManager.deviceManager.deviceData.toString();
       // _logManager.logger.d("deviceDataString: $deviceDataString");
@@ -1972,7 +2063,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
       final tempDecryptedBlob =
       await _cryptor.decryptBackupVault(currentVault!.blob, idStringPrevious);
-      // print("tempDecryptedBlob: $tempDecryptedBlob");
+      // logger.d("tempDecryptedBlob: $tempDecryptedBlob");
 
       if (tempDecryptedBlob == null || tempDecryptedBlob.isEmpty) {
         return false;
@@ -2019,7 +2110,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
       final encryptedBlobUpdated =
       await _cryptor.encryptBackupVault(tempDecryptedBlob, nonce, idStringUpdated);
-      // print("encryptedBlobUpdated: $encryptedBlobUpdated");
+      // logger.d("encryptedBlobUpdated: $encryptedBlobUpdated");
 
       final deviceDataString = _settingsManager.deviceManager.deviceData.toString();
 
@@ -2049,7 +2140,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
       backupItem.mac = base64.encode(hex.decode(backupMac));
 
       final backupItemString = backupItem.toRawJson();
-      // print('backupItemString: $backupItemString');
+      // logger.d('backupItemString: $backupItemString');
 
       final backupHash =
       Hasher().sha256Hash(backupItemString);
@@ -2152,7 +2243,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
           return StatefulBuilder(builder: (context, setState) {
             return AlertDialog(
               title: Text('Create Backup'),
-              // content: willOverwrite ? Text("Warning: This will overwrite your existing backup!") : null,
               actions: <Widget>[
                 OutlinedButton(
                   onPressed: () {
@@ -2183,11 +2273,12 @@ class _BackupsScreenState extends State<BackupsScreen> {
                   child: Text('Save'),
                 ),
               ],
-              content: willOverwrite ?
-              Column(
+              content: Column(
                 mainAxisSize: MainAxisSize.min,
                   children:[
-                Padding(
+                Visibility(
+                  visible: willOverwrite,
+                  child: Padding(
                   padding: EdgeInsets.fromLTRB(0, 8, 0, 16),
                   child: Text(
                     "Warning: This will overwrite your existing backup!",
@@ -2195,45 +2286,26 @@ class _BackupsScreenState extends State<BackupsScreen> {
                       color: Colors.red,
                     ),
                   ),
-                ),
+                ),),
                 TextField(
-                  // "Warning: This will overwrite your existing backup!",
-                onChanged: (value) {
-                  if (value.isNotEmpty) {
-                    setState(() {
-                      _enableBackupNameOkayButton = true;
-                    });
-                  } else {
-                    setState(() {
-                      _enableBackupNameOkayButton = false;
-                    });
-                  }
-                },
-                controller: _dialogTextFieldController,
-                focusNode: _dialogTextFieldFocusNode,
+                  controller: _dialogTextFieldController,
+                  focusNode: _dialogTextFieldFocusNode,
                   autofocus: true,
                   decoration: InputDecoration(
                     hintText: "Backup Name",
-                ),
-              )]) : TextField(
-                onChanged: (value) {
-                  if (value.isNotEmpty) {
-                    setState(() {
-                      _enableBackupNameOkayButton = true;
-                    });
-                  } else {
-                    setState(() {
-                      _enableBackupNameOkayButton = false;
-                    });
-                  }
-                },
-                controller: _dialogTextFieldController,
-                focusNode: _dialogTextFieldFocusNode,
-                autofocus: true,
-                decoration: InputDecoration(
-                    hintText: "Backup Name",
-                ),
-              ),
+                  ),
+                  onChanged: (value) {
+                    if (value.isNotEmpty) {
+                      setState(() {
+                        _enableBackupNameOkayButton = true;
+                      });
+                    } else {
+                      setState(() {
+                        _enableBackupNameOkayButton = false;
+                      });
+                    }
+                  },),
+                ]),
             );
           });
         });
@@ -2283,7 +2355,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
                             //     'Backup Restored Successfully',
                             //     duration: Duration(seconds: 3));
                             if (_loginScreenFlow) {
-                              // print("login screen flow");
                               Navigator.of(context).pop();
                             }
 
@@ -2327,6 +2398,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
                 },
                 controller: _dialogRestoreTextFieldController,
                 focusNode: _dialogRestoreTextFieldFocusNode,
+                autofocus: true,
                 decoration: InputDecoration(
                   hintText: "Password",
                   suffix: IconButton(
@@ -2393,7 +2465,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
                             'Backup Restored Successfully',
                             duration: Duration(seconds: 3));
                         if (_loginScreenFlow) {
-                          // print("login screen flow");
                           Navigator.of(context).pop();
                         }
 
@@ -2437,6 +2508,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
                 },
                 controller: _dialogRestoreTextFieldController,
                 focusNode: _dialogRestoreTextFieldFocusNode,
+                autofocus: true,
                 decoration: InputDecoration(
                   hintText: "Password",
                   suffix: IconButton(

@@ -4,10 +4,12 @@ import 'dart:convert';
 /// TODO: For Recovery Key Scanning
 class RecoveryKeyCode {
   String id; // 32 byte hash of pub key exchange, change to base64
+  String keyId; // id of associated vault root key
   String key; // 32 byte hex data, change to base64
 
   RecoveryKeyCode({
     required this.id,
+    required this.keyId,
     required this.key,
   });
 
@@ -19,6 +21,7 @@ class RecoveryKeyCode {
   factory RecoveryKeyCode.fromJson(Map<String, dynamic> json) {
     return RecoveryKeyCode(
       id: json['id'],
+      keyId: json['keyId'],
       key: json['key'],
     );
   }
@@ -26,6 +29,7 @@ class RecoveryKeyCode {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
       "id": id,
+      "keyId": keyId,
       "key": key,
     };
 

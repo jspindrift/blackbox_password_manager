@@ -42,6 +42,7 @@ class _QRCodeViewState extends State<QRCodeView> {
     super.initState();
 
     _logManager.log("QRCodeView", "initState", "initState");
+    // _logManager.logger.d("_myCode: ${widget.data}");
   }
 
   @override

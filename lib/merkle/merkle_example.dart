@@ -144,7 +144,7 @@ void proofTest(List<Uint8List> data) {
 }
 
 void main() {
-  print("merkle_example: main()");
+  // print("merkle_example: main()");
   // treeExample();
   logger.d('\n----------------------------------------------------\n');
   // rootOnlyExample();

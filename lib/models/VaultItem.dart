@@ -214,11 +214,13 @@ class VaultItem {
 
 class RecoveryKey {
   String id;    // pubKeyHash (hash of peer identity public key)
+  String keyId; // main root key id (encrypted)
   String data;  // encrypted root vault key using the shared secret key
   String cdate; // creation date
 
   RecoveryKey({
     required this.id,
+    required this.keyId,
     required this.data,
     required this.cdate,
   });
@@ -231,6 +233,7 @@ class RecoveryKey {
   factory RecoveryKey.fromJson(Map<String, dynamic> json) {
     return RecoveryKey(
       id: json['id'],
+      keyId: json['keyId'],
       data: json['data'],
       cdate: json['cdate'],
     );
@@ -239,6 +242,7 @@ class RecoveryKey {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
       "id": id,
+      "keyId": keyId,
       "data": data,
       "cdate": cdate,
     };

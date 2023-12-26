@@ -75,6 +75,8 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
   List<int> _privKeyExchange = [];
   List<int> _pubKeyExchange = [];
   String _publicKeyMnemonic = "";
+  String _pubKeyAddress = "";
+
 
   /// Used for symmetric keys
   List<int> _seedKey = [];
@@ -146,12 +148,6 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
         // print("keydata: ${keydata.length}: ${keydata}");
 
         final keyType = (_keyItem?.keyType)!;
-        // final keyIndex = (_keyItem?.keyIndex)!;
-        // var keyIndex = 0;
-        //
-        // if (_keyItem?.keyIndex != null) {
-        //   keyIndex = (_keyItem?.keyIndex)!;
-        // }
 
         /// decrypt root seed and expand
         final decryptedSeedData = await _cryptor.decrypt(keydata);
@@ -315,20 +311,15 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
 
     setState(() {
       _pubKeyExchange = simplePublicKey.bytes;
+
       _qrItem = QRCodeKeyItem(key: base64.encode(_pubKeyExchange), symmetric: false);
 
-      // print("_publicKey: ${_publicKey}");
-      // print("_publicKey: ${_pubKey.length}: ${_pubKey}");
-      // print("_publicKey: ${_pubKey.length}: ${hex.encode(_pubKey)}");
+      _pubKeyAddress = _cryptor.sha256(hex.encode(_pubKeyExchange)).substring(0,40);
 
       _publicKeyMnemonic = bip39.entropyToMnemonic(hex.encode(_pubKeyExchange));
-      // print("_publicKeyMnemonic: ${_publicKeyMnemonic}");
 
       _keyDataTextController.text =
           _publicKeyMnemonic;
-
-      // Kenc = expanded.sublist(0,32);
-      // Kauth = expanded.sublist(32,64);
     });
 
     _validateFields();
@@ -574,7 +565,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                 child:  Padding(
                   padding: EdgeInsets.fromLTRB(24, 8, 24, 16),
                   child: Text(
-                    "Public Key:\n${hex.encode(_pubKeyExchange)}",
+                    "\nAddress: $_pubKeyAddress\n\nPublic Key:\n${hex.encode(_pubKeyExchange)}",
                     // "Public Key:\n${hex.encode(_peerPublicKeyData)}\n\nPublic Mnemonic:\n${_publicKeyMnemonic}",
                     style: TextStyle(
                       color: _isDarkModeEnabled ? Colors.white : null,
@@ -695,14 +686,8 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                         onPressed: _fieldsAreValid
                             ? () async {
 
-                          final entropy = bip39.mnemonicToEntropy(_keyDataTextController.text);
-
-                          // final entropyBytes = hex.decode(entropy);
-                          //
-                          // final base64Key = base64.encode(entropyBytes);
-
                           await Clipboard.setData(ClipboardData(
-                            text: entropy,
+                            text: hex.encode(_pubKeyExchange),
                           ));
 
                           _settingsManager.setDidCopyToClipboard(true);
@@ -736,14 +721,8 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                         onPressed: _fieldsAreValid
                             ? () async {
 
-                          final entropy = bip39.mnemonicToEntropy(_keyDataTextController.text);
-
-                          // final entropyBytes = hex.decode(entropy);
-                          //
-                          // final base64Key = base64.encode(entropyBytes);
-
                           await Clipboard.setData(ClipboardData(
-                            text: entropy,
+                            text: hex.encode(_pubKeyExchange),
                           ));
 
                           _settingsManager.setDidCopyToClipboard(true);
@@ -769,17 +748,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                       IconButton(
                         onPressed: _fieldsAreValid
                             ? () async {
-
                           _pressedShareItem();
-
-                          // print("show QR code");
-                          // await Clipboard.setData(ClipboardData(
-                          //     text: _keyDataTextController.text));
-                          //
-                          // _settingsManager.setDidCopyToClipboard(true);
-                          //
-                          // EasyLoading.showToast('Copied',
-                          //     duration: Duration(milliseconds: 500));
                         }
                             : null,
                         icon: Icon(
@@ -814,39 +783,6 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                     ],
                   ),
                 ),),
-
-
-              // Divider(color: _isDarkModeEnabled ? Colors.greenAccent : null),
-
-              // Padding(
-              //     padding: EdgeInsets.all(16),
-              //     child: ListTile(
-              //       title: Text(
-              //         "Encrypt/Decrypt",
-              //         style: TextStyle(
-              //           color: _isDarkModeEnabled ? Colors.white : null,
-              //         ),
-              //       ),
-              //       trailing: Icon(
-              //         Icons.arrow_forward_ios,
-              //         color: _isDarkModeEnabled ? Colors.greenAccent : null,
-              //       ),
-              //       onTap: (){
-              //         print("open encryption and decryption screen");
-              //
-              //         Navigator.push(
-              //           context,
-              //           MaterialPageRoute(
-              //             builder: (context) => ActiveEncryptionScreen(
-              //               id: widget.id,
-              //             ),
-              //           ),
-              //         ).then((value) {
-              //           // _getItem();
-              //         });
-              //       },
-              //     )
-              // ),
               Visibility(
                 visible: true, //_hasPeerPublicKeys,
                 child:
@@ -924,12 +860,6 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                         color: _isDarkModeEnabled ? Colors.greenAccent : null,
                       ),
                       onTap: (){
-                        // print("import peer public keys...");
-
-                        /// Show Modal asking to scan or import
-                        ///
-
-
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -1374,36 +1304,23 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
 
 
   _pressedShareItem() {
-    // var qrItemString = "";
-
-    // if (_isSymmetricKey) {
      final qrItemString = _qrItem.toRawJson();
 
-     // final qrDigitalIdentity = DigitalIdentityCode(
-     //   pubKeySignature: hex.encode(_pubKeyExchange),
-     //   pubKeyExchange: hex.encode(_pubKeyExchange),
-     // );
-
      final qrDigitalIdentityB64 = DigitalIdentityCode(
+       keyId: _keyItem!.keyId,
        pubKeySignature: base64.encode(_pubKeyExchange),
        pubKeyExchange: base64.encode(_pubKeyExchange),
      );
-     // print("qrItemString: ${qrItemString}");
-    // } else {
-    //   qrItemString = qrPublicItem.toRawJson();
-    // }
-
-    // final qrItemString = qrItem.toRawJson();
+     // _logManager.logger.d("qrItemString: ${qrItemString}");
 
     if (qrItemString.length >= 1286) {
-      // print("too much data");
       _showErrorDialog("Too much data for QR code.\n\nLimit is 1286 bytes.");
     } else {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => QRCodeView(
-            data: qrDigitalIdentityB64.toRawJson(),//qrItemString,
+            data: qrDigitalIdentityB64.toRawJson(),
             isDarkModeEnabled: _isDarkModeEnabled,
             isEncrypted: false,
           ),

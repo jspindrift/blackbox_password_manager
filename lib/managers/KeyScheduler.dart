@@ -385,7 +385,6 @@ class KeyScheduler {
 
     final backupMac = await _cryptor.hmac256(backupItem.toRawJson());
     backupItem.mac = base64.encode(hex.decode(backupMac));
-
     // _logManager.logLongMessage("backupItemJson-long: ${backupItem.toRawJson().length}: ${backupItem.toRawJson()}");
 
     return backupItem;
@@ -684,7 +683,7 @@ class KeyScheduler {
     List<String> decryptedKeyExchangePubKey = [];
     List<String> pubKeyFingerprints = [];
 
-    Map<String, String> fingerprintKeyMap = {};
+    Map<String, String> fingerprintToPubKeyExchangeMap = {};
 
     try {
       if (identities != null) {
@@ -692,57 +691,49 @@ class KeyScheduler {
           return b.cdate.compareTo(a.cdate);
         });
         for (var id in identities) {
-          /// TODO: fix this
-          final x = await _cryptor.decrypt(id.pubKeySignature);
-          final y = await _cryptor.decrypt(id.pubKeyExchange);
-          // final z = await _cryptor.decrypt(id.intermediateKey);
-          decryptedKeyExchangePubKey.add(y);
-          final phash = _cryptor.sha256(y);
-          // print("phash identity: $phash");
+          final decryptedName = await _cryptor.decrypt(id.name);
+          final dKeySignature = await _cryptor.decrypt(id.pubKeySignature);
+          final dKeyExchange = await _cryptor.decrypt(id.pubKeyExchange);
+
+          decryptedKeyExchangePubKey.add(dKeyExchange);
+          final phash = _cryptor.sha256(dKeyExchange);
+
           pubKeyFingerprints.add(phash);
-          fingerprintKeyMap.addAll({phash: y});
+          fingerprintToPubKeyExchangeMap.addAll({phash: dKeyExchange});
 
-          // final reencryptedName =  await _cryptor.reKeyEncryption(id.name);
+          final reencryptedName =  await _cryptor.reKeyEncryption(false, decryptedName);
+          final reencryptedX = await _cryptor.reKeyEncryption(false, dKeySignature);
+          final reencryptedY = await _cryptor.reKeyEncryption(false, dKeyExchange);
 
-          final reencryptedX = await _cryptor.reKeyEncryption(false,
-              id.pubKeySignature);
-          final reencryptedY = await _cryptor.reKeyEncryption(false, id.pubKeyExchange);
-          // final reencryptedZ = await _cryptor.reKeyEncryption(false,
-          //     id.intermediateKey);
-
-          final timestamp = DateTime.now().toIso8601String();
+          /// TODO: check this encryption
+          final reencryptedKeyId = await _cryptor.reKeyEncryption(false, id.keyId);
 
           var rekeyedIdentity = DigitalIdentity(
             id: id.id,
-            keyId: id.keyId,
+            keyId: reencryptedKeyId,
             index: id.index,
             version: AppConstants.digitalIdentityVersion,
-            name: id.name,
+            name: reencryptedName,
             pubKeyExchange: reencryptedY,
             pubKeySignature: reencryptedX,
             mac: "",
             cdate: id.cdate,
-            mdate: timestamp,
+            mdate: DateTime.now().toIso8601String(),
           );
 
           final identityMac = await _cryptor.hmac256ReKey(rekeyedIdentity.toRawJson());
           rekeyedIdentity.mac = identityMac;
           // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
-
           _reKeyedIdentities.add(rekeyedIdentity);
         }
-        //
-        // _logManager.logger.d("pubKeyFingerprints: ${pubKeyFingerprints}");
-        // _logManager.logger.d("fingerprintKeyMap: ${fingerprintKeyMap}");
-        // _logManager.logger.d("peer identity decryptedKeyExchangePubKey: ${decryptedKeyExchangePubKey}");
       }
     } catch (e) {
       _logManager.logger.w("$e");
       return false;
     }
     _logManager.logger.d("pubKeyFingerprints: ${pubKeyFingerprints}");
-    _logManager.logger.d("fingerprintKeyMap: ${fingerprintKeyMap}");
+    _logManager.logger.d("fingerprintKeyMap: ${fingerprintToPubKeyExchangeMap}");
     _logManager.logger.d("peer identity decryptedKeyExchangePubKey: ${decryptedKeyExchangePubKey}");
 
     final recoveryKeys = await _keyManager.getRecoveryKeyItems();
@@ -752,13 +743,14 @@ class KeyScheduler {
       for (var rkey in recoveryKeys) {
         final fp = rkey.id;
         if (pubKeyFingerprints.contains(fp)) {
-          final identityPubKeyExchange = fingerprintKeyMap[fp];
+          final identityPubKeyExchange = fingerprintToPubKeyExchangeMap[fp];
           if (identityPubKeyExchange != null) {
 
             /// Re-Key Recovery Key
             final newRecoveryKey = await _reKeyRecoveryKey(
                 _mainPrivExchangeKeySeed,
                 identityPubKeyExchange,
+                rkey.keyId,
                 // rkey.index,
             );
 
@@ -768,7 +760,7 @@ class KeyScheduler {
               return false;
             }
           } else {
-            print("identityPubKeyExchange == null");
+            _logManager.logger.e("identityPubKeyExchange == null");
             return false;
           }
         }
@@ -780,7 +772,7 @@ class KeyScheduler {
 
 
   /// Used in above _reKeyIdentities() function
-  Future<RecoveryKey?> _reKeyRecoveryKey(String privMainSeedExchange, String pubKeyExchange) async {
+  Future<RecoveryKey?> _reKeyRecoveryKey(String privMainSeedExchange, String pubKeyExchange, String keyId) async {
     /// get my identity keys
     ///
     /// get this identity keys
@@ -799,7 +791,6 @@ class KeyScheduler {
       // print("pubBytes: $pubBytes");
 
       final bobPublicKey = SimplePublicKey(pubBytes, type: KeyPairType.x25519);
-      // print('bobKeyPair pubMade: ${bobPublicKey.bytes}');
       // print('bobKeyPair pubMade.Hex: ${hex.encode(bobPublicKey.bytes)}');
 
       final aliceSeed = privMainSeedExchange;
@@ -821,18 +812,18 @@ class KeyScheduler {
 
       final encryptedKeys = await _cryptor.encryptRecoveryKey(secretKeyData, rootKey);
 
-      // print("encrypted Keys: $encryptedKeys");
+      /// TODO: check this encryption
+      final encryptedKeyId = await _cryptor.reKeyEncryption(false, keyId);
 
       final pubKeyHash = _cryptor.sha256(pubKeyExchange);
       // _publicKeyHashes.add(pubKeyHash);
 
       final recoveryKey = RecoveryKey(
         id: pubKeyHash,
+        keyId: encryptedKeyId,
         data: encryptedKeys,
         cdate: DateTime.now().toIso8601String(),
       );
-
-      // print("recoveryKey: ${recoveryKey.toRawJson()}");
 
       return recoveryKey;
     } catch (e) {
