@@ -312,29 +312,30 @@ class _BackupsScreenState extends State<BackupsScreen> {
           // _logManager.logger.d("decryptedKeyNonce: ${decryptedKeyNonce}\n"
           //     "base64decoded keyNonce: ${hex.decode(decryptedKeyNonce)}");
 
-          final keyNonce = hex.decode(decryptedKeyNonce);
-          if (keyNonce.length != 16) {
-            return;
-          }
+          if (decryptedKeyNonce.isNotEmpty) {
+            final keyNonce = hex.decode(decryptedKeyNonce);
+            if (keyNonce.length != 16) {
+              return;
+            }
+            final ablock = keyNonce.sublist(8, 12);
+            final bblock = keyNonce.sublist(12, 16);
+            _logManager.logger.d("ablock: ${ablock}\n"
+                "bblock: ${bblock}");
 
-          final ablock = keyNonce.sublist(8, 12);
-          final bblock = keyNonce.sublist(12, 16);
-          _logManager.logger.d("ablock: ${ablock}\n"
-              "bblock: ${bblock}");
 
+            final rollBlockCount = int.parse(
+                hex.encode(ablock), radix: 16);
+            final encryptedBlockCount = int.parse(
+                hex.encode(bblock), radix: 16);
+            _logManager.logger.d(
+                "rollBlockCount: $rollBlockCount"
+                    "\nencryptedBlockCount: ${encryptedBlockCount}\n");
 
-          final rollBlockCount = int.parse(
-              hex.encode(ablock), radix: 16);
-          final encryptedBlockCount = int.parse(
-              hex.encode(bblock), radix: 16);
-          _logManager.logger.d(
-              "rollBlockCount: $rollBlockCount"
-                  "\nencryptedBlockCount: ${encryptedBlockCount}\n");
-
-          if (mounted) {
-            setState(() {
-              _localVaultNumEncryptedBlocks = encryptedBlockCount;
-            });
+            if (mounted) {
+              setState(() {
+                _localVaultNumEncryptedBlocks = encryptedBlockCount;
+              });
+            }
           }
         }
 
@@ -438,29 +439,31 @@ class _BackupsScreenState extends State<BackupsScreen> {
           // _logManager.logger.d("decryptedKeyNonce: ${decryptedKeyNonce}\n"
           //     "base64decoded keyNonce: ${hex.decode(decryptedKeyNonce)}");
 
-          final keyNonce = hex.decode(decryptedKeyNonce);
-          if (keyNonce.length != 16) {
-            return;
-          }
+          if (decryptedKeyNonce.isNotEmpty) {
+            final keyNonce = hex.decode(decryptedKeyNonce);
+            if (keyNonce.length != 16) {
+              return;
+            }
 
-          final ablock = keyNonce.sublist(8, 12);
-          final bblock = keyNonce.sublist(12, 16);
-          _logManager.logger.d("ablock: ${ablock}\n"
-              "bblock: ${bblock}");
+            final ablock = keyNonce.sublist(8, 12);
+            final bblock = keyNonce.sublist(12, 16);
+            _logManager.logger.d("ablock: ${ablock}\n"
+                "bblock: ${bblock}");
 
 
-          final rollBlockCount = int.parse(
-              hex.encode(ablock), radix: 16);
-          final encryptedBlockCount = int.parse(
-              hex.encode(bblock), radix: 16);
-          _logManager.logger.d(
-              "rollBlockCount: $rollBlockCount"
-                  "\nencryptedBlockCount: ${encryptedBlockCount}\n");
+            final rollBlockCount = int.parse(
+                hex.encode(ablock), radix: 16);
+            final encryptedBlockCount = int.parse(
+                hex.encode(bblock), radix: 16);
+            _logManager.logger.d(
+                "rollBlockCount: $rollBlockCount"
+                    "\nencryptedBlockCount: ${encryptedBlockCount}\n");
 
-          if (mounted) {
-            setState(() {
-              _localVaultNumEncryptedBlocks = encryptedBlockCount;
-            });
+            if (mounted) {
+              setState(() {
+                _localVaultNumEncryptedBlocks = encryptedBlockCount;
+              });
+            }
           }
         }
 
