@@ -308,9 +308,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
               .keyNonce)!;
 
           final decryptedKeyNonce = await _cryptor.decrypt(
-              encryptedKeyNonce); //.then((value) {
-          // _logManager.logger.d("decryptedKeyNonce: ${decryptedKeyNonce}\n"
-          //     "base64decoded keyNonce: ${hex.decode(decryptedKeyNonce)}");
+              encryptedKeyNonce);
 
           if (decryptedKeyNonce.isNotEmpty) {
             final keyNonce = hex.decode(decryptedKeyNonce);
@@ -435,9 +433,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
               .keyNonce)!;
 
           final decryptedKeyNonce = await _cryptor.decrypt(
-              encryptedKeyNonce); //.then((value) {
-          // _logManager.logger.d("decryptedKeyNonce: ${decryptedKeyNonce}\n"
-          //     "base64decoded keyNonce: ${hex.decode(decryptedKeyNonce)}");
+              encryptedKeyNonce);
 
           if (decryptedKeyNonce.isNotEmpty) {
             final keyNonce = hex.decode(decryptedKeyNonce);
@@ -1974,22 +1970,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
         return false;
       }
 
-      /// TODO: implement this outside of this function
-      _settingsManager.doEncryption(utf8.encode(tempDecryptedBlob).length);
-
-      final encryptedKey = EncryptedKey(
-        keyId: currentVault!.encryptedKey.keyId,
-        derivationAlgorithm: currentVault!.encryptedKey.derivationAlgorithm,
-        salt: currentVault!.encryptedKey.salt,
-        rounds: currentVault!.encryptedKey.rounds,
-        type: currentVault!.encryptedKey.type,
-        version: currentVault!.encryptedKey.version,
-        memoryPowerOf2: currentVault!.encryptedKey.memoryPowerOf2,
-        encryptionAlgorithm: currentVault!.encryptedKey.encryptionAlgorithm,
-        keyMaterial: currentVault!.encryptedKey.keyMaterial,
-        keyNonce: currentVault!.encryptedKey.keyNonce,
-        // mac: currentVault!.encryptedKey.mac,
-      );
 
       /// create iv
       var nonce = _cryptor.getNewNonce();
@@ -2009,17 +1989,34 @@ class _BackupsScreenState extends State<BackupsScreen> {
           "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${backupName}";
       // _logManager.logger.wtf("idStringUpdated: $idStringUpdated");
 
-      var encryptedBlobUpdated =
-          await _cryptor.encryptBackupVault(tempDecryptedBlob, nonce, idStringUpdated);
-
       final deviceDataString = _settingsManager.deviceManager.deviceData.toString();
       // _logManager.logger.d("deviceDataString: $deviceDataString");
 
+      /// TODO: implement this outside of this function
+      _settingsManager.doEncryption(utf8.encode(tempDecryptedBlob).length);
+
       _settingsManager.doEncryption(utf8.encode(deviceDataString).length);
       final encryptedDeviceData = await _cryptor.encrypt(deviceDataString);
-      // _logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
 
-      /// TODO: add in updatedBlob, remove blobDigest
+      final keyNonce = _convertEncryptedBlocksNonce();
+      final encryptedKeyNonce = await _cryptor.encrypt(keyNonce);
+
+      var encryptedBlobUpdated =
+      await _cryptor.encryptBackupVault(tempDecryptedBlob, nonce, idStringUpdated);
+
+      final encryptedKey = EncryptedKey(
+        keyId: currentVault!.encryptedKey.keyId,
+        derivationAlgorithm: currentVault!.encryptedKey.derivationAlgorithm,
+        salt: currentVault!.encryptedKey.salt,
+        rounds: currentVault!.encryptedKey.rounds,
+        type: currentVault!.encryptedKey.type,
+        version: currentVault!.encryptedKey.version,
+        memoryPowerOf2: currentVault!.encryptedKey.memoryPowerOf2,
+        encryptionAlgorithm: currentVault!.encryptedKey.encryptionAlgorithm,
+        keyMaterial: currentVault!.encryptedKey.keyMaterial,
+        keyNonce: encryptedKeyNonce,
+      );
+
       final backupItem = VaultItem(
         id: uuid,
         version: appVersion,
@@ -2105,24 +2102,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
         return false;
       }
 
-      /// TODO: figure out how to manage encryption blocks for external vaults
-      ///
-      _settingsManager.doEncryption(utf8.encode(tempDecryptedBlob).length);
-
-      final encryptedKey = EncryptedKey(
-        keyId: currentVault!.encryptedKey.keyId,
-        derivationAlgorithm: currentVault!.encryptedKey.derivationAlgorithm,
-        salt: currentVault!.encryptedKey.salt,
-        rounds: currentVault!.encryptedKey.rounds,
-        type: currentVault!.encryptedKey.type,
-        version: currentVault!.encryptedKey.version,
-        memoryPowerOf2: currentVault!.encryptedKey.memoryPowerOf2,
-        encryptionAlgorithm: currentVault!.encryptedKey.encryptionAlgorithm,
-        keyMaterial: currentVault!.encryptedKey.keyMaterial,
-        keyNonce: currentVault!.encryptedKey.keyNonce,
-        // mac: currentVault!.encryptedKey.mac,
-      );
-
       /// create iv
       var nonce = _cryptor.getNewNonce();
       nonce = nonce.sublist(0,8) + [0,0,0,1] + [0,0,0,0];
@@ -2138,8 +2117,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
       final idStringUpdated =
           "${uuid}-${_deviceId}-${appVersion}-${cdate}-${mdate}-${backupName}";
 
-      final encryptedBlobUpdated =
-      await _cryptor.encryptBackupVault(tempDecryptedBlob, nonce, idStringUpdated);
+      _settingsManager.doEncryption(utf8.encode(tempDecryptedBlob).length);
+
       // logger.d("encryptedBlobUpdated: $encryptedBlobUpdated");
 
       final deviceDataString = _settingsManager.deviceManager.deviceData.toString();
@@ -2147,6 +2126,26 @@ class _BackupsScreenState extends State<BackupsScreen> {
       _settingsManager.doEncryption(utf8.encode(deviceDataString).length);
       final encryptedDeviceData = await _cryptor.encrypt(deviceDataString);
       // _logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
+
+      final keyNonce = _convertEncryptedBlocksNonce();
+      final encryptedKeyNonce = await _cryptor.encrypt(keyNonce);
+
+      final encryptedBlobUpdated =
+      await _cryptor.encryptBackupVault(tempDecryptedBlob, nonce, idStringUpdated);
+
+
+      final encryptedKey = EncryptedKey(
+        keyId: currentVault!.encryptedKey.keyId,
+        derivationAlgorithm: currentVault!.encryptedKey.derivationAlgorithm,
+        salt: currentVault!.encryptedKey.salt,
+        rounds: currentVault!.encryptedKey.rounds,
+        type: currentVault!.encryptedKey.type,
+        version: currentVault!.encryptedKey.version,
+        memoryPowerOf2: currentVault!.encryptedKey.memoryPowerOf2,
+        encryptionAlgorithm: currentVault!.encryptedKey.encryptionAlgorithm,
+        keyMaterial: currentVault!.encryptedKey.keyMaterial,
+        keyNonce: encryptedKeyNonce,
+      );
 
       /// TODO: add in updatedBlob, remove blobDigest
       final backupItem = VaultItem(
