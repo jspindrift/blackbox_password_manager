@@ -1,4 +1,5 @@
-import '../models/GenericItem.dart';
+import 'dart:io';
+
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -8,6 +9,7 @@ import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/Cryptor.dart';
+import '../models/GenericItem.dart';
 import '../models/KeyItem.dart';
 import '../models/PasswordItem.dart';
 import '../models/NoteItem.dart';
@@ -177,9 +179,14 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],,
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? Colors.black87 : Colors.black87) : Colors.blue[50],//Colors.grey[100],,
       appBar: AppBar(
-        title: Text("Favorites"),
+        title: Text(
+          "Favorites",
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
+        ),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         actions: [

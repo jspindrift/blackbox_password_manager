@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:async';
+
 import 'package:dynamic_themes/dynamic_themes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pin_code_view/pin_code_view.dart';
 
+import '../helpers/AppConstants.dart';
 import '../managers/PostQuantumManager.dart';
 import '../managers/WOTSManager.dart';
 import '../managers/LogManager.dart';
@@ -71,9 +73,14 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
-        title: Text('Advanced Settings'),
+        title: Text(
+          "Advanced Settings",
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
+        ),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         leading: BackButton(
@@ -829,25 +836,42 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Delete Everything'),
+        title: Text(
+            "Delete Everything",
+        ),
         content: Text(
-            'Are you sure you want to delete everything?  This will delete everything except backups!'),
+            "Are you sure you want to delete everything?  This will delete everything except backups!",
+        ),
         actions: <Widget>[
-          OutlinedButton(
+          Padding(
+            padding: EdgeInsets.fromLTRB(4, 4, 4, 8),
+            child: ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: Text('Cancel'),
+            child: Text(
+                "Cancel",
+              style: TextStyle(
+                color: _isDarkModeEnabled ? Colors.white : Colors.black,
+              ),
+            ),
+            ),
           ),
-          OutlinedButton(
-            style: TextButton.styleFrom(
-              primary: Colors.redAccent,
+          ElevatedButton(
+            style: ButtonStyle(
+              backgroundColor:
+              MaterialStateProperty.all<Color>(Colors.redAccent),
             ),
             onPressed: () async {
               Navigator.of(context).pop();
               _showDoubleConfirmDeleteEverythingDialog();
             },
-            child: Text('Delete Everything'),
+            child: Text(
+              "Delete Everything",
+              style: TextStyle(
+                color: _isDarkModeEnabled ? Colors.white : Colors.black,
+              ),
+            ),
           ),
         ],
       ),
@@ -862,20 +886,34 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         content: Text(
             'Are you sure you want to delete all data?  Backups will not be deleted.'),
         actions: <Widget>[
-          OutlinedButton(
+          Padding(
+          padding: EdgeInsets.fromLTRB(4, 4, 4, 8),
+          child: ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: Text('Cancel'),
+            child: Text(
+              "Cancel",
+              style: TextStyle(
+                color: _isDarkModeEnabled ? Colors.white : Colors.black,
+              ),
+            ),
+            ),
           ),
-          OutlinedButton(
-            style: TextButton.styleFrom(
-              primary: Colors.redAccent,
+          ElevatedButton(
+            style: ButtonStyle(
+              backgroundColor:
+              MaterialStateProperty.all<Color>(Colors.redAccent),
             ),
             onPressed: () async {
               await _confirmedDeleteEverything();
             },
-            child: Text('Delete Everything'),
+            child: Text(
+              "Delete Everything",
+              style: TextStyle(
+                color: _isDarkModeEnabled ? Colors.white : Colors.black,
+              ),
+            ),
           ),
         ],
       ),

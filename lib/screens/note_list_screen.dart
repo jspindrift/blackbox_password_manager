@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:blackbox_password_manager/helpers/AppConstants.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter/material.dart';
 
@@ -81,9 +84,14 @@ class _NoteListScreenState extends State<NoteListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
-        title: Text('Notes'),
+        title: Text(
+            "Notes",
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
+        ),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         leading: BackButton(

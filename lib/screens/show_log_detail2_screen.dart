@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:async';
 import 'dart:math';
 
@@ -12,6 +13,8 @@ import '../managers/FileManager.dart';
 import '../managers/SettingsManager.dart';
 
 
+/// NOTE: Screen is currently not used
+///
 class ShowLogDetail2Screen extends StatefulWidget {
   const ShowLogDetail2Screen({
     Key? key,
@@ -206,9 +209,14 @@ class _ShowLogDetail2ScreenState extends State<ShowLogDetail2Screen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? Colors.black12 : Colors.black54) : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
-        title: Text("$_numberOfLines lines\n $logSizeString"),
+        title: Text(
+            "$_numberOfLines lines\n $logSizeString",
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
+        ),
         centerTitle: true,
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,

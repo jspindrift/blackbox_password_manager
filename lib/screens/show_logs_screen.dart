@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 
+import '../helpers/AppConstants.dart';
 import '../screens/show_log_detail_screen.dart';
 import '../managers/LogManager.dart';
 import '../managers/FileManager.dart';
@@ -210,7 +213,7 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,

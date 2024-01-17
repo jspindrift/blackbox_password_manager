@@ -205,9 +205,14 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54)) : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
-        title: Text('Recovery Mode'),
+        title: Text(
+          "Recovery Mode",
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
+        ),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         leading: BackButton(

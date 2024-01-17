@@ -1,6 +1,6 @@
+import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -727,9 +727,14 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
-        title: Text('Peer Public Key'),
+        title: Text(
+          "Peer Public Key",
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
+        ),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         leading: !_isEditing ? BackButton(
@@ -966,7 +971,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
               Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Text(
-                  "Public Address:\n${_peerAddr}",
+                  "Public Key:\n${hex.encode(_peerPublicKeyData)}\n\nPublic Address:\n${_peerAddr}",
                   style: TextStyle(
                     color: _isDarkModeEnabled ? Colors.white : null,
                     fontSize: 14,

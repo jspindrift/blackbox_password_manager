@@ -28,6 +28,7 @@ class KeyScheduler {
   }
 
   VaultItem? _currentDeviceVault;
+  EncryptedKey? _currentEncryptedKey;
   GenericItemList? _currentItemList;
   GenericItemList? _reKeyedItemList;
 
@@ -36,6 +37,8 @@ class KeyScheduler {
 
   List<DigitalIdentity>? _currentIdentites;
   List<DigitalIdentity> _reKeyedIdentities = [];
+
+  List<PreviousRootKey> _previousRootKeys = [];
 
   List<RecoveryKey>? _currentRecoveryKeys;   // different re-key function
   List<RecoveryKey> _reKeyedRecoveryKeys = [];
@@ -118,6 +121,7 @@ class KeyScheduler {
     }
 
     _currentDeviceVault = tempVaultItem;
+    _currentEncryptedKey = tempVaultItem.encryptedKey;
 
     final tempBackupItemString = tempVaultItem.toRawJson();
     // _logManager.logger.d("tempBackupItemString: $tempBackupItemString");
@@ -344,12 +348,7 @@ class KeyScheduler {
       encryptionAlgorithm: encryptionAlgo,
       keyMaterial: keyMaterial,
       keyNonce: encryptedKeyNonce,
-      // mac: "",
     );
-
-    /// TODO: replace this HMAC function to use derived auth key
-    // final keyParamsMac = await _cryptor.hmac256(encryptedKey.toRawJson());
-    // encryptedKey.mac = base64.encode(hex.decode(keyParamsMac));
 
     /// identities
     final identities = await _keyManager.getIdentities();
@@ -357,6 +356,7 @@ class KeyScheduler {
 
     /// Recovery Keys
     final recoveryKeys = await _keyManager.getRecoveryKeyItems();
+    final previousRootKeys = await _keyManager.getAllPreviousRootKeys();
 
     _currentRecoveryKeys = recoveryKeys;
 
@@ -374,6 +374,7 @@ class KeyScheduler {
       deviceId: deviceId,
       deviceData: encryptedDeviceData,
       encryptedKey: encryptedKey,
+      previousKeys: previousRootKeys,
       myIdentity: myId,
       identities: identities,
       recoveryKeys: recoveryKeys,
@@ -475,7 +476,6 @@ class KeyScheduler {
       return false;
     }
 
-    // _allItems = [];
     List<dynamic> _reKeyedItems = [];
     _reKeyedItemList = GenericItemList(list: []);
 
@@ -520,24 +520,21 @@ class KeyScheduler {
 
             List<PreviousPassword> newPreviousPasswordList = [];
             for (var pp in passwordItem.previousPasswords) {
-              /// TODO: BIP39 check and conversion here
-              ///
-              var decryptedPassword = "";
-              if (passwordItem.isBip39) {
+              var decryptedPreviousPassword = "";
+              if (pp.isBip39) {
                 final seed = _cryptor.mnemonicToEntropy(pp.password);
                 /// Encrypt seed here
-                decryptedPassword = await _cryptor.decrypt(seed);
+                decryptedPreviousPassword = await _cryptor.decrypt(seed);
               } else {
                 /// Encrypt password here
-                decryptedPassword = await _cryptor.decrypt(pp.password);
+                decryptedPreviousPassword = await _cryptor.decrypt(pp.password);
               }
 
-
-              final reecryptedPreviousPassword = await _cryptor.reKeyEncryption(false, decryptedPassword);
+              final reecryptedPreviousPassword = await _cryptor.reKeyEncryption(false, decryptedPreviousPassword);
               final newPp = PreviousPassword(
                   password: reecryptedPreviousPassword,
                   isBip39: pp.isBip39,
-                cdate: pp.cdate,
+                  cdate: pp.cdate,
               );
 
               newPreviousPasswordList.add(newPp);
@@ -547,10 +544,11 @@ class KeyScheduler {
 
             passwordItem.mac = "";
 
-            /// compute mac of JSON object with empty mac
+            /// compute MAC of JSON object with empty mac
             final computedMac = await _cryptor.hmac256(passwordItem.toRawJson());
             final newMac = base64.encode(hex.decode(computedMac));
 
+            /// set object MAC
             passwordItem.mac = newMac;
 
             _reKeyedItems.add(passwordItem);
@@ -558,12 +556,60 @@ class KeyScheduler {
             final gitem = GenericItem(type: "password", data: passwordItem.toRawJson());
 
             genericList.add(gitem);
-
           } else {
             /// TODO: can't re-key geo encrypted items!!!
             ///
             _logManager.logger.w("geo lock needs attention");
-            return false;
+
+            /// note the keyId for the item
+            final passwordItemKeyId = passwordItem.keyId;
+            _logManager.logger.wtf("passwordItemKeyId: $passwordItemKeyId");
+
+            if (_currentEncryptedKey != null) {
+              final rootKeyId = _currentEncryptedKey?.keyId;
+              _logManager.logger.wtf("rootKeyId: $rootKeyId");
+
+              if (rootKeyId != null) {
+                final prevRootKey = utf8.decode(_cryptor.aesRootSecretKeyBytes);
+                final reecryptedPreviousRootKey = await _cryptor.reKeyEncryption(false, prevRootKey);
+
+                PreviousRootKey prk = PreviousRootKey(
+                    keyId: rootKeyId, keyData: reecryptedPreviousRootKey);
+
+                /// check to see if we already have the previous root key in list
+                var shouldAddRootKey = true;
+                for (var tprk in _previousRootKeys) {
+                  _logManager.logger.wtf("_previousRootKeys tprk: ${tprk.toRawJson()}");
+
+                  if (tprk.keyId == rootKeyId) {
+                    shouldAddRootKey = false;
+                    break;
+                  }
+                }
+
+                /// add previous root key to list if not there
+                if (shouldAddRootKey) {
+                  _previousRootKeys.add(prk);
+                }
+
+
+                final previousRootKeyString = prk.toRawJson();
+
+                /// save encrypted previous root key object
+                final status = await _keyManager.savePreviousRootKey(rootKeyId, previousRootKeyString);
+
+                /// save password with same data (not re-keyed)
+                if (status) {
+                  final gitem = GenericItem(type: "password", data: passwordItem.toRawJson());
+
+                  genericList.add(gitem);
+                }
+              } else {
+                return false;
+              }
+            } else {
+              return false;
+            }
           }
 
         } else {

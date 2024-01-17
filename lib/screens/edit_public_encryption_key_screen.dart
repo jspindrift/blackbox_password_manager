@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:argon2/argon2.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
@@ -330,11 +332,14 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text(
-            'Key Pair',
+          "Key Pair",
           textAlign: TextAlign.center,
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
         ),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
@@ -566,11 +571,10 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                 child:  Padding(
                   padding: EdgeInsets.fromLTRB(24, 8, 24, 16),
                   child: Text(
-                    "\nAddress: $_pubKeyAddress\n\nPublic Key:\n${hex.encode(_pubKeyExchange)}",
-                    // "Public Key:\n${hex.encode(_peerPublicKeyData)}\n\nPublic Mnemonic:\n${_publicKeyMnemonic}",
+                    "Public Key:\n${hex.encode(_pubKeyExchange)}\n\nAddress: $_pubKeyAddress",
                     style: TextStyle(
                       color: _isDarkModeEnabled ? Colors.white : null,
-                      fontSize: 16,
+                      fontSize: 14,
                     ),
                   ),
                 ),),

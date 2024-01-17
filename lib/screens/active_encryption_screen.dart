@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 
@@ -376,9 +377,14 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white70,//Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
-        title: Text('Message Encryption'),
+        title: Text(
+          "Message Encryption",
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
+        ),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         leading: CloseButton(
@@ -396,7 +402,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
               Visibility(
                 visible: !_isRootSymmetric,
                 child: Padding(
-                  padding: EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(8.0),
                   child:Text(
                     "From: ${_mainKeyName}", //"${hex.encode(_mainPublicKey).substring(0, (_mainPublicKey.length/2).toInt())}...",
                     overflow: TextOverflow.fade,
@@ -414,7 +420,9 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
               padding: EdgeInsets.all(4.0),
               child: Text(
               // textAlign: TextAlign.start,
-              "Addr: ${_fromAddr} ", //"${hex.encode(_mainPublicKey).substring(0, (_mainPublicKey.length/2).toInt())}...",
+              //   "${_fromAddr} ",
+                "Address:\n${_fromAddr} ", //"${hex.encode(_mainPublicKey).substring(0, (_mainPublicKey.length/2).toInt())}...",
+                textAlign: TextAlign.center,
                 overflow: TextOverflow.fade,
                 maxLines: 3,
                 style: TextStyle(
@@ -453,7 +461,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                 child:Padding(
                   padding: EdgeInsets.all(4.0),
                   child:Text(
-                  "Addr: ${_toAddr} ", //"${hex.encode(_mainPublicKey).substring(0, (_mainPublicKey.length/2).toInt())}...",
+                  "Address:\n${_toAddr} ", //"${hex.encode(_mainPublicKey).substring(0, (_mainPublicKey.length/2).toInt())}...",
+                  textAlign: TextAlign.center,
                   overflow: TextOverflow.fade,
                   maxLines: 3,
                   style: TextStyle(
@@ -485,7 +494,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                           enabled: true,
                           readOnly: false,
                           minLines: 4,
-                          maxLines: 10,
+                          maxLines: 8,
                           decoration: InputDecoration(
                             labelText: 'Message',
                             hintStyle: TextStyle(

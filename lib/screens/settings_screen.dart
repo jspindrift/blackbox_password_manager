@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
+import '../helpers/AppConstants.dart';
 import '../helpers/InactivityTimer.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/BiometricManager.dart';
@@ -220,10 +223,15 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? Colors.black87 : (AppConstants.useMaterial3 ? Colors.black87 : Colors.black87)) : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
-        title: Text('Settings'),
+        title: Text(
+            'Settings',
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
+        ),
         automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
@@ -235,16 +243,16 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Center(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      side: _isDarkModeEnabled
-                          ? BorderSide(color: Colors.greenAccent)
+                  child: ElevatedButton(
+                    style: ButtonStyle(
+                      backgroundColor: _isDarkModeEnabled
+                          ? MaterialStateProperty.all<Color>(Colors.greenAccent)
                           : null,
                     ),
                     child: Text(
                       'Log Out',
                       style: _isDarkModeEnabled
-                          ? TextStyle(color: Colors.greenAccent, fontSize: 16)
+                          ? TextStyle(color: Colors.black, fontSize: 16)
                           : null,
                     ),
                     onPressed: () {
@@ -491,7 +499,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 padding: EdgeInsets.all(0.0),
                 child: Card(
                   elevation: 0,
-                  color: _isDarkModeEnabled ? Colors.black : Colors.white,
+                  color: _isDarkModeEnabled ? Colors.black54 : Colors.white,
                   child: Container(
                     height: 70,
                     child: ListTile(
@@ -607,7 +615,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 padding: EdgeInsets.all(0.0),
                 child: Card(
                   elevation: 1,
-                  color: _isDarkModeEnabled ? Colors.black54 : Colors.white,
+                  color: _isDarkModeEnabled ? Colors.black87 : Colors.white,
                   child: ListTile(
                     enabled: true,
                     title: Text(
@@ -661,7 +669,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               Padding(
                 padding: EdgeInsets.all(0.0),
                 child: Card(
-                  color: _isDarkModeEnabled ? Colors.black54 : Colors.white,
+                  color: _isDarkModeEnabled ? Colors.black87 : Colors.white,
                   elevation: 1,
                   child: ListTile(
                     enabled: true,
@@ -877,11 +885,16 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         title: Text("Log Out"),
         content: Text("Are you sure you want to Log Out?"),
         actions: <Widget>[
-          ElevatedButton(
+            ElevatedButton(
             onPressed: () {
               Navigator.of(ctx).pop();
             },
-            child: Text("Cancel"),
+            child: Text(
+              "Cancel",
+              style: TextStyle(
+                color: _isDarkModeEnabled ? Colors.white : Colors.black,
+              ),
+            ),
           ),
           ElevatedButton(
             style: ButtonStyle(
@@ -900,7 +913,12 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               //   return route.isFirst;
               // } );
             },
-            child: Text("Log Out"),
+            child: Text(
+                "Log Out",
+              style: TextStyle(
+                color: _isDarkModeEnabled ? Colors.white : Colors.black,
+              ),
+            ),
           ),
         ],
       ),

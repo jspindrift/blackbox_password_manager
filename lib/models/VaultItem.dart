@@ -30,7 +30,6 @@ class EncryptedKey {
   String encryptionAlgorithm; // encryption algo used on master root key
   String keyMaterial; // master root key data
   String keyNonce; // encrypted nonce that tracks number of encrypted blocks used by master encryption key
-  // String mac;  // mac of data model with empty mac string (using own auth key)
 
   EncryptedKey({
     required this.keyId,
@@ -43,7 +42,6 @@ class EncryptedKey {
     required this.encryptionAlgorithm,
     required this.keyMaterial,
     required this.keyNonce,
-    // required this.mac,
   });
 
   factory EncryptedKey.fromRawJson(String str) =>
@@ -63,7 +61,6 @@ class EncryptedKey {
       encryptionAlgorithm: json['encryptionAlgorithm'],
       keyMaterial: json['keyMaterial'],
       keyNonce: json['keyNonce'],
-      // mac: json['mac'],
     );
   }
 
@@ -79,7 +76,6 @@ class EncryptedKey {
       "encryptionAlgorithm": encryptionAlgorithm,
       "keyMaterial": keyMaterial,
       "keyNonce": keyNonce,
-      // "mac": mac,
     };
 
     return jsonMap;
@@ -95,6 +91,7 @@ class VaultItem {
   String deviceId;            // device identifier (id for vendor)
   String? deviceData;         // device information
   EncryptedKey encryptedKey;  // master key information
+  List<PreviousRootKey>? previousKeys; // list of previous root keys (saved for geo encrypted items to re-key)
   int numItems;               // number of passwords, notes, and keys
 
   String blob;                // encrypted GenericItemList JSON string base64 encoded
@@ -115,12 +112,12 @@ class VaultItem {
     required this.deviceId,
     required this.deviceData,
     required this.encryptedKey,
+    required this.previousKeys,
     required this.numItems,
     required this.blob,
     required this.myIdentity,
     required this.identities,
     required this.recoveryKeys,
-    // required this.vaultData,
     required this.mac,
     required this.cdate,
     required this.mdate,
@@ -147,6 +144,10 @@ class VaultItem {
     "deviceData": deviceData!,
   };
 
+  Map<String, dynamic> toJsonPreviousKeys() => {
+    "previousKeys": previousKeys!,
+  };
+
   factory VaultItem.fromJson(Map<String, dynamic> json) {
     return VaultItem(
       id: json['id'],
@@ -155,6 +156,10 @@ class VaultItem {
       deviceId: json['deviceId'],
         deviceData: json["deviceData"] ?? "",
       encryptedKey: EncryptedKey.fromJson(json['encryptedKey']),
+      previousKeys: json["previousKeys"] == null
+          ? null
+          : List<PreviousRootKey>.from(
+          json["previousKeys"].map((x) => PreviousRootKey.fromJson(x))),
       numItems: json['numItems'],
       blob: json['blob'],
       myIdentity: json["myIdentity"] == null
@@ -168,7 +173,6 @@ class VaultItem {
           ? null
           : List<RecoveryKey>.from(
               json["recoveryKeys"].map((x) => RecoveryKey.fromJson(x))),
-      // vaultData: json['vaultData'],
       mac: json['mac'],
       cdate: json['cdate'],
       mdate: json['mdate'],
@@ -184,7 +188,6 @@ class VaultItem {
       "encryptedKey": encryptedKey,
       "numItems": numItems,
       "blob": blob,
-      // "vaultData": vaultData,
       "mac": mac,
       "cdate": cdate,
       "mdate": mdate,
@@ -204,6 +207,10 @@ class VaultItem {
 
     if (deviceData != null) {
       jsonMap.addAll(toJsonDeviceData());
+    }
+
+    if (previousKeys != null) {
+      jsonMap.addAll(toJsonPreviousKeys());
     }
 
     return jsonMap;
@@ -252,52 +259,36 @@ class RecoveryKey {
 
 }
 
+class PreviousRootKey {
+  String keyId;  // keyId of root key
+  String keyData;    // encrypted key data (encrypted with current root key)
 
-class Vault {
-  List<RecoveryKey>? recoveryKeys;  // encrypted master key with recovery keys from identities
-  MyDigitalIdentity? myIdentity;    // my key pair info - encrypted
-  String blob;                      // encrypted GenericItemList JSON string base64 encoded
-  List<DigitalIdentity>? identities; // recovery identity public key info - encrypted
-
-  Vault({
-    required this.blob,
-    required this.myIdentity,
-    required this.identities,
-    required this.recoveryKeys,
+  PreviousRootKey({
+    required this.keyId,
+    required this.keyData,
   });
 
-  factory Vault.fromRawJson(String str) =>
-      Vault.fromJson(json.decode(str));
+  factory PreviousRootKey.fromRawJson(String str) =>
+      PreviousRootKey.fromJson(json.decode(str));
 
   String toRawJson() => json.encode(toJson());
 
 
-  factory Vault.fromJson(Map<String, dynamic> json) {
-    return Vault(
-      blob: json['blob'],
-      myIdentity: json["myIdentity"] == null
-          ? null
-          : MyDigitalIdentity.fromJson(json["myIdentity"]),
-      identities: json["identities"] == null
-          ? null
-          : List<DigitalIdentity>.from(
-          json["identities"].map((x) => DigitalIdentity.fromJson(x))),
-      recoveryKeys: json["recoveryKeys"] == null
-          ? null
-          : List<RecoveryKey>.from(
-          json["recoveryKeys"].map((x) => RecoveryKey.fromJson(x))),
+  factory PreviousRootKey.fromJson(Map<String, dynamic> json) {
+    return PreviousRootKey(
+      keyId: json['keyId'],
+      keyData: json["keyData"],
     );
   }
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
-      "blob": blob,
-      "myIdentity": myIdentity,
-      "identities": identities,
-      "recoveryKeys": recoveryKeys,
+      "keyId": keyId,
+      "keyData": keyData,
     };
 
     return jsonMap;
   }
 
 }
+

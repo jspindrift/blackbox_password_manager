@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../helpers/AppConstants.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 
@@ -39,9 +42,14 @@ class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white70, //Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.white70, //Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
-        title: Text('Block #${widget.block.blockNumber + 1}'),
+        title: Text(
+            "Block #${widget.block.blockNumber + 1}",
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
+        ),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         leading: CloseButton(

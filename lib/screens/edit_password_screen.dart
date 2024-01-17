@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
 
@@ -115,6 +116,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
   bool _isDecryptingGeoLock = false;
   bool _hasDecryptedGeoLock = false;
   bool _isOutOfRange = false;
+  bool _needsToReKey = false;
 
   double _passwordStrength = 0.0;
   double _randomPasswordStrength = 0.0;
@@ -307,7 +309,13 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         return;
       }
 
-      _logManager.logger.d("kid: ${_passwordItem?.keyId}");
+      _logManager.logger.d("_passwordItem keyId: ${_passwordItem?.keyId}\nencryptedKey keyId: ${_keyManager.keyId}");
+
+      if (_passwordItem?.keyId != _keyManager.keyId) {
+        _logManager.logger.w("_passwordItem needs previous root key to decrypt");
+        _needsToReKey = true;
+        return;
+      }
 
       final macCheck = await _passwordItem?.checkMAC() ?? false;
       if (!macCheck) {
@@ -626,9 +634,14 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
-        title: Text('Password'),
+        title: Text(
+          "Password",
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
+        ),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         leading: !_isEditing ? BackButton(
@@ -694,6 +707,29 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                         _isEditing = !_isEditing;
                       });
                     }
+                  : null,
+            ),
+          if (_needsToReKey)
+            TextButton(
+              child: Text(
+                "ReKey",
+                style: TextStyle(
+                  color: _isDarkModeEnabled
+                      ? (_fieldsAreValid ? Colors.greenAccent : Colors.grey)
+                      : (_fieldsAreValid ? Colors.white : Colors.grey),
+                  fontSize: 18,
+                ),
+              ),
+              onPressed: !_isOutOfRange
+                  ? () async {
+                setState(() {
+                  _isEditing = !_isEditing;
+                });
+
+                /// TODO: do re-key function here
+                ///
+
+              }
                   : null,
             ),
         ],
@@ -1318,16 +1354,14 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                       value: _isGeoLockedEnabled,
                       onChanged: (!_isOutOfRange)
                           ? (value) {
-                              //(!_isInitiallyGeoLocked && !_isOutOfRange) ? (value) {
-                              /// change item's encryption based on geolock value
-                              // print("geoLock: $value");
+                              if (_isLocationSettingsEnabled) {
+                                setState(() {
+                                  _isEditing = true;
+                                  _isGeoLockedEnabled = value;
+                                });
 
-                              setState(() {
-                                _isEditing = true;
-                                _isGeoLockedEnabled = value;
-                              });
-
-                              _validateFields();
+                                _validateFields();
+                              }
                             }
                           : null,
                     ),

@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:argon2/argon2.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
@@ -15,9 +17,7 @@ import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/Cryptor.dart';
-
 import '../models/GenericItem.dart';
-
 import 'home_tab_screen.dart';
 
 
@@ -227,9 +227,14 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
-        title: Text('Asymmetric Key Pair'),
+        title: Text(
+            "Add Key Pair",
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
+        ),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         leading: BackButton(

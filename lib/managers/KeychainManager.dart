@@ -304,8 +304,26 @@ class KeychainManager {
         sharedPreferencesName: 'recovery',
       );
 
+  /// Previous Root Key Options
+  IOSOptions _getIOSOptionsPreviousRootKey() => IOSOptions(
+    accountName: 'com.blackboxsystems.previousRootKey',
+    synchronizable: false,
+    accessibility: KeychainAccessibility.first_unlock_this_device,
+  );
 
-  /// Password Item Options
+  AndroidOptions _getAndroidOptionsPreviousRootKey()  => const AndroidOptions(
+    encryptedSharedPreferences: true,
+    preferencesKeyPrefix: 'com.blackboxsystems.previousRootKey',
+    sharedPreferencesName: 'previousRootKey',
+  );
+
+  MacOsOptions _getMacOptionsPreviousRootKey() => MacOsOptions(
+    accountName: 'com.blackboxsystems.previousRootKey',
+    synchronizable: false,
+    accessibility: KeychainAccessibility.first_unlock_this_device,
+  );
+
+  /// Vault Item Options
   ///
   IOSOptions _getIOSOptionsItem() => IOSOptions(
         accountName: 'com.blackboxsystems.item',
@@ -743,6 +761,165 @@ class KeychainManager {
       // print('error writing data');
       logManager.log("KeychainManager", "deleteAllPeerIdentities", "failure: $e");
       logManager.logger.w("Keychain deleteAllPeerIdentities failure: $e");
+      return false;
+    }
+  }
+
+
+  /// vault previous root key
+  ///
+  Future<bool> savePreviousRootKey(String keyId, String previousKey) async {
+    logger.d("savePreviousRootKey: $keyId");
+    try {
+      /// NOTE: write it twice just in case...bug observed in Android simulator
+      await _storage.write(
+        key: keyId,
+        value: previousKey,
+        iOptions: _getIOSOptionsPreviousRootKey(),
+        aOptions: _getAndroidOptionsPreviousRootKey(),
+        mOptions: _getMacOptionsPreviousRootKey(),
+      );
+
+      await _storage.write(
+        key: keyId,
+        value: previousKey,
+        iOptions: _getIOSOptionsPreviousRootKey(),
+        aOptions: _getAndroidOptionsPreviousRootKey(),
+        mOptions: _getMacOptionsPreviousRootKey(),
+      );
+
+      var keyStorage = await _storage.readAll(
+        iOptions: _getIOSOptionsPreviousRootKey(),
+        aOptions: _getAndroidOptionsPreviousRootKey(),
+        mOptions: _getMacOptionsPreviousRootKey(),
+      );
+
+      var tries = 0;
+
+      if (keyStorage.entries.length == 0) {
+        logger.w("Creating savePreviousRootKey - write again");
+
+        while (keyStorage.entries.length == 0) {
+          await _storage.write(
+            key: keyId,
+            value: previousKey,
+            iOptions: _getIOSOptionsPreviousRootKey(),
+            aOptions: _getAndroidOptionsPreviousRootKey(),
+            mOptions: _getMacOptionsPreviousRootKey(),
+          );
+
+          keyStorage = await _storage.readAll(
+            iOptions: _getIOSOptionsPreviousRootKey(),
+            aOptions: _getAndroidOptionsPreviousRootKey(),
+            mOptions: _getMacOptionsPreviousRootKey(),
+          );
+
+          tries += 1;
+
+          if (tries > 100) {
+            logger.w("EXHAUSTED TRIES Saving savePreviousRootKey");
+            return false;
+          }
+        }
+
+        return true;
+      }
+
+      logManager.log("KeychainManager", "savePreviousRootKey", "success: $vaultId");
+      logManager.logger
+          .d("KeychainManager - savePreviousRootKey: success: $vaultId");
+      return true;
+    } catch (e) {
+      logManager.log("KeychainManager", "savePreviousRootKey", "failure: $e");
+      logManager.logger.w("Keychain savePreviousRootKey failure: $e");
+      return false;
+    }
+  }
+
+  Future<PreviousRootKey?> getPreviousRootKey(String keyId) async {
+    logger.d("getPreviousRootKey: $keyId");
+    try {
+      final keyData = await _storage.read(
+        key: keyId,
+        iOptions: _getIOSOptionsPreviousRootKey(),
+        aOptions: _getAndroidOptionsPreviousRootKey(),
+        mOptions: _getMacOptionsPreviousRootKey(),
+      );
+
+      if (keyData != null) {
+        logManager.log("KeychainManager", "getItem", "success: $keyId");
+        final previousKey = PreviousRootKey.fromRawJson(keyData);
+        return previousKey;
+      }
+
+      return null;
+    } catch (e) {
+      logger.w("Exception: $e");
+      return null;
+    }
+  }
+
+  Future<List<PreviousRootKey>?> getAllPreviousRootKeys() async {
+    logger.d("getAllPreviousRootKeys");
+    try {
+      final previousKeys = await _storage.readAll(
+        iOptions: _getIOSOptionsPreviousRootKey(),
+        aOptions: _getAndroidOptionsPreviousRootKey(),
+        mOptions: _getMacOptionsPreviousRootKey(),
+      );
+
+      if (previousKeys != null) {
+        List<PreviousRootKey> previousRootKeys = [];
+        for (var key in previousKeys.entries) {
+          final prevKey = PreviousRootKey.fromRawJson(key.value);
+          previousRootKeys.add(prevKey);
+        }
+
+        if (previousRootKeys != null) {
+          logManager.log("KeychainManager", "getAllPreviousRootKeys", "success");
+          return previousRootKeys;
+        } else {
+          logManager.log("KeychainManager", "getAllPreviousRootKeys", "failure");
+          logManager.logger.w("Keychain getAllPreviousRootKeys failure");
+          return null;
+        }
+      }
+    } catch (e) {
+      logger.w("Exception: $e");
+      return null;
+    }
+  }
+
+  Future<bool> deletePreviousRootKey(String keyId) async {
+    logger.d("deletePreviousRootKey: $keyId");
+    try {
+
+      await _storage.delete(
+        key: keyId,
+        iOptions: _getIOSOptionsPreviousRootKey(),
+        aOptions: _getAndroidOptionsPreviousRootKey(),
+        mOptions: _getMacOptionsPreviousRootKey(),
+      );
+
+      return true;
+    } catch (e) {
+      logger.w("Exception: $e");
+      return false;
+    }
+  }
+
+  Future<bool> deleteAllPreviousRootKeys() async {
+    logger.d("deleteAllPreviousRootKeys");
+    try {
+      await _storage.deleteAll(
+        iOptions: _getIOSOptionsPreviousRootKey(),
+        aOptions: _getAndroidOptionsPreviousRootKey(),
+        mOptions: _getMacOptionsPreviousRootKey(),
+      );
+
+      return true;
+    } catch (e) {
+      logger.w("Exception: $e");
       return false;
     }
   }
@@ -1774,6 +1951,11 @@ class KeychainManager {
         aOptions: _getAndroidOptionsBiometric(),
         mOptions: _getMacOptionsBiometric(),
       );
+      await _storage.deleteAll(
+        iOptions: _getIOSOptionsPreviousRootKey(),
+        aOptions: _getAndroidOptionsPreviousRootKey(),
+        mOptions: _getMacOptionsPreviousRootKey(),
+      );
 
       _salt = '';
       _encryptedKeyMaterial = '';
@@ -1827,6 +2009,11 @@ class KeychainManager {
         aOptions: _getAndroidOptionsBiometric(),
         mOptions: _getMacOptionsBiometric(),
       );
+      await _storage.deleteAll(
+        iOptions: _getIOSOptionsPreviousRootKey(),
+        aOptions: _getAndroidOptionsPreviousRootKey(),
+        mOptions: _getMacOptionsPreviousRootKey(),
+      );
 
       _salt = '';
       _encryptedKeyMaterial = '';
@@ -1878,6 +2065,11 @@ class KeychainManager {
         iOptions: _getIOSOptionsBiometric(),
         aOptions: _getAndroidOptionsBiometric(),
         mOptions: _getMacOptionsBiometric(),
+      );
+      await _storage.deleteAll(
+        iOptions: _getIOSOptionsPreviousRootKey(),
+        aOptions: _getAndroidOptionsPreviousRootKey(),
+        mOptions: _getMacOptionsPreviousRootKey(),
       );
 
       _salt = "";

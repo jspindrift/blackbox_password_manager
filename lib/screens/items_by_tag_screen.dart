@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import "package:bip39/bip39.dart" as bip39;
 
+import '../helpers/AppConstants.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
@@ -227,9 +230,14 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : Colors.black54) : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
-        title: Text("${widget.tag}"),
+        title: Text(
+            "${widget.tag}",
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
+        ),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         leading: BackButton(

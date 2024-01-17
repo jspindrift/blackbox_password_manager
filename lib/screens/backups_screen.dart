@@ -57,8 +57,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
   List<bool> _matchingDeviceList = [];
 
   int _wrongPasswordCount = 0;
-  bool _isAuthenticating = false;
-  bool _reKeyInProgress = false;
+  // bool _isAuthenticating = false;
+  // bool _reKeyInProgress = false;
 
   VaultItem? _externalVaultItem; // SD card vault on Android
   int _externalVaultItemSize = 0;
@@ -92,8 +92,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
   String _localVaultHash = "";
 
   bool _shouldHideRecoveryPasswordField = true;
-
-  bool _isInitState = true;
 
   List<int> _backupFileSizes = [];
 
@@ -150,7 +148,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
       });
     });
 
-    _isInitState = false;
     _localVaultItem = null;
     _externalVaultItem = null;
 
@@ -248,6 +245,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
           final isLocalVaultNonceValid = _checkBackupNonceValidity(
               _localVaultItem!);
           _shouldReKeyLocalVault = !isLocalVaultNonceValid;
+
+          /// TODO: override for re-key testing
           // _shouldReKeyLocalVault = true;
 
           _localVaultNonceSequenceNumber =
@@ -861,9 +860,14 @@ class _BackupsScreenState extends State<BackupsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.blue[50], //Colors.grey[100],
       appBar: AppBar(
-        title: Text('Backups'),
+        title: Text(
+          "Backups",
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
+        ),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         leading: BackButton(
@@ -986,6 +990,9 @@ class _BackupsScreenState extends State<BackupsScreen> {
               ),
             ),
           ),
+          // Divider(
+          //   color: _isDarkModeEnabled ? Colors.greenAccent : null,
+          // ),
           Visibility(
           visible: Platform.isAndroid && !_loginScreenFlow,
             child: ListTile(
@@ -1359,10 +1366,13 @@ class _BackupsScreenState extends State<BackupsScreen> {
         _logManager.logger.d("BackupsScreen-create backup");
 
         var currentVault = _localVaultItem;
-
+        List<PreviousRootKey> previousRootKeys = [];
         if (currentVault != null) {
           cdate = currentVault.cdate;
           // keyId = currentVault.encryptedKey.keyId;
+          if (currentVault.previousKeys != null) {
+            previousRootKeys = currentVault.previousKeys!;
+          }
         }
 
         var keyId = _keyManager.keyId;
@@ -1441,11 +1451,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
           keyNonce: encryptedKeyNonce,
         );
 
-        // /// TODO: replace this HMAC function to use derived auth key
-        // final keyParamsMac = await _cryptor.hmac256(encryptedKey.toRawJson());
-        // encryptedKey.mac = base64.encode(hex.decode(keyParamsMac));
-        // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
-
         var backupItem = VaultItem(
           id: uuid,
           version: appVersion,
@@ -1453,6 +1458,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
           deviceId: _deviceId,
           deviceData: encryptedDeviceData,
           encryptedKey: encryptedKey,
+          previousKeys: previousRootKeys,
           myIdentity: myId,
           identities: identities,
           recoveryKeys: recoveryKeys,
@@ -1512,15 +1518,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
     var localKeyId = _keyManager.keyId;
     var keyId = localKeyId;
 
-    // if (_externalVaultItem != null &&
-    //     _externalVaultItem?.id == _keyManager.vaultId &&
-    //     _hasMatchingExternalVaultKeyData) {
-    //
-    //   backupName = (_externalVaultItem?.name)!;
-    //   cdate = (_externalVaultItem?.cdate)!;
-    //   keyId = _externalVaultItem?.encryptedKey.keyId ?? "";
-    // }
-
     if (localKeyId != keyId) {
       logger.wtf("keyId != localKeyId");
       return false;
@@ -1534,11 +1531,16 @@ class _BackupsScreenState extends State<BackupsScreen> {
         var currentVault = _externalVaultItem;
         cdate = (_externalVaultItem?.cdate)!;
         keyId = _externalVaultItem?.encryptedKey.keyId ?? "";
+        List<PreviousRootKey> previousRootKeys = [];
 
         if (currentVault != null) {
           cdate = currentVault.cdate;
           if (backupName.isEmpty) {
             backupName = currentVault.name;
+          }
+
+          if (currentVault.previousKeys != null) {
+            previousRootKeys = currentVault.previousKeys!;
           }
         }
 
@@ -1610,13 +1612,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
           encryptionAlgorithm: encryptionAlgo,
           keyMaterial: keyMaterial,
           keyNonce: encryptedKeyNonce,
-          // mac: "",
         );
-
-        /// TODO: replace this HMAC function to use derived auth key
-        // final keyParamsMac = await _cryptor.hmac256(encryptedKey.toRawJson());
-        // encryptedKey.mac = base64.encode(hex.decode(keyParamsMac));
-        // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
 
         final backupItem = VaultItem(
           id: uuid,
@@ -1625,6 +1621,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
           deviceId: _deviceId,
           deviceData: encryptedDeviceData,
           encryptedKey: encryptedKey,
+          previousKeys: previousRootKeys,
           myIdentity: myId,
           identities: identities,
           recoveryKeys: recoveryKeys,
@@ -2018,6 +2015,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         deviceId: _deviceId,
         deviceData: encryptedDeviceData,
         encryptedKey: encryptedKey,
+        previousKeys: currentVault!.previousKeys,
         myIdentity: currentVault!.myIdentity,
         identities: currentVault!.identities,
         recoveryKeys: currentVault!.recoveryKeys,
@@ -2149,6 +2147,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         deviceId: _deviceId,
         deviceData: encryptedDeviceData,
         encryptedKey: encryptedKey,
+        previousKeys: currentVault!.previousKeys,
         myIdentity: currentVault!.myIdentity,
         identities: currentVault!.identities,
         recoveryKeys: currentVault!.recoveryKeys,
@@ -2279,17 +2278,17 @@ class _BackupsScreenState extends State<BackupsScreen> {
         _wrongPasswordCount = 0;
         _currentPasswordTextController.text = '';
 
-        setState(() {
-          _isAuthenticating = false;
-        });
+        // setState(() {
+        //   _isAuthenticating = false;
+        // });
 
         _showReKeyConfirmationDialog(password);
 
       } else {
         _wrongPasswordCount += 1;
-        setState(() {
-          _isAuthenticating = false;
-        });
+        // setState(() {
+        //   _isAuthenticating = false;
+        // });
         if (_wrongPasswordCount % 3 == 0 && _keyManager.hint.isNotEmpty) {
           _showErrorDialog('Invalid password.\n\nhint: ${_keyManager.hint}');
         } else {
@@ -2324,9 +2323,9 @@ class _BackupsScreenState extends State<BackupsScreen> {
             onPressed: () async {
               Navigator.of(ctx).pop();
 
-              setState(() {
-                _reKeyInProgress = true;
-              });
+              // setState(() {
+              //   _reKeyInProgress = true;
+              // });
 
               EasyLoading.show(status: "Re-Keying...");
 
@@ -2350,9 +2349,9 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
     EasyLoading.dismiss();
 
-    setState(() {
-      _reKeyInProgress = false;
-    });
+    // setState(() {
+    //   _reKeyInProgress = false;
+    // });
 
     if (status) {
 

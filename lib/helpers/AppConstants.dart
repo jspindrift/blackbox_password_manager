@@ -3,6 +3,7 @@ import 'dart:math';
 
 class AppConstants {
 
+  static const bool useMaterial3 = true;
   /// TODO: DEBUG change this to true to show sensitive key data
   /// for testing/debug purposes only!!!
   static const bool debugKeyData = false;
@@ -23,7 +24,7 @@ class AppConstants {
   /// Vault specific values ---------------------------------------
   /// TODO: right side - increase to represent 64 bit iv (possibly < 64 bit && > 32 bit)
   /// 32 bit for now
-  static final int maxEncryptionBlocks = (pow(2,32)-1).toInt();
+  static final int maxEncryptionBlocks = (pow(2,32)-1).toInt(); // do (pow(2,32-1)).toInt();
   static final int maxEncryptionBytes = maxEncryptionBlocks*16;
 
   /// TODO: left side - increase to represent 64 bit iv (possibly < 64 bit && > 32 bit)

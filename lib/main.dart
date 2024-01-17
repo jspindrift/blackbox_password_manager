@@ -1,3 +1,4 @@
+import 'package:blackbox_password_manager/helpers/AppConstants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:dynamic_themes/dynamic_themes.dart';
@@ -182,20 +183,16 @@ class MyApp extends StatelessWidget {
     },
       themeCollection: ThemeCollection(
           fallbackTheme: ThemeData(
-            useMaterial3: false,
+            useMaterial3: AppConstants.useMaterial3,
             brightness: Brightness.dark,
           ),
           themes: {
             0: ThemeData(
-              useMaterial3: false,
+              useMaterial3: AppConstants.useMaterial3,
               brightness: Brightness.light,
-              // bottomNavigationBarTheme: BottomNavigationBarThemeData(
-              //     backgroundColor: _settingsManager.isDarkModeEnabled ? Colors.black12 : Colors.grey,
-              //
-              // ),
             ),
             1: ThemeData(
-              useMaterial3: false,
+              useMaterial3: AppConstants.useMaterial3,
               brightness: Brightness.dark,
             ),
           }

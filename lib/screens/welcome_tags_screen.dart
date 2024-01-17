@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:argon2/argon2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -187,9 +189,14 @@ class _WelcomeTagsScreenState extends State<WelcomeTagsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? Colors.black87 : Colors.black87) : null,
       appBar: AppBar(
-        title: Text('Tags'),
+        title: Text(
+            "Tags",
+          style: TextStyle(
+            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+          ),
+        ),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
         actions: [

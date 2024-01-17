@@ -699,6 +699,8 @@ class BackupManager {
 
     final identities = await _keyManager.getIdentities();
     final recoveryKeys = await _keyManager.getRecoveryKeyItems();
+    final previousRootKeys = await _keyManager.getAllPreviousRootKeys();
+
     final deviceDataString = _settingsManager.deviceManager.deviceData.toString();
     _logManager.logger.d("deviceDataString.length: ${deviceDataString.length}");
     // _logManager.logger.d("deviceData[utsname.version:]: ${_settingsManager.deviceManager.deviceData["utsname.version:"]}");
@@ -727,14 +729,7 @@ class BackupManager {
       encryptionAlgorithm: encryptionAlgo,
       keyMaterial: keyMaterial,
       keyNonce: encryptedKeyNonce,
-      // mac: "",
     );
-
-    /// TODO: replace this HMAC function to use derived auth key
-    // final keyParamsMac = await _cryptor.hmac256(encryptedKey.toRawJson());
-    // encryptedKey.mac = base64.encode(hex.decode(keyParamsMac));
-    // _logManager.logger.d('encryptedKey: ${encryptedKey.toJson()}');
-
 
     var backupItem = VaultItem(
       id: _keyManager.vaultId,
@@ -743,6 +738,7 @@ class BackupManager {
       deviceId: deviceId,
       deviceData: encryptedDeviceData,
       encryptedKey: encryptedKey,
+      previousKeys: previousRootKeys,
       myIdentity: myId,
       identities: identities,
       recoveryKeys: recoveryKeys,

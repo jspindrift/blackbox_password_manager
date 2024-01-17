@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.2.2+3
+version: 0.3.0+4
 
 environment:
   sdk: '>=3.0.3 <4.0.0'
@@ -34,7 +34,7 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.2
+  cupertino_icons: ^1.0.6
 
   # light and dark mode
   dynamic_themes: ^1.1.0
@@ -43,10 +43,10 @@ dependencies:
   flutter_easyloading: ^3.0.5
 
   # encryption and hashing
-  cryptography: ^2.0.5
+  cryptography: ^2.7.0
 
   # hashing functions
-  crypt: ^4.2.1
+  crypt: ^4.3.1
 
   # hashing functions - original
   crypto: ^3.0.2
@@ -58,28 +58,28 @@ dependencies:
   convert: ^3.1.1
 
   # biometrics checking
-  local_auth: ^2.1.6
+  local_auth: ^2.1.8
 
   # secure storage of credentials
-  flutter_secure_storage: ^8.0.0
+  flutter_secure_storage: ^9.0.0
 
   # scrollable alphabetic list
   alphabet_list_scroll_view: ^2.0.0
 
   # slidable used in alphabetic list
-  flutter_slidable: ^2.0.0
+  flutter_slidable: ^3.0.1
 
   # used for device id
-  device_info_plus: ^9.0.2
+  device_info_plus: ^9.1.1
 
   # used for app info
-  package_info_plus: ^4.0.2
+  package_info_plus: ^5.0.1
 
   # get uuids
-  uuid: ^3.0.7
+  uuid: ^4.3.3
 
   # shared preferences
-  shared_preferences: ^2.2.0
+  shared_preferences: ^2.2.2
 
   # enum to string for shared preferences
   enum_to_string: ^2.0.1
@@ -97,10 +97,10 @@ dependencies:
   pin_code_view: ^0.3.0+2
 
   # pretty logs
-  logger: ^1.0.0
+  logger: ^2.0.2+1
 
   # storing larger data sets
-  path_provider: ^2.0.15
+  path_provider: ^2.1.2
 
   # generating QR codes
   qr_flutter: ^4.0.0
@@ -112,13 +112,13 @@ dependencies:
   qr_code_scanner: ^1.0.1
 
   # geo location
-  geolocator: ^9.0.2
+  geolocator: ^10.1.0
 
   # ECDSA - signing
-  ecdsa: ^0.0.4
+  ecdsa: ^0.1.0
 
   # data type validation methods
-  string_validator: ^1.0.0
+  string_validator: ^1.0.2
 
   # jailbreak detection
   flutter_jailbreak_detection: ^1.10.0
@@ -139,7 +139,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^2.0.0
+  flutter_lints: ^3.0.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
