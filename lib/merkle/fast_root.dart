@@ -29,7 +29,7 @@ Uint8List fastRoot(List<Uint8List> values, DigestFn digestFn) {
 
     return results[0];
   } catch (e) {
-   print(e);
+   // print(e);
    return Uint8List(0);
   }
 }

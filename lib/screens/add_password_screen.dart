@@ -158,7 +158,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Password'),
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
@@ -836,6 +836,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
       ),
     );
   }
+
 
   void _onItemTapped(int index) {
     setState(() {
@@ -1738,6 +1739,8 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
     final password = _passwordTextController.text;
     final notes = _notesTextController.text;
 
+    _isBip39Valid = bip39.validateMnemonic(password);
+
     final passwordItem = PasswordItem(
       id: uuid,
       keyId: _keyManager.keyId,
@@ -1783,6 +1786,9 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
   void _generatePassword(StateSetter state) {
     String newPassword = '';
     if (_selectedSegment == PasswordType.random) {
+      // state(() {
+      //   _isBip39Valid = false;
+      // });
       newPassword = _randomGenerator.randomPassword(
           letters: _isWithLetters,
           numbers: _isWithNumbers,
@@ -1831,10 +1837,13 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
         newPassword = _delimeterConversion(mnemonic);
       }
       bool isValid = bip39.validateMnemonic(newPassword);
-      state(() {
-        _isBip39Valid = isValid;
-      });
+      // state(() {
+      //   _isBip39Valid = isValid;
+      // });
     } else {
+      // state(() {
+      //   _isBip39Valid = false;
+      // });
       newPassword = _randomGenerator.randomPassword(
           letters: false,
           numbers: true,
@@ -1857,6 +1866,9 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
   void _generatePasswordInit() {
     String newPassword = '';
     if (_selectedSegment == PasswordType.random) {
+      // setState(() {
+      //   _isBip39Valid = false;
+      // });
       newPassword = _randomGenerator.randomPassword(
           letters: _isWithLetters,
           numbers: _isWithNumbers,
@@ -1884,10 +1896,13 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
         newPassword = _delimeterConversion(mnemonic);
       }
       bool isValid = bip39.validateMnemonic(newPassword);
-      setState(() {
-        _isBip39Valid = isValid;
-      });
+      // setState(() {
+      //   _isBip39Valid = isValid;
+      // });
     } else {
+      // setState(() {
+      //   _isBip39Valid = false;
+      // });
       newPassword = _randomGenerator.randomPassword(
           letters: false,
           numbers: true,

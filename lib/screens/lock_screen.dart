@@ -111,6 +111,7 @@ class _LockScreenState extends State<LockScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -118,7 +119,7 @@ class _LockScreenState extends State<LockScreen> {
         return Future.value(false);
       },
         child: Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Locked'),
         // backgroundColor: Colors.black54,
@@ -305,6 +306,7 @@ class _LockScreenState extends State<LockScreen> {
       ),
     );
   }
+
 
   /// validate fields are valid before enabling button to log in
   _validateField() {

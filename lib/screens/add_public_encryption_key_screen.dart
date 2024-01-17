@@ -75,6 +75,8 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
 
   String _publicKeyMnemonic = "";
 
+  final algorithm_exchange = X25519();
+
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
   final _keyManager = KeychainManager();
@@ -111,11 +113,8 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     // });
   }
 
-
   Future<void> _generateKeyPair() async {
     // print("add_public_encryption_key: _generateKeyPair");
-
-    final algorithm_exchange = X25519();
 
     // _seedKey = _cryptor.getRandomBytes(32);
     // print("rand seed: $_seedKey");
@@ -187,10 +186,48 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
 
   }
 
+  Future<void> _getChainedKey() async {
+    final seed = List<int>.filled(32, 0);
+    final privSeedPair = await algorithm_exchange.newKeyPairFromSeed(seed);
+
+    // final privSeedPair = pair;
+    final pubKey = await privSeedPair.extractPublicKey();
+    var pubKeyHash = _cryptor.sha256(hex.encode(pubKey.bytes));
+    _logManager.logger.d("pubKeyHash1: $pubKeyHash");
+
+    for (var index = 0; index < 8; index++) {
+      final keyPair = await algorithm_exchange.newKeyPairFromSeed(hex.decode(pubKeyHash));
+      final pubKey = await keyPair.extractPublicKey();
+      pubKeyHash = _cryptor.sha256(hex.encode(pubKey.bytes));
+      _logManager.logger.d("pubKeyHash-$index: $pubKeyHash");
+    }
+
+    _logManager.logger.d("pubKeyHash-last: $pubKeyHash");
+    // final simplePublicKey = value;
+    // _mainPubKey = simplePublicKey.bytes;
+    // privSeedPair.extractPrivateKeyBytes().then((value) {
+    //   print("privkeyseed check: ${value}");
+    //   print("privkeyseed check hex: ${hex.encode(value)}");
+    // });
+
+
+    // if (mounted) {
+    //   setState(() {
+    //     _mainPrivKey = base64.decode(rootKey);
+    //     _mainPubKey = pubKey.bytes;
+    //   });
+    // } else {
+    //   _mainPrivKey = base64.decode(rootKey);
+    //   _mainPubKey = pubKey.bytes;
+    // }
+
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Asymmetric Key Pair'),
         automaticallyImplyLeading: false,
@@ -925,6 +962,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
       ),
     );
   }
+
 
   void _onItemTapped(int index) {
     setState(() {

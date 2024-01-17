@@ -216,8 +216,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
   }
 
-  /// TODO: add inactivity time screen
-  ///
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -772,6 +771,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       ),
     );
   }
+
 
   /// authenticate the user with biometrics and create the biometric
   /// keychain item to unwrap our encryption keys when authenticated

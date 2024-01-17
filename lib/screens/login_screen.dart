@@ -457,6 +457,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
   }
 
+
   @override
   Widget build(BuildContext context) {
     _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
@@ -544,7 +545,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       return Future.value(false);
     },
     child: Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[200]!,//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[200]!,//Colors.grey[100],
       appBar: AppBar(
         title: Text('Blackbox'),
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
@@ -978,6 +979,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       ),),
     );
   }
+
 
   /// validate the text fields to verify the inputs match before we
   /// allow the user to create the account/vault

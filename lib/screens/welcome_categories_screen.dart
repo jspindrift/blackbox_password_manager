@@ -61,7 +61,7 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
     _getAvailableCategories();
   }
 
-  void _getAvailableCategories() async {
+  Future<void> _getAvailableCategories() async {
     _availableCategories = [];
     _categoryCounts = {};
     _sortedCategoryCounts = {};
@@ -76,12 +76,8 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
       if (item.type == "password") {
         /// TODO: increment favorite counts
         final passwordItem = PasswordItem.fromRawJson(item.data);
-        // final keyIndex = (passwordItem?.keyIndex)!;
-        // var keyIndex = 0;
-        //
-        // if (passwordItem?.keyIndex != null) {
-        //   keyIndex = (passwordItem?.keyIndex)!;
-        // }
+
+
         if (!_availableCategories.contains("Passwords")) {
           _availableCategories.add("All");
           _availableCategories.add("Passwords");
@@ -103,12 +99,20 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
             }
           }
 
+          _logManager.logger.d("passwordItem: ${passwordItem.toRawJson()}");
+
           if (passwordItem.geoLock == null) {
             final decryptedPassword =
                 await _cryptor.decrypt(passwordItem.password);
+            _logManager.logger.d("decryptedPassword: $decryptedPassword");
+
             if (passwordItem.isBip39) {
-              final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
-              _decryptedPasswordList.add(mnemonic);
+              try {
+                final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
+                _decryptedPasswordList.add(mnemonic);
+              } catch (e) {
+                _logManager.logger.e("exception: $e");
+              }
             } else {
               _decryptedPasswordList.add(decryptedPassword);
             }
@@ -199,6 +203,7 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
       setState(() {});
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -293,8 +298,8 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
                   MaterialPageRoute(
                     builder: (context) => WelcomeAllListScreen(),
                   ),
-                ).then((value) {
-                  _getAvailableCategories();
+                ).then((value) async {
+                  await _getAvailableCategories();
                 });
               },
             );
@@ -337,8 +342,8 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
                   MaterialPageRoute(
                     builder: (context) => WelcomeScreen(),
                   ),
-                ).then((value) {
-                  _getAvailableCategories();
+                ).then((value) async {
+                  await _getAvailableCategories();
                 });
               } else if (_availableCategories[index] == "Notes") {
                 Navigator.push(
@@ -346,8 +351,8 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
                   MaterialPageRoute(
                     builder: (context) => NoteListScreen(),
                   ),
-                ).then((value) {
-                  _getAvailableCategories();
+                ).then((value) async {
+                  await _getAvailableCategories();
                 });
               } else if (_availableCategories[index] == "Keys") {
 
@@ -360,8 +365,8 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
                   MaterialPageRoute(
                     builder: (context) => KeyListScreen(),
                   ),
-                ).then((value) {
-                  _getAvailableCategories();
+                ).then((value) async {
+                  await _getAvailableCategories();
                 });
               } else if (_availableCategories[index] == "All") {
                 Navigator.push(
@@ -369,13 +374,13 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
                   MaterialPageRoute(
                     builder: (context) => WelcomeAllListScreen(),
                   ),
-                ).then((value) {
+                ).then((value) async {
                   // if (value == "savedItem") {
                   //   EasyLoading.showToast("Saved Key Item",
                   //       duration: Duration(seconds: 2));
                   // }
 
-                  _getAvailableCategories();
+                  await _getAvailableCategories();
                 });
               }
             },
@@ -384,6 +389,7 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
       ),
     );
   }
+
 
   /// show the generate password screen
   void _showSelectCategoryModal(BuildContext context) {
@@ -512,27 +518,29 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
               passwordList: _decryptedPasswordList,
             ),
           ))
-              .then((value) {
+              .then((value) async {
             if (value == "savedItem") {
               EasyLoading.showToast("Saved Password Item",
                   duration: Duration(seconds: 2));
             }
 
-            _getAvailableCategories();
+            await _getAvailableCategories();
           });
         } else if (value == "Secure Note") {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AddNoteScreen(note: null),
+              builder: (context) => AddNoteScreen(
+                  id: null,
+              ),
             ),
-          ).then((value) {
+          ).then((value) async {
             if (value == "savedItem") {
               EasyLoading.showToast("Saved Note Item",
                   duration: Duration(seconds: 2));
             }
 
-            _getAvailableCategories();
+            await _getAvailableCategories();
           });
         } else if (value == "Credit Card") {
         } else if (value == "Key") {
@@ -542,13 +550,13 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
             MaterialPageRoute(
               builder: (context) => AddPublicEncryptionKeyScreen(), //AddKeyItemScreen(),
             ),
-          ).then((value) {
+          ).then((value) async {
             if (value == "savedItem") {
               EasyLoading.showToast("Saved Key Item",
                   duration: Duration(seconds: 2));
             }
 
-            _getAvailableCategories();
+            await _getAvailableCategories();
           });
 
           // _showKeyTypeSelectionModal();
@@ -558,7 +566,6 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
       }
     });
   }
-
 
   _showKeyTypeSelectionModal() {
     /// show modal bottom sheet
@@ -634,13 +641,13 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
                                   MaterialPageRoute(
                                     builder: (context) => AddPublicEncryptionKeyScreen(), //AddKeyItemScreen(),
                                   ),
-                                ).then((value) {
+                                ).then((value) async {
                                   if (value == "savedItem") {
                                     EasyLoading.showToast("Saved Key Item",
                                         duration: Duration(seconds: 2));
                                   }
 
-                                  _getAvailableCategories();
+                                  await _getAvailableCategories();
                                 });
 
                               },
@@ -652,7 +659,7 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
                   ),
                 );
               });
-        }).then((value) {
+        }).then((value) async {
           if (value != null) {
             // print("Chose: $value");
 
@@ -662,10 +669,9 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
 
             }
 
-            _getAvailableCategories();
+            await _getAvailableCategories();
           }
     });
   }
-
 
 }

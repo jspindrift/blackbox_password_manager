@@ -131,8 +131,11 @@ class KeyScheduler {
     }
 
 
+    var kid = _cryptor.getUUID();
+    _keyManager.setNewReKeyId(kid);
+
     /// Third - derive new key to re-key
-    final newEncryptedKey = await _cryptor.deriveNewKeySchedule(password);
+    final newEncryptedKey = await _cryptor.deriveNewKeySchedule(password, kid);
     // _logManager.logger.d("newEncryptedKey: $newEncryptedKey");
 
     if (newEncryptedKey == null) {
@@ -221,7 +224,7 @@ class KeyScheduler {
     ///
 
     final vaultId = _keyManager.vaultId;
-    final rekeyId = _keyManager.rekeyId;
+    final rekeyId = _keyManager.reKeyId;
 
     final newSalt = newEncryptedKey.salt;
     if (newSalt == null) {
@@ -509,6 +512,7 @@ class KeyScheduler {
             // print("reecryptedName enc: ${reecryptedName}\nreecryptedUsername: ${reecryptedUsername}");
             // print("reecryptedPassword enc: ${reecryptedPassword}\n");
 
+            passwordItem.keyId = _keyManager.reKeyId;
             passwordItem.name = reecryptedName;
             passwordItem.username = reecryptedUsername;
             passwordItem.password = reecryptedPassword;
@@ -516,8 +520,20 @@ class KeyScheduler {
 
             List<PreviousPassword> newPreviousPasswordList = [];
             for (var pp in passwordItem.previousPasswords) {
-              // final x = pp.password;
-              final reecryptedPreviousPassword = await _cryptor.reKeyEncryption(false, pp.password);
+              /// TODO: BIP39 check and conversion here
+              ///
+              var decryptedPassword = "";
+              if (passwordItem.isBip39) {
+                final seed = _cryptor.mnemonicToEntropy(pp.password);
+                /// Encrypt seed here
+                decryptedPassword = await _cryptor.decrypt(seed);
+              } else {
+                /// Encrypt password here
+                decryptedPassword = await _cryptor.decrypt(pp.password);
+              }
+
+
+              final reecryptedPreviousPassword = await _cryptor.reKeyEncryption(false, decryptedPassword);
               final newPp = PreviousPassword(
                   password: reecryptedPreviousPassword,
                   isBip39: pp.isBip39,
@@ -529,6 +545,14 @@ class KeyScheduler {
 
             passwordItem.previousPasswords = newPreviousPasswordList;
 
+            passwordItem.mac = "";
+
+            /// compute mac of JSON object with empty mac
+            final computedMac = await _cryptor.hmac256(passwordItem.toRawJson());
+            final newMac = base64.encode(hex.decode(computedMac));
+
+            passwordItem.mac = newMac;
+
             _reKeyedItems.add(passwordItem);
 
             final gitem = GenericItem(type: "password", data: passwordItem.toRawJson());
@@ -536,6 +560,8 @@ class KeyScheduler {
             genericList.add(gitem);
 
           } else {
+            /// TODO: can't re-key geo encrypted items!!!
+            ///
             _logManager.logger.w("geo lock needs attention");
             return false;
           }
@@ -550,8 +576,20 @@ class KeyScheduler {
           // final keyIndex = (noteItem?.keyIndex)!;
 
           if (noteItem.geoLock == null) {
+            final reecryptedName = await _cryptor.reKeyEncryption(false, noteItem.name);
             final reecryptedNote = await _cryptor.reKeyEncryption(false, noteItem.notes);
+
             noteItem.notes = reecryptedNote;
+            noteItem.name = reecryptedName;
+            noteItem.keyId = _keyManager.reKeyId;
+
+            noteItem.mac = "";
+
+            /// compute mac of JSON object with empty mac
+            final computedMac = await _cryptor.hmac256(noteItem.toRawJson());
+            final newMac = base64.encode(hex.decode(computedMac));
+
+            noteItem.mac = newMac;
 
             _reKeyedItems.add(noteItem);
 
@@ -578,6 +616,7 @@ class KeyScheduler {
           final reecryptedKey = await _cryptor.reKeyEncryption(false, key);
           // final reecryptedKey = await _cryptor.reKeyEncryption(keyItem.);
 
+          keyItem.keyId = _keyManager.reKeyId;
           keyItem.name = reecryptedName;
           keyItem.notes = reecryptedNotes;
           keyItem.key = reecryptedKey;
@@ -651,7 +690,7 @@ class KeyScheduler {
 
         /// TODO: check keyId state
         _reKeyedMyDigitalIdentity = MyDigitalIdentity(
-            keyId: _keyManager.keyId,
+            keyId: _keyManager.reKeyId,
             version: AppConstants.myDigitalIdentityItemVersion,
             privKeyExchange: reencryptedEKey,
             privKeySignature: reencryptedSKey,

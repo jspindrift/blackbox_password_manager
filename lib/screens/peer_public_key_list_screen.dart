@@ -87,7 +87,6 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
     _getItem();
   }
 
-
   void _getItem() async {
     // _peerPublicKeys = [];
     // _peerPublicKeysShowing = [];
@@ -253,7 +252,6 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
     });
   }
 
-
   Future<void> _generatePeerKeyPair(String bobPubString) async {
     // print("peer_public_key_list: _generatePeerKeyPair");
 
@@ -308,10 +306,11 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
     // print("shared secret key hash: ${sharedSecretKeyHash}");
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Peer Public Keys'),
         automaticallyImplyLeading: false,
@@ -539,6 +538,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
       ),
     );
   }
+
 
   void _onItemTapped(int index) {
     setState(() {

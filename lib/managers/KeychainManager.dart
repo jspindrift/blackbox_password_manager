@@ -41,7 +41,7 @@ class KeychainManager {
   Map<String, String> _items = {};
 
   String _keyId = "";
-  String _rekeyId = "";
+  String _reKeyId = "";
 
   String _vaultId = "";
   String _encryptedKeyMaterial = '';
@@ -61,8 +61,8 @@ class KeychainManager {
     return _keyId;
   }
 
-  get rekeyId {
-    return _rekeyId;
+  get reKeyId {
+    return _reKeyId;
   }
 
   get numberOfPreviousPasswords {
@@ -328,12 +328,16 @@ class KeychainManager {
 
 
   setNewReKeyId(String id) {
-    _rekeyId = id;
+    _reKeyId = id;
   }
 
   setKeyId(String id) {
     _keyId = id;
   }
+
+  // generateNewKeyId() {
+  //
+  // }
 
   /// save the encrypted key and salt for the master password
   Future<bool> saveMasterPassword(KeyMaterial key) async {

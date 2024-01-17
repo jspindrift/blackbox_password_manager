@@ -1074,6 +1074,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     );
   }
 
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;

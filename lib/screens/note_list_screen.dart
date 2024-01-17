@@ -66,12 +66,6 @@ class _NoteListScreenState extends State<NoteListScreen> {
       }
     }
 
-    // _notes.sort(
-    //     (e1, e2) => e1.name.toLowerCase().compareTo(e2.name.toLowerCase()));
-
-    // print("sortedNotes: ${_notes}");
-    // print("note1: ${_notes.first.name}");
-
     if (_notes.isEmpty) {
       Navigator.of(context).pop();
     }
@@ -83,10 +77,11 @@ class _NoteListScreenState extends State<NoteListScreen> {
     });
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Notes'),
         automaticallyImplyLeading: false,
@@ -104,7 +99,9 @@ class _NoteListScreenState extends State<NoteListScreen> {
             onPressed: () {
               Navigator.of(context)
                   .push(MaterialPageRoute(
-                builder: (context) => const AddNoteScreen(note: null),
+                builder: (context) => const AddNoteScreen(
+                    id: null,
+                ),
               ))
                   .then((value) {
                 if (value == "savedItem") {
@@ -208,7 +205,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => AddNoteScreen(
-                    note: _notes[index],
+                    id: _notes[index].id,
                   ),
                 ),
               ).then((value) {
@@ -288,6 +285,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
       ),
     );
   }
+
 
   void _onItemTapped(int index) {
     setState(() {

@@ -183,6 +183,7 @@ class _WelcomeTagsScreenState extends State<WelcomeTagsScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -257,6 +258,7 @@ class _WelcomeTagsScreenState extends State<WelcomeTagsScreen> {
       ),
     );
   }
+
 
   /// show the generate password screen
   void _showSelectCategoryModal(BuildContext context) {
@@ -397,7 +399,9 @@ class _WelcomeTagsScreenState extends State<WelcomeTagsScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AddNoteScreen(note: null),
+              builder: (context) => AddNoteScreen(
+                  id: null,
+              ),
             ),
           ).then((value) {
             if (value == "savedItem") {

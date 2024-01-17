@@ -223,10 +223,11 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text("${widget.tag}"),
         automaticallyImplyLeading: false,
@@ -391,14 +392,6 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
                   fontSize: 14,
                 ),
               ),
-              // Text(convertedItem.favorite ?
-              //   "modified: ${DateFormat('yyyy-MM-dd  hh:mm a').format(DateTime.parse(convertedItem.mdate))}\n⭐"
-              //   : "modified: ${DateFormat('yyyy-MM-dd  hh:mm a').format(DateTime.parse(convertedItem.mdate))}",
-              //   // convertedItem.notes,
-              //   style: TextStyle(
-              //     color: _isDarkModeEnabled ? Colors.white : null,
-              //   ),
-              // ),
               leading: categoryIcon,
               trailing: Icon(
                 Icons.arrow_forward_ios,
@@ -414,7 +407,7 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => AddNoteScreen(
-                      note: convertedItem,
+                      id: convertedItem.id,
                     ),
                   ),
                 ).then((value) {
@@ -591,6 +584,7 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
       ),
     );
   }
+
 
   void _onItemTapped(int index) {
     setState(() {

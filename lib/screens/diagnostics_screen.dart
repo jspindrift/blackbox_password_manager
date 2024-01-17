@@ -102,6 +102,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
     WidgetsBinding.instance.removeObserver(this);
   }
 
+
   @override
   Widget build(BuildContext context) {
     double years = 0;
@@ -151,7 +152,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
     }
 
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text(''),
         automaticallyImplyLeading: false,
@@ -365,6 +366,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
       ),
     );
   }
+
 
   void _onItemTapped(int index) {
     setState(() {

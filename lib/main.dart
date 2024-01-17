@@ -1,10 +1,8 @@
-import 'package:blackbox_password_manager/managers/SettingsManager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:dynamic_themes/dynamic_themes.dart';
 
 import '../models/KeyItem.dart';
-import '../models/NoteItem.dart';
 import '../screens/active_encryption_screen.dart';
 import '../screens/add_key_item_screen.dart';
 import '../screens/add_peer_public_key_screen.dart';
@@ -41,7 +39,7 @@ import './screens/favorites_list_screen.dart';
 import './screens/inactivity_time_screen.dart';
 import './screens/emergency_kit_screen.dart';
 import './widgets/qr_code_view.dart';
-import 'helpers/InactivityTimer.dart';
+import './helpers/InactivityTimer.dart';
 
 
 void main() {
@@ -55,7 +53,7 @@ class MyApp extends StatelessWidget {
   MyApp({Key? key}) : super(key: key);
 
   final _inactivityTimer = InactivityTimer();
-  final _settingsManager = SettingsManager();
+  // final _settingsManager = SettingsManager();
 
 
   @override
@@ -66,10 +64,7 @@ class MyApp extends StatelessWidget {
           /// TODO: only do this while logged in
           /// check this
           _inactivityTimer.startInactivityTimer();
-        }, // best place to reset timer imo
-        // onPointerMove: (_) {
-        //   /// ...
-        // },
+        },
         onPointerUp: (_) {
           /// TODO: only do this while logged in
           /// check this
@@ -103,21 +98,8 @@ class MyApp extends StatelessWidget {
             NoteListScreen.routeName: (ctx) => NoteListScreen(),
             AddNoteScreen.routeName: (ctx) =>
                 AddNoteScreen(
-                  note: NoteItem(
-                    id: "",
-                    keyId: "",
-                    version: 0,
-                    name: "",
-                    notes: "",
-                    favorite: false,
-                    tags: [],
-                    geoLock: null,
-                    mac: "",
-                    cdate: DateTime.now().toIso8601String(),
-                    mdate: DateTime.now().toIso8601String(),
-                  ),
+                  id: null,
                 ),
-
             SettingsScreen.routeName: (ctx) => SettingsScreen(),
             ChangePasswordScreen.routeName: (ctx) => ChangePasswordScreen(),
             LockScreen.routeName: (ctx) => LockScreen(),

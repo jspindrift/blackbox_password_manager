@@ -195,7 +195,6 @@ class PeerPublicKey {
     required this.notes,
     required this.sentMessages,
     required this.receivedMessages,
-
     required this.mdate,
     required this.cdate,
   });
@@ -247,11 +246,9 @@ class PeerPublicKey {
 
 class SecureMessageList {
   List<SecureMessage> list;
-  List<String> merkleTree;
 
   SecureMessageList({
     required this.list,
-    required this.merkleTree,
   });
 
   factory SecureMessageList.fromRawJson(String str) => SecureMessageList.fromJson(json.decode(str));
@@ -262,69 +259,15 @@ class SecureMessageList {
     return SecureMessageList(
       list: List<SecureMessage>.from(
           json["list"].map((x) => SecureMessage.fromJson(x))),
-      merkleTree: List<String>.from(json["list"]),
     );
   }
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
       "list": list,
-      "merkleTree": merkleTree,
     };
 
     return jsonMap;
-  }
-
-  /// TODO: merkle root
-  ///
-  ///
-  Future<List<String>> calculateMerkleRoot() async {
-    logger.d("calculateMerkleRoot: SecureMessageList");
-
-    // var msgHashList = "";
-    List<Uint8List> data = [];
-
-    for (var message in list) {
-      final msgHashList = await Cryptor().hmac256(message.cdate + message.iv + message.blob);
-      data.add(Uint8List.fromList(hex.decode(msgHashList)));
-
-    }
-    // logger.d("msgHashList: $msgHashList");
-
-    final tree = getTree(data, 256);
-    /// TODO: set this
-    merkleTree = tree;
-    logger.d("tree: $tree");
-
-    return tree;
-  }
-
-  Future<bool> calculateMerkleRootCheck(List<String> treeToCheck) async {
-    logger.d("calculateMerkleRootCheck: SecureMessageList");
-
-    // var msgHashList = "";
-    List<Uint8List> data = [];
-
-    for (var message in list) {
-      final msgHashList = await Cryptor().hmac256(message.cdate + message.iv + message.blob);
-      data.add(Uint8List.fromList(hex.decode(msgHashList)));
-    }
-    // logger.d("msgHashList: $msgHashList");
-
-    final localTree = getTree(data, 256);
-
-    int index = 0;
-    for (var leaf in localTree) {
-      if (leaf != treeToCheck[index]) {
-        logger.e("merkleRoot failed at index: $index\n leaf: $leaf");
-        return false;
-      }
-      index += 1;
-    }
-
-    logger.d("merkleTree is valid: $treeToCheck");
-
-    return true;
   }
 
 }
@@ -332,12 +275,16 @@ class SecureMessageList {
 
 /// encrypted with key derived from user's shared secret key
 class SecureMessage {
-  String iv;  // used as message id, as we should never repeat these
-  String blob; // mac + encryptedMessage
+  String version;
+  String to;
+  String from;
+  String blob; // iv + mac + encryptedMessage
   String cdate;
 
   SecureMessage({
-    required this.iv,
+    required this.version,
+    required this.to,
+    required this.from,
     required this.blob,
     required this.cdate,
   });
@@ -349,7 +296,9 @@ class SecureMessage {
 
   factory SecureMessage.fromJson(Map<String, dynamic> json) {
     return SecureMessage(
-      iv: json['iv'],
+      version: json['version'],
+      to: json['to'],
+      from: json['from'],
       blob: json['blob'],
       cdate: json['cdate'],
     );
@@ -357,9 +306,10 @@ class SecureMessage {
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
-      "iv": iv,
+      "version": version,
+      "to": to,
+      "from": from,
       "blob": blob,
-      // "key": key,
       "cdate": cdate,
     };
 

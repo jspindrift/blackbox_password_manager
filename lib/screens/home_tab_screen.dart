@@ -285,6 +285,7 @@ class _HomeTabScreenState extends State<HomeTabScreen>
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -384,6 +385,7 @@ class _HomeTabScreenState extends State<HomeTabScreen>
       ),
     );
   }
+
 
   void _onItemTapped(int index) {
     setState(() {

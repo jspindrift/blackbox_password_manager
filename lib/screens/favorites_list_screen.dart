@@ -173,6 +173,7 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -314,7 +315,7 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => AddNoteScreen(
-                      note: convertedItem,
+                      id: convertedItem.id,
                     ),
                   ),
                 ).then((value) {
@@ -427,6 +428,7 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
       ),
     );
   }
+
 
   /// show the generate password screen
   _showSelectCategoryModal(BuildContext context) {
@@ -568,7 +570,9 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AddNoteScreen(note: null),
+              builder: (context) => AddNoteScreen(
+                  id: null,
+              ),
             ),
           ).then((value) {
             if (value == "savedItem") {

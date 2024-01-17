@@ -54,7 +54,7 @@ class _QRScanViewState extends State<QRScanView> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Card(
-        color: _isDarkModeEnabled ? Colors.black54 : Colors.white,
+        color: _isDarkModeEnabled ? Colors.black87 : Colors.white,
         child: Column(
         children: <Widget>[
           Expanded(flex: 4, child: _buildQrView(context)),

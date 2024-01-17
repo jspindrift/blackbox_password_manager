@@ -307,6 +307,8 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         return;
       }
 
+      _logManager.logger.d("kid: ${_passwordItem?.keyId}");
+
       final macCheck = await _passwordItem?.checkMAC() ?? false;
       if (!macCheck) {
         _showErrorDialog("Password Item Invalid.  MAC check failed.");
@@ -620,10 +622,11 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
     // _geolocationManager.shutdown();
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Password'),
         automaticallyImplyLeading: false,
@@ -1694,6 +1697,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
     );
   }
 
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -2401,10 +2405,11 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                                   : null,
                               autocorrect: false,
                               obscureText: false,
+                              // autofocus: true,
                               minLines: 1,
                               maxLines: 1,
                               decoration: InputDecoration(
-                                labelText: 'Tag',
+                                labelText: "Tag",
                                 hintStyle: TextStyle(
                                   fontSize: 18.0,
                                   color:

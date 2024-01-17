@@ -35,10 +35,11 @@ class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
     _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.white70, //Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white70, //Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Block #${widget.block.blockNumber + 1}'),
         automaticallyImplyLeading: false,

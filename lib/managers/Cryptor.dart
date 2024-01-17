@@ -1244,18 +1244,19 @@ class Cryptor {
           secretKey: secretKy,
         );
 
-        final macPhrase = bip39.entropyToMnemonic(hex.encode(mac.bytes));
-        final macWordList = macPhrase.split(" ");
+        /// TODO: mac phase
+        // final macPhrase = bip39.entropyToMnemonic(hex.encode(mac.bytes));
+        // final macWordList = macPhrase.split(" ");
 
         // var confirmMacPhrase = macWordList[0] + " " + macWordList[1] + " " + macWordList.last;
-        var confirmMacPhrase = macWordList[0] + " " + macWordList.last;
+        // var confirmMacPhrase = macWordList[0] + " " + macWordList.last;
         // logger.d("confirmMacPhrase: $confirmMacPhrase");
         // for (var mword in macWordList) {
         //   confirmMacPhrase = confirmMacPhrase + " " + mword;
         // }
 
         if (AppConstants.debugKeyData) {
-          logger.d("confirmMacPhrase: $confirmMacPhrase");
+          // logger.d("confirmMacPhrase: $confirmMacPhrase");
           logger.d("mac: ${mac}\n");
         }
 
@@ -1283,7 +1284,7 @@ class Cryptor {
 
   /// Used when re-keying our vault
   ///
-  Future<EncryptedKey?> deriveNewKeySchedule(String password) async {
+  Future<EncryptedKey?> deriveNewKeySchedule(String password, String keyId) async {
     // logger.d("PBKDF2 - deriveNewKeySchedule");
     try {
       // final startTime = DateTime.now();
@@ -1342,8 +1343,8 @@ class Cryptor {
         _tempReKeyRootSecretKeyBytes = newRootSecret;
         _tempReKeyRootSecretKey = SecretKey(_tempReKeyRootSecretKeyBytes);
 
-        var kid = getUUID();
-        KeychainManager().setNewReKeyId(kid);
+        // var kid = getUUID();
+        // KeychainManager().setNewReKeyId(kid);
 
         await expandSecretTempRootKey(_tempReKeyRootSecretKeyBytes);
         final iv_new = algorithm_nomac.newNonce();
@@ -1400,7 +1401,7 @@ class Cryptor {
         // logger.d("blob_keyNonce: ${blob_keyNonce}");
 
         var encryptedKey = EncryptedKey(
-            keyId: kid,
+            keyId: keyId,
             derivationAlgorithm: kdfAlgo,
             salt: base64.encode(newSalt),
             rounds: rounds,
@@ -1751,8 +1752,8 @@ class Cryptor {
   Future<String> reKeyEncryption(bool ishex, String ciphertext) async {
     logger.d("reKeyEncryption");
     try {
-      if (_aesEncryptionKey != null
-          && _aesAuthKey != null
+      if (_tempAesEncryptionKey != null
+          && _tempAuthKey != null
           && _tempReKeyRootSecretKey != null) {
 
         final decryptedData = await decrypt(ciphertext);
@@ -2271,6 +2272,20 @@ class Cryptor {
 
       xorList = xor(x, y);
     }
+    logger.d("xorList: ${xorList}");
+
+    List<int> xor1Byte = xorList;
+
+    while (xor1Byte.length != 1) {
+      final x =
+      Uint8List.fromList(bytes.sublist(0, (xor1Byte.length! / 2).toInt()));
+      final y = Uint8List.fromList(bytes.sublist(
+          (xor1Byte.length! / 2).toInt(), (xor1Byte.length!).toInt()));
+
+      xor1Byte = xor(x, y);
+    }
+    logger.d("xor1Byte: ${xor1Byte}");
+
 
     List<int> xorInverseList = [];
 
@@ -2280,8 +2295,29 @@ class Cryptor {
       // logger.d("y[${index}]: ${y}");
       xorInverseList.addAll(xor(xx, y));
     }
+    logger.d("xorInverseList: ${xorInverseList}");
 
-    // logger.d("xorInverseList[${xorInverseList.length}]: ${xorInverseList}");
+    List<int> xorSecondInverseList = [];
+
+    for (var index = 0; index < xorList.length; index++) {
+      final xx = Uint8List.fromList(xorList.sublist(index, (index + 1)));
+      final y = Uint8List.fromList(xor1Byte);
+      // logger.d("y[${index}]: ${y}");
+      xorSecondInverseList.addAll(xor(xx, y));
+    }
+
+    logger.d("xorSecondInverseList[${xorSecondInverseList.length}]: ${xorSecondInverseList}");
+
+    List<int> xorInverseListBytes = [];
+
+    for (var index = 0; index < bytes.length/16; index++) {
+      final xx = Uint8List.fromList(xorSecondInverseList);
+      final y = Uint8List.fromList(bytes.sublist(index * 16, 16 * (index + 1)));
+      // logger.d("y[${index}]: ${y}");
+      xorInverseListBytes.addAll(xor(xx, y));
+    }
+    logger.d("xorInverseListBytes: ${xorInverseListBytes}");
+
     return xorInverseList;
   }
 

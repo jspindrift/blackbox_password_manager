@@ -76,6 +76,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -83,7 +84,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
         return Future.value(false);
       },
       child: Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
       appBar: AppBar(
         backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
         automaticallyImplyLeading:
@@ -171,6 +172,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
       ),
     );
   }
+
 
   /// create the pin code item and save in keychain
   void _createPinCode(String code) async {

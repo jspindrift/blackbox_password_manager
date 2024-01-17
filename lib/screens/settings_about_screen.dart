@@ -75,10 +75,11 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
     _passwordFileSize = _keyManager.passwordItemsSize;
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('About Blackbox'),
         automaticallyImplyLeading: false,
@@ -350,6 +351,7 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
       ),
     );
   }
+
 
   void _onItemTapped(int index) {
     setState(() {

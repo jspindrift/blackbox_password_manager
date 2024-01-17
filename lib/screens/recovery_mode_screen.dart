@@ -205,7 +205,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Recovery Mode'),
         automaticallyImplyLeading: false,
@@ -529,6 +529,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     );
   }
 
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -539,7 +540,6 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
 
     _settingsManager.changeRoute(index);
   }
-
 
   _computeAndShowRecoveryCode(DigitalIdentity identity) async {
     final algorithm = X25519();

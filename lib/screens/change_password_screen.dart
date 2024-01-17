@@ -62,10 +62,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     _isConfirmingCurrentPassword = !isRecovered;
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.white70,//Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white70,//Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Change Password'),
         automaticallyImplyLeading: false,
@@ -496,6 +497,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       ),
     );
   }
+
 
   /// determine if the necessary field(s) are filled out to enable the user
   /// to confirm the current password

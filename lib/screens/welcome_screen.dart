@@ -74,7 +74,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     });
 
     _selectedIndex = _settingsManager.currentTabIndex;
-    // print("_selectedIndex: $_selectedIndex");
 
     // _keyManager.readRecoveryPasscodeKey();
 
@@ -82,8 +81,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     // _logManager.logger.d("WelcomeScreen - initState");
 
     _keyManager.getAllItems().then((value) {
-      // passwordList = value;
-      // passwordListByDate = value;
 
       /// decrypt the names and usernames and set them
       ///
@@ -120,58 +117,48 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       return;
     }
 
-    var numOfPasswords = 0;
-
     for (var item in items.list) {
-      // print("welcome screen item type: ${item.type}");
       if (item.type == "password") {
-        // print("welcome screen item data: ${item.data}");
-        numOfPasswords += 1;
         var passwordItem = PasswordItem.fromRawJson(item.data);
-        // final itemId = passwordItem.id + "-" + passwordItem.cdate + "-" + passwordItem.mdate;
-        // var keyIndex = 0;
-        //
-        // if (passwordItem?.keyIndex != null) {
-        //   keyIndex = (passwordItem?.keyIndex)!;
-        // }
+
+        // var updatedPasswordItem = PasswordItem.fromRawJson(item.data);
+
         final decryptedName = await _cryptor.decrypt(passwordItem.name);
-        var thisItem = items.list.firstWhere((element) {
-          if (element.type == "password") {
-            var checkItem = PasswordItem.fromRawJson(element.data);
 
-            // final elm = element as PasswordItem;
-            if (checkItem != null) {
-              return checkItem.id == passwordItem.id;
-            }
-          }
-          return false;
-        });
+        if (decryptedName.isEmpty) {
+          return;
+        }
 
-        var updatedPasswordItem = PasswordItem.fromRawJson(thisItem.data);
-
-        // print("thisItem: $updatedPasswordItem");
-        updatedPasswordItem.name = decryptedName;
+        passwordItem.name = decryptedName;
         final decryptedUsername = await _cryptor.decrypt(passwordItem.username);
-        updatedPasswordItem.username = decryptedUsername;
+
+        passwordItem.username = decryptedUsername;
 
         /// TODO: get all passwords (decrypted) and hold to flag any reused passwords
         ///
         if (passwordItem.geoLock == null) {
           final decryptedPassword =
               await _cryptor.decrypt(passwordItem.password);
-
+          if (decryptedPassword.isEmpty) {
+            return;
+          }
           if (passwordItem.isBip39) {
-            final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
+            try {
+              final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
 
-            _decryptedPasswordList.add(mnemonic);
+              _decryptedPasswordList.add(mnemonic);
+            } catch(e) {
+              _logManager.logger.e("exception: $e");
+              return;
+            }
           } else {
             _decryptedPasswordList.add(decryptedPassword);
           }
 
-          _decryptedPasswordItemList.add(updatedPasswordItem);
+          _decryptedPasswordItemList.add(passwordItem);
         } else {
           // _decryptedPasswordItemList.add(null);
-          _decryptedPasswordItemList.add(updatedPasswordItem);
+          _decryptedPasswordItemList.add(passwordItem);
         }
       }
     }
@@ -219,7 +206,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     int hours = difference.inHours % 24;
     int minutes = difference.inMinutes % 60;
     int seconds = difference.inSeconds % 60;
-    // print("$years years");
 
     var elapsedTimeString = "";
     if (years >= 1.0) {
@@ -556,10 +542,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[100],// Colors.grey[50],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[100],// Colors.grey[50],
       appBar: AppBar(
         title: Text(
           "Passwords",
@@ -746,6 +733,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
+
   Future<void> _scanQR() async {
     if (Platform.isIOS) {
       String barcodeScanRes;
@@ -871,12 +859,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     // _logManager.logger.d("passwordItem toRawJson: $passwordItemString");
 
     final genericItem = GenericItem(type: "password", data: passwordItemString);
-    // print('genericItem toRawJson: ${genericItem.toRawJson()}');
-
     final genericItemString = genericItem.toRawJson();
 
     final status = await _keyManager.saveItem(uuid, genericItemString);
-    // print("passwordItem status: $status");
 
     if (status) {
       // Navigator.of(context).pop();
@@ -910,9 +895,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       final encryptedName = (passwordItem?.name)!;
       final encryptedUsername = (passwordItem?.username)!;
       final encryptedPassword = (passwordItem?.password)!;
-      // print('passwordItem encryptedName: $encryptedName');
-      // print('passwordItem encryptedUsername: $encryptedUsername');
-      // print('passwordItem encryptedPassword: $encryptedPassword');
 
       /// decrypt fields
       ///
@@ -960,14 +942,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       await newPasswordItem.encryptParams(null);
 
       final passwordItemString = newPasswordItem.toRawJson();
-      // print('passwordItem toRawJson: $passwordItemString');
 
-      /// TODO: add GenericItem
-      ///
       final genericItem =
           GenericItem(type: "password", data: passwordItemString);
-      // print('genericItem toRawJson: ${genericItem.toRawJson()}');
-
       final genericItemString = genericItem.toRawJson();
 
       /// save item

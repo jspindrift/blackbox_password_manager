@@ -16,6 +16,7 @@ import '../helpers/ivHelper.dart';
 import '../helpers/AppConstants.dart';
 import '../helpers/WidgetUtils.dart';
 import '../managers/FileManager.dart';
+import '../managers/KeyScheduler.dart';
 import '../models/RecoveryKeyCode.dart';
 import '../models/VaultItem.dart';
 import '../models/GenericItem.dart';
@@ -44,7 +45,9 @@ class _BackupsScreenState extends State<BackupsScreen> {
   final _dialogTextFieldController = TextEditingController();
   final _dialogRestoreTextFieldController = TextEditingController();
   final _dialogLocalChangeNameTextFieldController = TextEditingController();
+  final _currentPasswordTextController = TextEditingController();
 
+  FocusNode _currentPasswordFocusNode = FocusNode();
   FocusNode _dialogTextFieldFocusNode = FocusNode();
   FocusNode _dialogRestoreTextFieldFocusNode = FocusNode();
   FocusNode _dialogChangeLocalNameFocusNode = FocusNode();
@@ -52,6 +55,10 @@ class _BackupsScreenState extends State<BackupsScreen> {
   List<VaultItem> _backups = [];
   List<bool> _matchingKeyList = [];
   List<bool> _matchingDeviceList = [];
+
+  int _wrongPasswordCount = 0;
+  bool _isAuthenticating = false;
+  bool _reKeyInProgress = false;
 
   VaultItem? _externalVaultItem; // SD card vault on Android
   int _externalVaultItemSize = 0;
@@ -108,6 +115,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
   final _settingsManager = SettingsManager();
   final _logManager = LogManager();
   final _fileManager = FileManager();
+  final _keyScheduler = KeyScheduler();
 
 
   @override
@@ -134,7 +142,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
     _fetchBackups();
   }
 
-  _fetchBackups() async {
+  Future<void> _fetchBackups() async {
 
     _keyManager.readEncryptedKey().then((value) {
       setState(() {
@@ -240,6 +248,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
           final isLocalVaultNonceValid = _checkBackupNonceValidity(
               _localVaultItem!);
           _shouldReKeyLocalVault = !isLocalVaultNonceValid;
+          // _shouldReKeyLocalVault = true;
 
           _localVaultNonceSequenceNumber =
               _getBackupNonceSequenceNumber(_localVaultItem!);
@@ -852,7 +861,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Backups'),
         automaticallyImplyLeading: false,
@@ -873,7 +882,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
               color: _isDarkModeEnabled ? Colors.greenAccent : null,
             ),
             onPressed: () async {
-              _fetchBackups();
+              await _fetchBackups();
             },
             tooltip: "Refresh backup list",
           ),
@@ -917,7 +926,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
                             EasyLoading.dismiss();
 
-                            _fetchBackups();
+                            await _fetchBackups();
 
                             if (status) {
                               EasyLoading.showToast("Backup Successful");
@@ -935,64 +944,47 @@ class _BackupsScreenState extends State<BackupsScreen> {
                   ),
                 ),
               ),
-              Visibility(
-                visible: _shouldReKeyLocalVault || (_shouldReKeyExternalVault && _shouldSaveToSDCard),
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(
-                    child: ElevatedButton(
-                      style: ButtonStyle(
-                        backgroundColor: _isDarkModeEnabled
-                            ? MaterialStateProperty.all<Color>(
-                            Colors.greenAccent)
-                            : null,
-                      ),
-                      child: Text(
-                        "ReKey and Create Backup",
-                        style: TextStyle(
-                          color:
-                          _isDarkModeEnabled ? Colors.black : Colors.white,
-                        ),
-                      ),
-                      onPressed: () async {
-                        if (_localVaultItem != null) {
-                          WidgetUtils.showSnackBarDuration(context, "Re-Keying and Backing Up Vault...", Duration(seconds: 2));
-
-                          if ((_localVaultItem?.id)! == _keyManager.vaultId &&
-                              _hasMatchingLocalVaultKeyData) {
-
-                            /// TODO: add rekey functionality here
-                            ///
-
-                            /// check master password
-                            ///
-                            /// re-key and backup vault
-
-                            // WidgetUtils.showSnackBarDuration(context, "Backing Up Vault...", Duration(seconds: 2));
-                            // final status = await _createBackup();
-
-                            EasyLoading.dismiss();
-
-                            _fetchBackups();
-
-                            EasyLoading.showToast("Implement this.");
-                            // if (status) {
-                            //   EasyLoading.showToast("Backup Successful");
-                            // } else {
-                            //   _showErrorDialog("Could not backup vault.");
-                            // }
-                          } else {
-                            _displayCreateBackupDialog(context, true, true);
-                          }
-                        } else {
-                          _displayCreateBackupDialog(context, true, false);
-                        }
-                      },
+            ],
+          ),
+          Visibility(
+            visible: _shouldReKeyLocalVault || (_shouldReKeyExternalVault && _shouldSaveToSDCard),
+            child: Padding(
+              padding: EdgeInsets.all(4),
+              child: Center(
+                child: ElevatedButton(
+                  style: ButtonStyle(
+                    backgroundColor: _isDarkModeEnabled
+                        ? MaterialStateProperty.all<Color>(
+                        Colors.greenAccent)
+                        : null,
+                  ),
+                  child: Text(
+                    "ReKey and Create Backup",
+                    style: TextStyle(
+                      color:
+                      _isDarkModeEnabled ? Colors.black : Colors.white,
                     ),
                   ),
+                  onPressed: () async {
+                    if (_localVaultItem != null) {
+                      // WidgetUtils.showSnackBarDuration(context, "Re-Keying and Backing Up Vault...", Duration(seconds: 2));
+
+                      if ((_localVaultItem?.id)! == _keyManager.vaultId &&
+                          _hasMatchingLocalVaultKeyData) {
+
+                        /// TODO: add rekey functionality here
+                        ///
+
+                        /// check master password
+                        ///
+                        /// re-key and backup vault
+                        _displayConfirmReKeyDialog(context);
+                      }
+                    }
+                  },
                 ),
               ),
-            ],
+            ),
           ),
           Visibility(
           visible: Platform.isAndroid && !_loginScreenFlow,
@@ -1168,6 +1160,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
           : null,
     );
   }
+
 
   _pressedSDCardSwitch(bool value) async {
 
@@ -1366,12 +1359,14 @@ class _BackupsScreenState extends State<BackupsScreen> {
         _logManager.logger.d("BackupsScreen-create backup");
 
         var currentVault = _localVaultItem;
-        var keyId = _keyManager.keyId;
 
         if (currentVault != null) {
           cdate = currentVault.cdate;
-          keyId = currentVault.encryptedKey.keyId;
+          // keyId = currentVault.encryptedKey.keyId;
         }
+
+        var keyId = _keyManager.keyId;
+        _logManager.logger.d("check keyID: $keyId");
 
         var numRounds = _cryptor.rounds;
         final salt = _keyManager.salt;
@@ -1444,7 +1439,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
           encryptionAlgorithm: encryptionAlgo,
           keyMaterial: keyMaterial,
           keyNonce: encryptedKeyNonce,
-          // mac: "",
         );
 
         // /// TODO: replace this HMAC function to use derived auth key
@@ -1474,7 +1468,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
 
         final backupItemString = backupItem.toRawJson();
         final backupHash = _cryptor.sha256(backupItemString);
-        // _logManager.logLongMessage("backupItemJson-long: ${backupItemString.length}: ${backupItemString}");
+        _logManager.logLongMessage("backupItemJson-long: ${backupItemString.length}: ${backupItemString}");
         // _logManager.logger.d("backup hash: $backupHash");
 
         _logManager.log(
@@ -1833,7 +1827,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
                     Navigator.of(context).pop();
 
                     if (status) {
-                      _fetchBackups();
+                      await _fetchBackups();
                       EasyLoading.showToast(
                           "Backup Name Change Successful");
                     } else {
@@ -1895,7 +1889,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
                     Navigator.of(context).pop();
 
                     if (status) {
-                      _fetchBackups();
+                      await _fetchBackups();
                       EasyLoading.showToast(
                           "Backup Name Change Successful");
                     } else {
@@ -2190,6 +2184,214 @@ class _BackupsScreenState extends State<BackupsScreen> {
   }
 
 
+  _displayConfirmReKeyDialog(BuildContext context) async {
+    return showDialog(
+        context: context,
+        builder: (context) {
+          return StatefulBuilder(builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Re-Key Backup'),
+              actions: <Widget>[
+                OutlinedButton(
+                  onPressed: () {
+                    setState(() {
+                      _dialogTextFieldController.text = '';
+                      _enableBackupNameOkayButton = false;
+                    });
+
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: _enableBackupNameOkayButton
+                      ? () async {
+                    Navigator.of(context).pop();
+                    EasyLoading.show(status: "Re-Keying...");
+                    await _confirmCurrentMasterPassword(_currentPasswordTextController.text);
+
+                    EasyLoading.dismiss();
+
+                    setState(() {
+                      _currentPasswordTextController.text = '';
+                      _enableBackupNameOkayButton = false;
+                    });
+
+                    // Navigator.of(context).pop();
+                  }
+                      : null,
+                  child: Text('Re-Key'),
+                ),
+              ],
+              content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children:[
+                    Visibility(
+                      visible: true,
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(0, 8, 0, 16),
+                        child: Text(
+                          "Warning: This is a sensitive operation.",
+                          style: TextStyle(
+                            color: Colors.red,
+                          ),
+                        ),
+                      ),),
+                    TextField(
+                      controller: _currentPasswordTextController,
+                      focusNode: _currentPasswordFocusNode,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: "Master Password",
+                      ),
+                      onChanged: (value) {
+                        if (value.isNotEmpty) {
+                          setState(() {
+                            _enableBackupNameOkayButton = true;
+                          });
+                        } else {
+                          setState(() {
+                            _enableBackupNameOkayButton = false;
+                          });
+                        }
+                      },),
+                  ]),
+            );
+          });
+        });
+  }
+
+  /// confirm the current vault master password
+  Future<void> _confirmCurrentMasterPassword(String password) async {
+    FocusScope.of(context).unfocus();
+
+    // final password = _currentPasswordTextController.text;
+
+    _logManager.log(
+        "ReKeyAuthScreen", "_confirmCurrentMasterPassword", "confirming");
+
+    try {
+      final status = await _cryptor.deriveKeyCheck(password, _keyManager.salt);
+      _logManager.log("ReKeyAuthScreen", "_confirmCurrentMasterPassword",
+          "deriveKeyCheck: $status");
+
+      if (status) {
+        _wrongPasswordCount = 0;
+        _currentPasswordTextController.text = '';
+
+        setState(() {
+          _isAuthenticating = false;
+        });
+
+        _showReKeyConfirmationDialog(password);
+
+      } else {
+        _wrongPasswordCount += 1;
+        setState(() {
+          _isAuthenticating = false;
+        });
+        if (_wrongPasswordCount % 3 == 0 && _keyManager.hint.isNotEmpty) {
+          _showErrorDialog('Invalid password.\n\nhint: ${_keyManager.hint}');
+        } else {
+          _showErrorDialog('Invalid password.');
+        }
+      }
+      // });
+    } catch (e) {
+      _logManager.logger.w(e);
+      _logManager.log(
+          "ReKeyAuthScreen", "_confirmCurrentMasterPassword", "Error: $e");
+      _showErrorDialog('An error occurred');
+    }
+  }
+
+  void _showReKeyConfirmationDialog(String password) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Confirm Re-Key Vault'),
+        content: Text("Warning, this is a sensitive operation.  Please wait for the process the finish and dont background the app.\n\nDo you wish to proceed?"),
+        actions: <Widget>[
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+
+              FocusScope.of(context).requestFocus(_currentPasswordFocusNode);
+            },
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+
+              setState(() {
+                _reKeyInProgress = true;
+              });
+
+              EasyLoading.show(status: "Re-Keying...");
+
+              final status = await reKey(password);
+
+              // if (status) {
+              //
+              // }
+
+              // });
+            },
+            child: Text('Okay'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool> reKey(String password) async {
+    final status = await _keyScheduler.startReKeyService(password);
+
+    EasyLoading.dismiss();
+
+    setState(() {
+      _reKeyInProgress = false;
+    });
+
+    if (status) {
+
+      _logManager.logger.d("reKey COMPLETE!!!! success, check it out.");
+
+      // Navigator.of(context).popUntil((route) => route.isFirst);
+
+      final status  = await _createBackup();
+      if (status) {
+        _showCompletionDialog("Complete");
+      }
+      await _fetchBackups();
+
+    } else {
+      _showErrorDialog("Error re-keying vault.  Be Aware!!");
+    }
+    return status;
+  }
+
+  void _showCompletionDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Re-Key Complete'),
+        content: Text(message),
+        actions: <Widget>[
+          ElevatedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+
+                // FocusScope.of(context).requestFocus(_currentPasswordFocusNode);
+              },
+              child: Text('Okay'))
+        ],
+      ),
+    );
+  }
+
+
   /// restore local backup
   ///
   Future<bool> _restoreLocalBackup(String salt) async {
@@ -2388,7 +2590,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
                             }
 
                             if (!_loginScreenFlow) {
-                              _fetchBackups();
+                              await _fetchBackups();
                             }
 
                             setState(() {
@@ -2498,7 +2700,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
                         }
 
                         if (!_loginScreenFlow) {
-                          _fetchBackups();
+                          await _fetchBackups();
                         }
 
                         setState(() {
@@ -2584,7 +2786,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
             //   primary: Colors.redAccent,
             // ),
             onPressed: () async {
-              _confirmDeleteLocalBackup();
+              await _confirmDeleteLocalBackup();
               Navigator.of(ctx).pop();
             },
             child: Text('Delete'),
@@ -2625,13 +2827,13 @@ class _BackupsScreenState extends State<BackupsScreen> {
     );
   }
 
-  void _confirmDeleteLocalBackup() async {
+  Future<void> _confirmDeleteLocalBackup() async {
 
     await _fileManager.clearNamedVaultFile();
 
     _localVaultItem = null;
 
-    _fetchBackups();
+    await _fetchBackups();
   }
 
   void _confirmDeleteExternalBackup() async {
@@ -2641,6 +2843,23 @@ class _BackupsScreenState extends State<BackupsScreen> {
     _externalVaultItem = null;
 
     _fetchBackups();
+  }
+
+  void _showMessageDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Info'),
+        content: Text(message),
+        actions: <Widget>[
+          ElevatedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+              },
+              child: Text('Okay'))
+        ],
+      ),
+    );
   }
 
   void _showErrorDialog(String message) {

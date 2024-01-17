@@ -94,6 +94,8 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
   /// symmetric
   final algorithm_nomac = AesCtr.with256bits(macAlgorithm: MacAlgorithm.empty);
 
+  final algorithm_exchange = X25519();
+
 
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
@@ -116,11 +118,9 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
 
     _peerPublicKeys = widget.keyItem.peerPublicKeys;
 
-    final algorithm_exchange = X25519();
-
     // final keyIndex = (widget.keyItem.keyIndex)!;
     /// decrypt root seed and expand
-    _cryptor.decrypt(widget.keyItem.key).then((value) {
+    _cryptor.decrypt(widget.keyItem.key).then((value) async {
       final decryptedSeedData = value;
       // print("decryptedSeedData: ${decryptedSeedData}");
 
@@ -128,6 +128,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
       // final decodedRootKey = hex.decode(decryptedSeedData);
       final decodedRootKey = base64.decode(decryptedSeedData);
 
+      // await _getChainedKey(decryptedSeedData);
       // print("decodedRootKey: ${decodedRootKey}");
 
       algorithm_exchange
@@ -155,17 +156,6 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
         });
 
       });
-
-
-      // _pubKey = simplePublicKey.bytes;
-
-      // if (mounted) {
-      //   setState(() {
-      //     _mainPrivKey = decodedRootKey;
-      //   });
-      // } else {
-      //   _mainPrivKey = decodedRootKey;
-      // }
     });
 
 
@@ -189,6 +179,42 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
 
     _startOTPTimer();
     
+  }
+
+  Future<void> _getChainedKey(String rootKey) async {
+    final privSeedPair = await algorithm_exchange.newKeyPairFromSeed(base64.decode(rootKey));
+
+      // final privSeedPair = pair;
+    final pubKey = await privSeedPair.extractPublicKey();
+    var pubKeyHash = _cryptor.sha256(hex.encode(pubKey.bytes));
+    _logManager.logger.d("pubKeyHash1: $pubKeyHash");
+
+    for (var index = 0; index < 8; index++) {
+      final keyPair = await algorithm_exchange.newKeyPairFromSeed(hex.decode(pubKeyHash));
+      final pubKey = await keyPair.extractPublicKey();
+      pubKeyHash = _cryptor.sha256(hex.encode(pubKey.bytes));
+      _logManager.logger.d("pubKeyHash-$index: $pubKeyHash");
+    }
+
+    _logManager.logger.d("pubKeyHash-last: $pubKeyHash");
+        // final simplePublicKey = value;
+        // _mainPubKey = simplePublicKey.bytes;
+        // privSeedPair.extractPrivateKeyBytes().then((value) {
+        //   print("privkeyseed check: ${value}");
+        //   print("privkeyseed check hex: ${hex.encode(value)}");
+        // });
+
+
+    if (mounted) {
+      setState(() {
+        _mainPrivKey = base64.decode(rootKey);
+        _mainPubKey = pubKey.bytes;
+      });
+    } else {
+      _mainPrivKey = base64.decode(rootKey);
+      _mainPubKey = pubKey.bytes;
+    }
+
   }
 
   void _startOTPTimer() async {
@@ -294,6 +320,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
 
     _cancelOTPTimer();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -1182,6 +1209,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
     );
   }
 
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -1601,10 +1629,9 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
       version: AppConstants.peerPublicKeyItemVersion,
       name: encryptedPeerName,
       key: encryptedPeerPublicKey,
-      // favorite: _isFavorite,
       notes: encryptedPeerNotes,
-      sentMessages: SecureMessageList(list: [], merkleTree: []), // TODO: add back in
-      receivedMessages: SecureMessageList(list: [], merkleTree: []), // TODO: add back in
+      sentMessages: SecureMessageList(list: []), // TODO: add back in
+      receivedMessages: SecureMessageList(list: []), // TODO: add back in
       cdate: createdDate,
       mdate: createdDate,
     );

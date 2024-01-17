@@ -19,11 +19,13 @@ import 'home_tab_screen.dart';
 class AddNoteScreen extends StatefulWidget {
   const AddNoteScreen({
     Key? key,
-    required this.note,
+    // required this.note,
+    required this.id,
   }) : super(key: key);
   static const routeName = '/add_note_screen';
 
-  final NoteItem? note;
+  // final NoteItem? note;
+  final String? id;
 
   @override
   State<AddNoteScreen> createState() => _AddNoteScreenState();
@@ -46,7 +48,6 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   bool _isNewNote = true;
   bool _isFavorite = false;
   bool _fieldsAreValid = false;
-  bool _enableTagNameOkayButton = false;
 
   NoteItem? _noteItem;
 
@@ -68,7 +69,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
 
     _logManager.log("AddNoteScreen", "initState", "initState");
 
-    if (widget.note == null) {
+    if (widget.id == null) {
       _isEditing = true;
       _isNewNote = true;
 
@@ -80,57 +81,99 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
     } else {
       _isEditing = false;
       _isNewNote = false;
-      var item = widget.note;
-      _noteItem = item;
+      // var item = widget.note;
+
+      EasyLoading.show(status: "Loading...");
+
+      _keyManager.getItem(widget.id!).then((item) async {
+        try {
+          // _logManager.logger.e("item: $item");
+
+          final genericItem = GenericItem.fromRawJson(item);
+          _logManager.logger.e("item: $genericItem");
+
+          _noteItem = NoteItem.fromRawJson(genericItem.data);
+          _logManager.logger.e("noteItem enc: ${_noteItem?.toRawJson()}");
+
+          await _noteItem?.decryptObject();
+          _logManager.logger.wtf("_noteItem dec: ${_noteItem?.toRawJson()}");
+
+          // var name = (_noteItem?.name)!;
+          // var notes = (_noteItem?.notes)!;
+          //
+          // var noteTags = (_noteItem?.tags)!;
+          // var isFavorite = (_noteItem?.favorite)!;
+          // var modifiedDate = (_noteItem?.mdate)!;
+
+        setState(() {
+          _noteTags = (_noteItem?.tags)!;
+          _isFavorite = (_noteItem?.favorite)!;
+          _modifiedDate = (_noteItem?.mdate)!;
+
+          for (var _ in _noteTags) {
+            _selectedTags.add(false);
+          }
+        });
+
+        _nameTextController.text = (_noteItem?.name)!;
+        _notesTextController.text = (_noteItem?.notes)!;
+
+          _validateFields();
+
+        } catch (e) {
+          _logManager.logger.e("Exception: $e");
+        }
+
+        EasyLoading.dismiss();
+      });
+    }
+
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
+    _selectedIndex = _settingsManager.currentTabIndex;
+  }
+
+  Future<void> _refreshNoteItem() async {
+    if (widget.id == null) {
+      _logManager.logger.e("_noteItem is empty");
+      return;
+    }
+
+    final genericItem = await _keyManager.getItem(widget.id!);
+    try {
+      final item = GenericItem.fromRawJson(genericItem);
+      _logManager.logger.e("item: $genericItem");
+
+      _noteItem = NoteItem.fromRawJson(item.data);
+      _logManager.logger.e("noteItem enc: ${_noteItem?.toRawJson()}");
+
+      await _noteItem?.decryptObject();
+      _logManager.logger.wtf("_noteItem refresh: ${_noteItem?.toRawJson()}");
 
       setState(() {
-        _noteTags = (item?.tags)!;
-        _isFavorite = (item?.favorite)!;
-        _modifiedDate = (item?.mdate)!;
+        _noteTags = (_noteItem?.tags)!;
+        _isFavorite = (_noteItem?.favorite)!;
+        _modifiedDate = (_noteItem?.mdate)!;
       });
 
-      for (var tag in _noteTags) {
+      for (var _ in _noteTags) {
         _selectedTags.add(false);
       }
 
       _filteredTags = _settingsManager.itemTags;
 
-      _nameTextController.text = (item?.name)!;
-      _notesTextController.text = (item?.notes)!;
+      _nameTextController.text = (_noteItem?.name)!;
+      _notesTextController.text = (_noteItem?.notes)!;
+
+    } catch (e) {
+      _logManager.logger.e("Exception: $e");
     }
-
-    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
-    _selectedIndex = _settingsManager.currentTabIndex;
-
-    _validateFields();
   }
 
-  Future<void> _refreshNoteItem() async {
-    if (_noteItem == null) {
-      _logManager.logger.e("_noteItem is empty");
-      return;
-    }
-
-    setState(() {
-      _noteTags = (_noteItem?.tags)!;
-      _isFavorite = (_noteItem?.favorite)!;
-      _modifiedDate = (_noteItem?.mdate)!;
-    });
-
-    for (var tag in _noteTags) {
-      _selectedTags.add(false);
-    }
-
-    _filteredTags = _settingsManager.itemTags;
-
-    _nameTextController.text = (_noteItem?.name)!;
-    _notesTextController.text = (_noteItem?.notes)!;
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Note'),
         automaticallyImplyLeading: false,
@@ -147,7 +190,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
               _isEditing = false;
             });
 
-            if (widget.note == null) {
+            if (_noteItem == null) {
               Navigator.of(context).pop();
               return;
             }
@@ -557,7 +600,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                     children: [
                       // SizedBox(height: 8),
                       Text(
-                        widget.note == null ? '' : 'id: ${(widget.note?.id)!}',
+                        _noteItem?.id == null ? '' : 'id: ${(_noteItem?.id)!}',
                         style: TextStyle(
                           fontSize: 14,
                           color: _isDarkModeEnabled ? Colors.white : null,
@@ -565,7 +608,8 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'created: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse((widget.note?.cdate)!))}',
+                      _noteItem == null
+                          ? "" : 'created: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse((_noteItem?.cdate)!))}',
                         style: TextStyle(
                           fontSize: 14,
                           color: _isDarkModeEnabled ? Colors.white : null,
@@ -573,7 +617,8 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                       ),
                       SizedBox(height: 5),
                       Text(
-                        'modified: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse(_modifiedDate))}',
+                      _noteItem == null ? "" :
+                      'modified: ${DateFormat('MMM d y  hh:mm a').format(DateTime.parse(_modifiedDate))}',
                         style: TextStyle(
                           fontSize: 14,
                           color: _isDarkModeEnabled ? Colors.white : null,
@@ -581,9 +626,9 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        widget.note == null
+                        _noteItem == null
                             ? ''
-                            : 'size: ${(((widget.note)!).toRawJson().length / 1024).toStringAsFixed(2)} KB',
+                            : 'size: ${(((_noteItem)!).toRawJson().length / 1024).toStringAsFixed(2)} KB',
                         style: TextStyle(
                           fontSize: 14,
                           color: _isDarkModeEnabled ? Colors.white : null,
@@ -731,8 +776,8 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
     _modifiedDate = createDate;
 
     if (!_isNewNote) {
-      createDate = (widget.note?.cdate)!;
-      uuid = (widget.note?.id)!;
+      createDate = (_noteItem?.cdate)!;
+      uuid = (_noteItem?.id)!;
       setState(() {
         _modifiedDate = DateTime.now().toIso8601String();
       });
@@ -821,7 +866,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   }
 
   void _confirmedDeleteItem() async {
-    final status = await _keyManager.deleteItem((widget.note?.id)!);
+    final status = await _keyManager.deleteItem((_noteItem?.id)!);
 
     if (status) {
       Navigator.of(context).pop();
@@ -891,6 +936,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                                   : null,
                               autocorrect: false,
                               obscureText: false,
+                              // autofocus: true,
                               minLines: 1,
                               maxLines: 1,
                               decoration: InputDecoration(
@@ -1006,7 +1052,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                                       updatedTagList
                                           .sort((e1, e2) => e1.compareTo(e2));
 
-                                      settingsManager
+                                      _settingsManager
                                           .saveItemTags(updatedTagList);
 
                                       state(() {

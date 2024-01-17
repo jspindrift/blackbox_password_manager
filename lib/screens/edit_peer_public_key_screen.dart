@@ -723,10 +723,11 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Peer Public Key'),
         automaticallyImplyLeading: false,
@@ -1671,6 +1672,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
       ),
     );
   }
+
 
   void _onItemTapped(int index) {
     setState(() {

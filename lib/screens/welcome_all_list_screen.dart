@@ -187,10 +187,11 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text("All"),
         automaticallyImplyLeading: false,
@@ -409,7 +410,7 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => AddNoteScreen(
-                      note: convertedItem,
+                      id: convertedItem.id,
                     ),
                   ),
                 ).then((value) {
@@ -589,6 +590,7 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
     );
   }
 
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -740,7 +742,9 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AddNoteScreen(note: null),
+              builder: (context) => AddNoteScreen(
+                  id: null,
+              ),
             ),
           ).then((value) {
             if (value == "savedItem") {
@@ -772,9 +776,6 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
 
         /// Add New Items here...
       }
-      // else {
-      //   print("Dismissed");
-      // }
     });
   }
 
