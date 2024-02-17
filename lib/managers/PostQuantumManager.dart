@@ -220,7 +220,7 @@ class PostQuantumManager {
       keyIndex_secp256k1 = 0;
     }
 
-    var messageString = "project_file_hashes.txt: ${fileHash}";
+    var messageString = "{cdate: ${DateTime.now().toIso8601String()}, project_file_hashes.txt: ${fileHash}}";
     // final msgObjectHash = _cryptor.sha256(messageString);
 
     /// compute asymmetric signature on message object
@@ -269,7 +269,6 @@ class PostQuantumManager {
       previousHash: lastBlockHash,
       publicKey: _wotsManager.topPublicKey,
       nextPublicKey: _wotsManager.nextTopPublicKey,
-      time: DateTime.now().toIso8601String(),
       data: messageString,
     );
 
@@ -278,7 +277,6 @@ class PostQuantumManager {
         kek,
         chainId,
         lastBlockHash,
-        thisSigatureIndex,
         msgObject,
         bitSecurity,
         doRecovery,

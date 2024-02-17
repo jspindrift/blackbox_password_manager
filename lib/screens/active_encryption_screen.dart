@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:blackbox_password_manager/managers/WOTSManager.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/cupertino.dart';
@@ -15,6 +14,7 @@ import '../models/EncryptedPeerMessage.dart';
 import '../models/KeyItem.dart';
 import '../models/GenericItem.dart';
 import '../models/QRCodeEncryptedMessageItem.dart';
+import '../managers/WOTSManager.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
@@ -28,12 +28,12 @@ import 'home_tab_screen.dart';
 class ActiveEncryptionScreen extends StatefulWidget {
   const ActiveEncryptionScreen({
     Key? key,
-    required this.id,
+    required this.peerId,
     KeyItem? this.keyItem,
   }) : super(key: key);
   static const routeName = '/active_encryption_key_screen';
 
-  final String id;
+  final String peerId;
   final KeyItem? keyItem;
 
   @override
@@ -67,6 +67,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
   String _fromAddr = "";
   String _toAddr = "";
 
+  String _lastBlockHash = "";
+
   List<int> _peerPublicKey = [];
   List<int> _seedKey = [];
   List<int> _Kenc = [];
@@ -82,11 +84,21 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
   List<int> _Kwots = [];
   List<int> _Kwots_send = [];
-  int _wotsSigningCounter = 0;
+  int _wotsSigningCounter = 1;
+
+  String _lastRecievedHashState = "";
+  String _lastSentHashState = "";
+
 
   KeyItem? _keyItem;
+  PeerPublicKey? _peerKey;
+
+  GenericMessageList? _sentMessages;
+  GenericMessageList? _receivedMessages;
 
   QRCodeEncryptedMessageItem? _qrMessageItem;
+
+  final algorithm_exchange = X25519();
 
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
@@ -101,142 +113,240 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
     _logManager.log("ActiveEncryptionScreen", "initState", "initState");
 
-    // _logManager.logger.d("widget.id: ${widget.id}");
-
-    /// read key info from keychain
-    _getItem();
-
-    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
-
-    _selectedIndex = _settingsManager.currentTabIndex;
-
     _wotsManager.reset();
 
-    _validateFields();
+    _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
+    _selectedIndex = _settingsManager.currentTabIndex;
+
+    /// read key info from keychain
+    _getItem().then((value) {
+      _keyItem = widget.keyItem;
+      _sentMessages = _keyItem?.peerPublicKeys.first.sentMessages;
+      _receivedMessages = _keyItem?.peerPublicKeys.first.receivedMessages;
+      if (_keyItem!.peerPublicKeys.first.sentMessages!.list.isNotEmpty) {
+        _isUsingWOTS =
+        (_keyItem?.peerPublicKeys.first.sentMessages?.list.first.type ==
+            MessageType.wotsEncryptedMesh.name);
+      }
+
+      _logManager.logger.wtf("_sentMessages: ${_sentMessages?.toJson()}");
+      _logManager.logger.wtf("_receivedMessages: ${_receivedMessages?.toJson()}");
+
+      if (_sentMessages!.list.length > 0) {
+        _lastBlockHash = _cryptor.sha256(_sentMessages!.list.last.toRawJson());
+      }
+      _logManager.logger.wtf("_lastBlockHash: ${_lastBlockHash}");
+
+
+      _validateFields();
+    });
+
   }
 
-  void _getItem() async {
+  Future<void> _getItem() async {
 
-    if (widget.keyItem == null) {
-      _isRootSymmetric = true;
-      /// get the password item and decrypt the data
-      final item = await _keyManager.getItem(widget.id);//.then((value) async {
-        final genericItem = GenericItem.fromRawJson(item);
-        if (genericItem.type == "key") {
-          /// must be a PasswordItem type
-          _keyItem = KeyItem.fromRawJson(genericItem.data);
-
-          if (_keyItem != null) {
-            var keydata = (_keyItem?.key)!;
-
-            if (keydata == null) {
-              return;
-            }
-            // print("keydata: ${keydata.length}: $keydata");
-
-            /// TODO: set seedKey and encryption/auth keys
-            // final decrypedSeedData = await _cryptor.decrypt(keydata);
-            final decrypedSeedData = await _cryptor.decryptReturnData(keydata);
-            var decodedSeedData = decrypedSeedData;
-            if (_keyItem?.keyType == "sym") {
-              decodedSeedData = base64.decode(utf8.decode(decrypedSeedData));
-            }
-
-
-            _seedKey = decodedSeedData;
-            _logManager.logger.d("_seedKey: ${hex.encode(_seedKey)}");
-
-            final expanded = await _cryptor.expandKey(_seedKey);
-            if (AppConstants.debugKeyData) {
-              _logManager.logger.d("decrypedSeedData: ${decrypedSeedData
-                  .length}: $decrypedSeedData");
-              _logManager.logger.d("decodedSeedData: ${decodedSeedData
-                  .length}: $decodedSeedData");
-              _logManager.logger.d("expanded: ${expanded.length}: $expanded");
-            }
-
-
-            setState(() {
-              _Kenc = expanded.sublist(0, 32);
-              _Kauth = expanded.sublist(32, 64);
-            });
-
-            var name = (_keyItem?.name)!;
-
-            _logManager.logger.d("_Kenc: ${hex.encode(_Kenc)}\n"
-                "_Kauth: ${hex.encode(_Kauth)}");
-
-            _cryptor.decrypt(name).then((value) {
-              name = value;
-
-              _validateFields();
-            });
-
-            _Kwots = _cryptor.aesGenKeyBytes;
-            if (_Kwots != null && _Kwots.isNotEmpty) {
-              _logManager.logger.d("got a wots key: ${hex.encode(_Kwots)}");
-            }
-          }
-        }
-      // });
-    } else {
+    // if (widget.keyItem == null) {
+    //   _isRootSymmetric = true;
+    //   /// get the password item and decrypt the data
+    //   final item = await _keyManager.getItem(widget.peerId);
+    //   final genericItem = GenericItem.fromRawJson(item);
+    //   if (genericItem.type == "key") {
+    //     /// must be a PasswordItem type
+    //     _keyItem = KeyItem.fromRawJson(genericItem.data);
+    //
+    //     if (_keyItem != null) {
+    //       var keydata = (_keyItem?.keys)!;
+    //
+    //       if (keydata == null) {
+    //         return;
+    //       }
+    //
+    //       try {
+    //         if (keydata.privX == null) {
+    //           _logManager.logger.wtf("keydata.privX == null");
+    //           return;
+    //         }
+    //
+    //         if (keydata.privS == null) {
+    //           _logManager.logger.wtf("keydata.privS == null");
+    //           return;
+    //         }
+    //
+    //         if (keydata.privK == null) {
+    //           _logManager.logger.wtf("keydata.privK == null");
+    //           return;
+    //         }
+    //
+    //         final decrypedPrivX = await _cryptor.decryptReturnData(
+    //             keydata.privX!);
+    //         _logManager.logger.wtf("decrypedPrivX: ${decrypedPrivX}");
+    //
+    //         final decrypedPrivS = await _cryptor.decryptReturnData(
+    //             keydata.privS!);
+    //         _logManager.logger.wtf("decrypedPrivS: ${decrypedPrivS}");
+    //
+    //         final decrypedPrivK = await _cryptor.decryptReturnData(
+    //             keydata.privK!);
+    //         _logManager.logger.wtf("decrypedPrivK: ${decrypedPrivK}");
+    //
+    //
+    //         var decodedSeedData = decrypedPrivX;
+    //         if (_keyItem?.keyType == "sym") {
+    //           decodedSeedData = base64.decode(utf8.decode(decrypedPrivX));
+    //         }
+    //
+    //
+    //         _seedKey = decodedSeedData;
+    //         _logManager.logger.d("_seedKey: ${hex.encode(_seedKey)}");
+    //
+    //         final expanded = await _cryptor.expandKey(_seedKey);
+    //         if (AppConstants.debugKeyData) {
+    //           _logManager.logger.d("decrypedSeedData: ${decrypedPrivX
+    //               .length}: $decrypedPrivX");
+    //           _logManager.logger.d("decodedSeedData: ${decodedSeedData
+    //               .length}: $decodedSeedData");
+    //           _logManager.logger.d("expanded: ${expanded.length}: $expanded");
+    //         }
+    //
+    //
+    //         setState(() {
+    //           _Kenc = expanded.sublist(0, 32);
+    //           _Kauth = expanded.sublist(32, 64);
+    //         });
+    //
+    //         var name = (_keyItem?.name)!;
+    //
+    //         _logManager.logger.d("_Kenc: ${hex.encode(_Kenc)}\n"
+    //             "_Kauth: ${hex.encode(_Kauth)}");
+    //
+    //         _cryptor.decrypt(name).then((value) {
+    //           name = value;
+    //
+    //           _validateFields();
+    //         });
+    //
+    //         _Kwots = _cryptor.aesGenKeyBytes;
+    //         if (_Kwots != null && _Kwots.isNotEmpty) {
+    //           _logManager.logger.d("got a wots key: ${hex.encode(_Kwots)}");
+    //         }
+    //       } catch (e) {
+    //         _logManager.logger.wtf("exception: $e");
+    //       }
+    //     }
+    //   }
+    // } else {
+    if (widget.keyItem != null) {
       _isRootSymmetric = false;
 
-      var keydata = (widget.keyItem?.key)!;
-
-      // final keyIndex = (widget.keyItem?.keyIndex)!;
-      var version = 0;
-
-      if (widget.keyItem?.version != null) {
-        version = (widget.keyItem?.version)!;
-      }
-
-      if (keydata == null) {
-        return;
-      }
-
-      var keyName = (widget.keyItem?.name)!;
-
-
-      final decryptedName = await _cryptor.decrypt(keyName);
-      setState(() {
-        _mainKeyName = decryptedName;
-      });
-
-      // _validateFields();
-
-      var peerPublicKeys = (widget.keyItem?.peerPublicKeys)!;
-
-      for (var peerKey in peerPublicKeys) {
-        if (peerKey.id == widget.id) {
-          var keyIndex = 0;
-          // if (peerKey.version != null) {
-          //   version = (peerKey?.version)!;
-          // }
-          final decryptedPeerPublicKey = await _cryptor.decrypt(peerKey.key);
-          // _peerPublicKey = base64.decode(decryptedPeerPublicKey);
-
-          final decryptedPeerName = await _cryptor.decrypt(peerKey.name);
-          // _peerKeyName = decryptedPeerName;
-          setState(() {
-            _peerPublicKey = base64.decode(decryptedPeerPublicKey);
-            _peerKeyName = decryptedPeerName;
-          });
+      try {
+        var keydata = (widget.keyItem?.keys)!;
+        if (keydata == null) {
+          return;
         }
+
+        var keyName = (widget.keyItem?.name)!;
+        final decryptedName = await _cryptor.decrypt(keyName);
+
+        // var version = widget.keyItem?.version;
+        var peerIndex = 0;
+        for (var peerKey in widget.keyItem!.peerPublicKeys) {
+          if (peerKey.id == widget.peerId) {
+            break;
+          }
+          peerIndex++;
+        }
+
+        // if (_sentMessages != null) {
+
+          _isUsingWOTS = (_keyItem?.peerPublicKeys[peerIndex].sentMessages?.list.first.type == MessageType.wotsEncryptedMesh.name);
+        // }
+        _logManager.logger.d("${_isUsingWOTS}");
+        // _logManager.logger.d("${_keyItem?.peerPublicKeys[peerIndex].receivedMessages?.list}");
+
+        setState(() {
+          _sentMessages = _keyItem?.peerPublicKeys[peerIndex].sentMessages;
+          if (_sentMessages != null) {
+            if (_sentMessages!.list.length > 0) {
+              _wotsSigningCounter = (_sentMessages!.list.length + 1)!;
+            }
+          }
+          _receivedMessages = _keyItem?.peerPublicKeys[peerIndex].receivedMessages;
+          _mainKeyName = decryptedName;
+        });
+
+        if (_sentMessages != null) {
+          if (_sentMessages!.list.length > 0) {
+            _lastBlockHash =
+                _cryptor.sha256(_sentMessages!.list.last.toRawJson());
+          }
+        }
+
+        // (_receivedMessages.first.list);
+
+        // _validateFields();
+
+        var peerPublicKeys = (widget.keyItem?.peerPublicKeys)!;
+
+        for (var peerKey in peerPublicKeys) {
+          if (peerKey.id == widget.peerId) {
+            var keyIndex = 0;
+            // if (peerKey.version != null) {
+            //   version = (peerKey?.version)!;
+            // }
+            final decryptedPeerPublicKey = await _cryptor.decrypt(
+                peerKey.pubKeyX);
+            // _peerPublicKey = base64.decode(decryptedPeerPublicKey);
+
+            final decryptedPeerName = await _cryptor.decrypt(peerKey.name);
+            // _peerKeyName = decryptedPeerName;
+            setState(() {
+              _peerPublicKey = base64.decode(decryptedPeerPublicKey);
+              _peerKeyName = decryptedPeerName;
+            });
+
+            _peerKey = peerKey;
+            break;
+          }
+        }
+
+        if (keydata.privX == null) {
+          _logManager.logger.wtf("keydata.privX == null");
+
+          return;
+        }
+
+        if (keydata.privS == null) {
+          _logManager.logger.wtf("keydata.privS == null");
+
+          return;
+        }
+
+        if (keydata.privK == null) {
+          _logManager.logger.wtf("keydata.privK == null");
+          return;
+        }
+
+        /// TODO: set seedKey and encryption/auth keys
+        // final decrypedSeedData = await _cryptor.decrypt(keydata);
+        final decrypedPrivX = await _cryptor.decrypt(keydata.privX!);
+        // _logManager.logger.wtf("decrypedPrivX: ${decrypedPrivX}");
+
+        final decrypedPrivS = await _cryptor.decrypt(
+            keydata.privS!);
+        // _logManager.logger.wtf("decrypedPrivS: ${decrypedPrivS}");
+
+        final decrypedPrivK = await _cryptor.decrypt(
+            keydata.privK!);
+        // _logManager.logger.wtf("decrypedPrivK: ${decrypedPrivK}");
+
+        // setState(() {
+          _mainPrivateKey = base64.decode(decrypedPrivX);
+        // });
+      } catch (e) {
+        _logManager.logger.e("exception: ${e}");
       }
-
-      /// TODO: set seedKey and encryption/auth keys
-      // final decrypedSeedData = await _cryptor.decrypt(keydata);
-      final decrypedMainPrivateKeyData = await _cryptor.decrypt(keydata);
-
-      // print("decrypedMainPrivateKeyData: $decrypedMainPrivateKeyData");
-      // _mainPrivateKey = base64.decode(decrypedMainPrivateKeyData);
-      setState(() {
-        _mainPrivateKey = base64.decode(decrypedMainPrivateKeyData);
-      });
 
       await _generatePeerKeyPair();
-
 
       _validateFields();
     }
@@ -244,50 +354,23 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
   }
 
   Future<void> _generatePeerKeyPair() async {
-    if (_mainPrivateKey == null) {
+    if (_mainPrivateKey == null || _mainPrivateKey.isEmpty || _peerPublicKey == null || _peerPublicKey.isEmpty) {
       return;
     }
 
-    if (_mainPrivateKey.isEmpty) {
-      return;
-    }
-
-    if (_peerPublicKey == null) {
-      return;
-    }
-
-    if (_peerPublicKey.isEmpty) {
-      return;
-    }
-
-    final algorithm_exchange = X25519();
-
-    // print("bobPubString: ${bobPubString.length}: ${bobPubString}");
-
-    /// TODO: switch encoding !
-    // final privKey = hex.decode(privateKeyString);
-    // final privKey = base64.decode(privateKeyString);
-    // print("privKey: ${privKey.length}: ${privKey}");
-    // print("_mainPrivateKey: ${_mainPrivateKey.length}: ${_mainPrivateKey}");
-
-    // final ownerKeyPair = await algorithm_exchange.newKeyPairFromSeed(privKey);
     final ownerKeyPair = await algorithm_exchange.newKeyPairFromSeed(_mainPrivateKey);
+
 
     // final privKey = await ownerKeyPair.extractPrivateKeyBytes();
     // print("privKeyBytes: ${privKey.length}: ${privKey}");
 
     final mainPublicKey = await ownerKeyPair.extractPublicKey();
     _mainPublicKey = mainPublicKey.bytes;
-    // print("_mainPublicKey: ${_mainPublicKey.length}: ${_mainPublicKey}");
     // print("_mainPublicKeyHex: ${_mainPublicKey.length}: ${hex.encode(_mainPublicKey)}");
 
     // final bobPub = hex.decode(bobPubString);
     final bobPub = _peerPublicKey;
-    // print('peer Public Key: $bobPub');
     // print('peer Public Key hex: ${hex.encode(bobPub)}');
-
-    // _peerPublicKeyMnemonic = bip39.entropyToMnemonic(hex.encode(_peerPublicKey));
-
 
     final bobPublicKey = SimplePublicKey(bobPub, type: KeyPairType.x25519);
     final bobPubKeyBytes = bobPublicKey.bytes;
@@ -298,18 +381,17 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     );
 
     final sharedSecretBytes = await sharedSecret.extractBytes();
-    // print('Shared secret: $sharedSecretBytes');
-    // print('Shared secret hex: ${hex.encode(sharedSecretBytes)}');
+    // _logManager.logger.d('Shared secret hex: ${hex.encode(sharedSecretBytes)}');
 
     // final sharedSecretKeyHash = await _cryptor.sha256(hex.encode(sharedSecretBytes));
-    // print("shared secret key hash: ${sharedSecretKeyHash}");
+    // _logManager.logger.dnt("shared secret key hash: ${sharedSecretKeyHash}");
 
     final expanded = await _cryptor.expandKey(sharedSecretBytes);
-    // print('Shared secret expanded: $expanded');
+    // _logManager.logger.d('Shared secret expanded: $expanded');
     _Kenc = expanded.sublist(0, 32);
     _Kauth = expanded.sublist(32, 64);
-    // print('secret _Kenc: ${hex.encode(_Kenc)}');
-    // print('secret _Kauth: ${hex.encode(_Kauth)}');
+    // _logManager.logger.d('secret _Kenc: ${hex.encode(_Kenc)}');
+    // _logManager.logger.d('secret _Kauth: ${hex.encode(_Kauth)}');
 
     /// set public key values
     final mainPubSecretKey = SecretKey(_mainPublicKey);
@@ -575,12 +657,12 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                           : MaterialStateProperty.all<Color>(
                           Colors.blueGrey)
                   ),
-                  onPressed: _fieldsAreValid ? () {
+                  onPressed: _fieldsAreValid ? () async {
                     setState((){
                       _isDecrypting = false;
                     });
 
-                    _encryptMessage();
+                    await _encryptMessage();
                   } : null,
                   ),
                 ),
@@ -604,12 +686,12 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                           : MaterialStateProperty.all<Color>(
                           Colors.blueGrey)
                   ),
-                  onPressed: _fieldsAreValid ? () {
+                  onPressed: _fieldsAreValid ? () async {
                     setState((){
                       _isDecrypting = true;
                     });
 
-                    _decryptMessage();
+                    await _decryptMessage();
                   } : null,
                   ),
                 ),
@@ -663,16 +745,28 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                     ),
                   ),
                   Spacer(),
-                  Padding(
+                  // Padding(
+                  //   padding: EdgeInsets.all(8), child: Text(
+                  //   "signature: $_wotsSigningCounter",
+                  //   style: TextStyle(
+                  //     color: _isDarkModeEnabled ? Colors.white : Colors.black,
+                  //     fontSize: 16,
+                  //   ),
+                  // ),),
+                  // Spacer(),
+                ],),
+              ),
+              Visibility(
+                visible: _debugTestWots,
+                child: Padding(
                     padding: EdgeInsets.all(8), child: Text(
                     "signature: $_wotsSigningCounter",
                     style: TextStyle(
                       color: _isDarkModeEnabled ? Colors.white : Colors.black,
                       fontSize: 16,
                     ),
-                  ),),
-                  Spacer(),
-                ],),
+                  ),
+                ),
               ),
 
               Visibility(
@@ -802,6 +896,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                       onPressed: () {
                         setState(() {
                           _messageTextController.text = "";
+                          _sentMessages?.list = [];
+                          _receivedMessages?.list = [];
                         });
                         _validateFields();
                       },
@@ -874,6 +970,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                         onPressed: _fieldsAreValid
                             ? () async {
 
+                          // _pressedShareEncryptedMessage();
+
                           EasyLoading.showToast('Message Saved',
                               duration: Duration(milliseconds: 500));
                         }
@@ -905,6 +1003,8 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
                           /// TODO: save verified encrypted message in history/chain
                           /// after it has been verified
                           ///
+
+                          // _pressedShareEncryptedMessage();
 
                           EasyLoading.showToast('Message Saved',
                               duration: Duration(milliseconds: 500));
@@ -1126,6 +1226,15 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
 
   void _pressedShareEncryptedMessage() {
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => CameraScreen(cameras: _cameras,),
+    //   ),
+    // );
+    //
+    // return;
+
     if (_qrMessageItem == null) {
       _logManager.logger.e("QR item empty 1");
       return;
@@ -1157,8 +1266,12 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
   /// limit is 864 characters to fit within a shareable encrypted QR Code
   /// we could compact this more if we agreed upon a standard format without JSON
   /// or a JSON object with one param with keyId and message concatenated
-  void _encryptMessage() async {
-    final messageVersionNumber = 1;
+  Future<void> _encryptMessage() async {
+    var messageVersionNumber = 1;
+
+    if (_sentMessages != null) {
+       messageVersionNumber = _sentMessages!.list.length + 1;
+    }
     final message = _messageTextController.text;
 
     if (message == null) {
@@ -1174,6 +1287,11 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     final encryptedMessage = await _cryptor.encryptWithKey(_Kenc_send, _Kauth_send, message);
     final encryptedBlobBytes = base64.decode(encryptedMessage);
 
+    // final secMessage = SecureMessage(version: "test-v1", data: encryptedMessage);
+    // _sentMessages?.list.add(secMessage);
+    // _logManager.logger.e("_sentMessage: ${secMessage.toJson()}");
+
+
     final iv = encryptedBlobBytes.sublist(0,16);
     final mac = encryptedBlobBytes.sublist(16,48);
     final blob = encryptedBlobBytes.sublist(48,encryptedBlobBytes.length);
@@ -1182,84 +1300,165 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     final toAddr = _cryptor.sha256(hex.encode(_peerPublicKey)).substring(0, 40);
     final fromAddr = _cryptor.sha256(hex.encode(_mainPublicKey)).substring(0, 40);
 
-    // final appendedMessage = "to:" + toAddr + ":" + encryptedMessage;
     final timestamp = DateTime.now().toIso8601String();
 
-    EncryptedPeerMessage message_send_plain = EncryptedPeerMessage(
-      version: messageVersionNumber,
+    // EncryptedPeerMessage epm = EncryptedPeerMessage(
+    //     index: messageVersionNumber,
+    //     from: fromAddr,
+    //     to: toAddr,
+    //     message: encryptedMessage,
+    //     time: DateTime.now().toIso8601String(),
+    //     mac: "",
+    // );
+
+    var recieverState;
+    if (_receivedMessages!.list!.isNotEmpty) {
+      recieverState = _cryptor.sha256(_receivedMessages?.list.last.toRawJson());
+    }
+
+    var sentState;
+    if (_sentMessages!.list!.isNotEmpty) {
+      sentState = _cryptor.sha256(_sentMessages?.list!.last.toRawJson());
+      _wotsSigningCounter = _sentMessages!.list.length + 1;
+    }
+
+    EncryptedMeshPeerMessage messageToSend = EncryptedMeshPeerMessage(
+      index: messageVersionNumber,
+      sstate: sentState ?? "",
+      rstate: recieverState ?? "",
       from: fromAddr,
       to: toAddr,
       message: encryptedMessage,
       time: timestamp,
-      jmac: "",
+      mac: "",
     );
 
-    final msg_hash = _cryptor.sha256(message_send_plain.toRawJson());
-    final msgHashKey = SecretKey(hex.decode(msg_hash));
+    GenericPeerMessage genericMessage = GenericPeerMessage(
+      type: MessageType.encryptedMesh.name,
+      data: messageToSend.toRawJson(),
+    );
+
+    // _lastRecievedHashState = hex.decode(msg_hashv1);
+    _lastSentHashState = _cryptor.sha256(genericMessage.toRawJson());
+
+    final msgHashKeyv1 = SecretKey(hex.decode(_lastSentHashState));
+
+    // final msg_hash = _cryptor.sha256(message_send_plain.toRawJson());
+    // final msgHashKey = SecretKey(hex.decode(msg_hash));
 
     final hmac = Hmac.sha256();
     final mac_msg = await hmac.calculateMac(
       _Kauth_send,
-      secretKey: msgHashKey!,
+      secretKey: msgHashKeyv1!,
     );
 
-    EncryptedPeerMessage message_send_mac = EncryptedPeerMessage(
-      version: messageVersionNumber,
+    messageToSend.mac = base64.encode(mac_msg.bytes);
+    // message_send_mac.mac = base64.encode(mac_msg.bytes);
+
+    GenericPeerMessage updateGenericMessage = GenericPeerMessage(
+      type: MessageType.encryptedMesh.name,
+      data: messageToSend.toRawJson(),
+    );
+
+    /// add message to our list
+    // _sentMessages?.list.add(updateGenericMessage);
+
+    EncryptedWotsMeshPeerMessage messageToSendWots = EncryptedWotsMeshPeerMessage(
+      index: messageVersionNumber,
+      // sstate: sentState ?? "",
+      rstate: recieverState ?? "",
       from: fromAddr,
       to: toAddr,
       message: encryptedMessage,
       time: timestamp,
-      jmac: base64.encode(mac_msg.bytes),
+      mac: "",
     );
 
-    /// TODO: get kek, lastBlockHash, thisSignatureIndex, and msgObject
-    // final msg = BasicMessageData(
-    //     time: timestamp,
-    //     message: message_send_mac.toRawJson(),
-    //     signature: "",
-    // );
+    GenericPeerMessage genericMessageWots = GenericPeerMessage(
+      type: MessageType.wotsEncryptedMesh.name,
+      data: messageToSendWots.toRawJson(),
+    );
+
+    // _lastRecievedHashState = hex.decode(msg_hashv1);
+    final wotsMsgHash = _cryptor.sha256(genericMessageWots.toRawJson());
+
+    final wotsMsgHashKey = SecretKey(hex.decode(wotsMsgHash));
+
+    // final msg_hash = _cryptor.sha256(message_send_plain.toRawJson());
+    // final msgHashKey = SecretKey(hex.decode(msg_hash));
+
+    // final hmac = Hmac.sha256();
+    final mac_msg_wots = await hmac.calculateMac(
+      _Kauth_send,
+      secretKey: wotsMsgHashKey!,
+    );
+
+    messageToSendWots.mac = base64.encode(mac_msg_wots.bytes);
+
 
     final msgObject = WOTSMessageData(
       messageIndex: _wotsSigningCounter,
-      previousHash: _wotsManager.lastBlockHash,
+      previousHash: _lastBlockHash,
       publicKey: _wotsManager.topPublicKey,
       nextPublicKey: _wotsManager.nextTopPublicKey,
-      time: timestamp,
-      data: message_send_mac.toRawJson(),
+      data: messageToSendWots.toRawJson(),
     );
+
+    _lastBlockHash = _lastSentHashState;
 
     GigaWOTSSignatureItem? wotsSignature1 = GigaWOTSSignatureItem(
       id: "",
+      recovery: "",
       signature:[],
+      checksum: "",
       message: msgObject,
     );
 
     if (_isUsingWOTS && _debugTestWots) {
       _wotsSigningCounter++;
 
+      // updateGenericMessage = GenericPeerMessage(
+      //   type: MessageType.wotsEncryptedMesh.name,
+      //   data: messageToSend.toRawJson(),
+      // );
+
       wotsSignature1 = await _wotsManager.signGigaWotMessage(
           _Kwots_send,
           "main",
-          "lastBlockHash",
-          _wotsSigningCounter,
+          _wotsManager.lastBlockHash,
           msgObject,
           256,
           false,
       );
 
-      _logManager.logger.d("wotsSignature1: ${wotsSignature1?.toRawJson()}");
+      updateGenericMessage = GenericPeerMessage(
+        type: MessageType.wotsEncryptedMesh.name,
+        data: wotsSignature1!.toRawJson(),
+      );
+
+      setState(() {
+        _sentMessages?.list.add(updateGenericMessage);
+      });
+
+      await _saveEncryptedMessage();
+
+      // _logManager.logger.d("wotsSignature1: ${wotsSignature1?.toRawJson()}");
+      _logManager.logLongMessage("wotsSignature1: ${wotsSignature1?.toRawJson()}");
+    } else {
+
+      setState(() {
+        _sentMessages?.list.add(updateGenericMessage);
+      });
+
+      await _saveEncryptedMessage();
     }
 
     setState(() {
       _didEncrypt = true;
       _didDecryptSuccessfully = false;
-      // if (_isUsingWOTS && wotsSignature1 != null) {
-      //   _messageTextController.text = wotsSignature1.toRawJson();
-      // } else {
-      //   _messageTextController.text = message_send_mac.toRawJson();
-      // }
 
-      _messageTextController.text = message_send_mac.toRawJson();
+      _messageTextController.text = genericMessage.toRawJson();
+      // _messageTextController.text = updateGenericMessage.toRawJson();
     });
 
     if (_isUsingWOTS && wotsSignature1 != null) {
@@ -1267,10 +1466,13 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
         keyId: base64.encode(hex.decode(toAddr)),
         message: wotsSignature1!.toRawJson(),
       );
+
+      _messageTextController.text = updateGenericMessage.toRawJson();
+
     } else {
       _qrMessageItem = QRCodeEncryptedMessageItem(
         keyId: base64.encode(hex.decode(toAddr)),
-        message: message_send_mac.toRawJson(),
+        message: messageToSend.toRawJson(),
       );
     }
 
@@ -1298,13 +1500,13 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
 
   }
 
-  void _decryptMessage() async {
+  Future<void> _decryptMessage() async {
     final message = _messageTextController.text.trim();
 
-    EncryptedPeerMessage messageItem;
+    GenericPeerMessage messageItem;
     try {
       /// decode this into an EncryptedPeerMessage object
-      messageItem = EncryptedPeerMessage.fromRawJson(message);
+      messageItem = GenericPeerMessage.fromRawJson(message);
     } catch (e) {
       _logManager.logger.e("Exception: decrypt: $e");
       setState(() {
@@ -1324,7 +1526,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       return;
     }
 
-    if (messageItem.message.isEmpty) {
+    if (messageItem.data.isEmpty) {
       setState(() {
         _didEncrypt = false;
         _didDecryptSuccessfully = false;
@@ -1333,60 +1535,177 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       return;
     }
 
+    var receivedMessage;
+    var wotsSignature;
+    var wotsMsgObj;
+
+    try {
+      switch (messageItem.type) {
+        case "plain":
+          receivedMessage = PlaintextPeerMessage.fromRawJson(messageItem.data);
+          break;
+        case "encrypted"://MessageType.encrypted:
+          receivedMessage = EncryptedPeerMessage.fromRawJson(messageItem.data);
+          break;
+        case "encryptedMesh"://MessageType.encryptedMesh:
+          receivedMessage = EncryptedMeshPeerMessage.fromRawJson(messageItem.data);
+          break;
+        case "wotsPlain"://MessageType.wotsPlain:
+          receivedMessage = PlaintextPeerMessage.fromRawJson(messageItem.data);
+          break;
+        case "wotsEncrypted"://MessageType.wotsEncrypted:
+          receivedMessage = EncryptedPeerMessage.fromRawJson(messageItem.data);
+          break;
+        case "wotsEncryptedMesh"://MessageType.wotsEncryptedMesh:
+          wotsSignature = GigaWOTSSignatureItem.fromRawJson(messageItem.data);
+
+          wotsMsgObj = wotsSignature.message;
+          receivedMessage =  EncryptedWotsMeshPeerMessage.fromRawJson(wotsSignature.message.data);
+
+          // var message = receivedMessage.message;
+          _logManager.logger.d("receivedMessage: ${receivedMessage.toRawJson()}");
+
+          final isValid = await _wotsManager.verifyGigaWotSignature(wotsSignature);
+          _logManager.logger.d("isValid: $isValid");
+
+          if (!isValid) {
+            return;
+          }
+          break;
+        case "unknown":
+          receivedMessage = EncryptedPeerMessage.fromRawJson(messageItem.data);
+          break;
+      }
+    } catch (e) {
+      _logManager.logger.e("Exception: $e");
+    }
+
     /// check against the from and to address
-    final toAddr = _cryptor.sha256(base64.encode(_peerPublicKey)).substring(0, 40);
-    final fromAddr = _cryptor.sha256(base64.encode(_mainPublicKey)).substring(0,40);
+    final peerAddr = _cryptor.sha256(base64.encode(_peerPublicKey)).substring(0, 40);
+    final myAddr = _cryptor.sha256(base64.encode(_mainPublicKey)).substring(0,40);
 
-    final messageFromAddr = messageItem.from;
-    final messageToAddr = messageItem.to;
+    final messageFromAddr = receivedMessage.from;
+    final messageToAddr = receivedMessage.to;
 
-    final jmac_msg_bytes = base64.decode(messageItem.jmac);
+    _logManager.logger.d("myAddr: ${myAddr}, peerAddr: ${peerAddr}");
+    _logManager.logger.d("messageFromAddr: ${messageFromAddr}, messageToAddr: ${messageToAddr}");
 
-    var Kuse_e = _Kenc_send;
-    var Kuse_a = _Kauth_send;
+    // final mac_msg_bytes = base64.decode(messageItem.mac);
 
-    if (messageToAddr == fromAddr) {
-      Kuse_e = _Kenc_rec;
-      Kuse_a = _Kauth_rec;
-    } else if (messageToAddr == toAddr) {
+    var Kuse_e = _Kenc_rec;
+    var Kuse_a = _Kauth_rec;
+
+    // var isOwnMessage = false;
+    // if (messageToAddr == myAddr) {
+    //   Kuse_e = _Kenc_rec;
+    //   Kuse_a = _Kauth_rec;
+    // }
+    // else if (messageToAddr == peerAddr) {
+    //   isOwnMessage = true;
+    //   Kuse_e = _Kenc_send;
+    //   Kuse_a = _Kauth_send;
+    // }
+
+    // var Kuse_e = _Kenc_rec;
+    // var Kuse_a = _Kauth_rec;
+
+    var isOwnMessage = false;
+    if (messageToAddr == myAddr) {
       Kuse_e = _Kenc_send;
       Kuse_a = _Kauth_send;
     }
+    else if (messageFromAddr == myAddr) {
+      isOwnMessage = true;
+      Kuse_e = _Kenc_rec;
+      Kuse_a = _Kauth_rec;
+    }
 
-    /// check the jmac
+    // var sentState;
+    // if (_sentMessages!.list!.isNotEmpty) {
+    //   sentState = _sentMessages?.list!.last;
+    // }
+    /// check the mac
     ///
-    final check_received_message = EncryptedPeerMessage(
-        version: messageItem.version,
-        from: messageItem.from,
-        to: messageItem.to,
-        message: messageItem.message,
-        time: messageItem.time,
-        jmac: "",
+    // final check_received_message = EncryptedPeerMessage(
+    //     index: messageItem.index,
+    //     from: messageItem.from,
+    //     to: messageItem.to,
+    //     message: messageItem.message,
+    //     time: messageItem.time,
+    //     mac: "",
+    // );
+    final macToCheck = receivedMessage.mac;
+    receivedMessage.mac = "";
+
+
+
+    GenericPeerMessage genericMessageWots = GenericPeerMessage(
+      type: MessageType.wotsEncryptedMesh.name,
+      data: receivedMessage.toRawJson(),
     );
 
-    final msg_rec_hash = _cryptor.sha256(check_received_message.toRawJson());
-    // print("msg_rec_hash: ${msg_rec_hash}");
+    // GenericPeerMessage genericMessageWots = GenericPeerMessage(
+    //   type: messageItem.type,
+    //   data: wotsSignatureUpgraded.toRawJson(),
+    // );
+
+
+    final msg_rec_hash = _cryptor.sha256(genericMessageWots.toRawJson());
+    print("msg_rec_hash: ${msg_rec_hash}");
+
+    var recieverState;
+    // if (isOwnMessage) {
+      if (_receivedMessages!.list!.isNotEmpty) {
+        recieverState = _receivedMessages?.list.last;
+      }
+    // }
+
 
     final msgRecHashKey = SecretKey(hex.decode(msg_rec_hash));
 
     final hmac = Hmac.sha256();
-    final mac_rec_msg = await hmac.calculateMac(
+    final computedMac = await hmac.calculateMac(
       Kuse_a,
       secretKey: msgRecHashKey!,
     );
 
-    if (messageItem.jmac != base64.encode(mac_rec_msg.bytes)) {
+    _logManager.logger.d("$macToCheck == ${base64.encode(computedMac.bytes)}");
+
+    if (macToCheck != base64.encode(computedMac.bytes)) {
       setState(() {
         _hasEmbeddedMessageObject = false;
         _didEncrypt = false;
         _didDecryptSuccessfully = false;
       });
-      _logManager.logger.w("JMACs DO NOT Equal!!");
+      _logManager.logger.w("MACs DO NOT Equal!!");
       return;
     }
 
+
+    receivedMessage.mac = macToCheck;
+
+    var newWotsMsgObj = WOTSMessageData(
+      messageIndex: wotsMsgObj.messageIndex,
+      previousHash: wotsMsgObj.previousHash,
+      publicKey: wotsMsgObj.publicKey,
+      nextPublicKey: wotsMsgObj.nextPublicKey,
+      data: receivedMessage.toRawJson(),
+    );
+
+    GigaWOTSSignatureItem wotsSignatureUpgraded = GigaWOTSSignatureItem(
+      id: wotsSignature.id,
+      recovery: wotsSignature.recovery,
+      signature: wotsSignature.signature,
+      checksum: wotsSignature.checksum,
+      message: newWotsMsgObj,
+    );
+    GenericPeerMessage updatedGenericMessageWots = GenericPeerMessage(
+      type: MessageType.wotsEncryptedMesh.name,
+      data: wotsSignatureUpgraded.toRawJson(),
+    );
+
     /// need to decrypt with shared secret key
-    final decryptedMessage = await _cryptor.decryptWithKey(Kuse_e, Kuse_a, messageItem.message);
+    final decryptedMessage = await _cryptor.decryptWithKey(Kuse_e, Kuse_a, receivedMessage.message);
 
     if (decryptedMessage == null) {
       setState(() {
@@ -1406,6 +1725,15 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       return;
     }
 
+    if (isOwnMessage) {
+      _receivedMessages?.list.add(updatedGenericMessageWots);
+    }
+    // _logManager.logger.e("decrypted secMessage: ${secMessage.toJson()}");
+
+    if (!isOwnMessage) {
+      await _saveDecryptedMessage();
+    }
+
     setState(() {
       _didEncrypt = false;
       _didDecryptSuccessfully = true;
@@ -1413,7 +1741,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
    });
 
     _qrMessageItem = QRCodeEncryptedMessageItem(
-        keyId: base64.encode(hex.decode(toAddr)),
+        keyId: base64.encode(hex.decode(peerAddr)),
         message: decryptedMessage,
     );
 
@@ -1437,28 +1765,226 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
       });
     }
 
-    try {
-      /// decode this into an EncryptedPeerMessage object
-      var embeddedItem = EncryptedPeerMessage.fromRawJson(decryptedMessage);
-      if (embeddedItem == null) {
-        setState((){
-          _hasEmbeddedMessageObject = false;
-          _showShareMessageAsQRCode = false;
-        });
-      } else {
-        setState((){
-          _hasEmbeddedMessageObject = true;
-          _showShareMessageAsQRCode = true;
-        });
+ }
+
+  Future<void> _saveEncryptedMessage() async {
+
+    if (_peerKey != null && _sentMessages != null) {
+
+      final timestamp = DateTime.now().toIso8601String();
+
+      PeerPublicKey newPeerPublicKey = PeerPublicKey(
+        id: widget.peerId,
+        version: AppConstants.peerPublicKeyItemVersion,
+        name: (_peerKey?.name)!,
+        pubKeyX: (_peerKey?.pubKeyX)!,
+        pubKeyS: (_peerKey?.pubKeyS)!,
+        notes: (_peerKey?.notes)!,
+        sentMessages: _sentMessages!,
+        // TODO: add back in
+        receivedMessages: _receivedMessages!,
+        // TODO: add back in
+        cdate: (_peerKey?.cdate)!,
+        mdate: timestamp,
+      );
+
+      var peerIndex = 0;
+      var peerPubKeys = widget.keyItem!.peerPublicKeys;
+      for (var peerKey in widget.keyItem!.peerPublicKeys) {
+        if (peerKey.id == widget.peerId) {
+          break;
+        }
+        peerIndex++;
       }
-    } catch (e) {
-      _logManager.logger.e("Exception: Decrypt: ${e}");
-      setState((){
-        _hasEmbeddedMessageObject = false;
-        _showShareMessageAsQRCode = false;
-      });
+
+      peerPubKeys.removeAt(peerIndex);
+      peerPubKeys.insert(peerIndex, newPeerPublicKey);
+
+
+      var keyItem = KeyItem(
+        id: widget.keyItem!.id,
+        keyId: widget.keyItem!.keyId,
+        version: AppConstants.keyItemVersion,
+        name: widget.keyItem!.name,
+        keys: widget.keyItem!.keys,
+        keyType: widget.keyItem!.keyType,
+        purpose: widget.keyItem!.purpose,
+        algo: widget.keyItem!.algo,
+        notes: widget.keyItem!.notes,
+        favorite: widget.keyItem!.favorite,
+        isBip39: widget.keyItem!.isBip39,
+        peerPublicKeys: peerPubKeys,
+        tags: widget.keyItem!.tags,
+        mac: "",
+        cdate: widget.keyItem!.cdate,
+        mdate: timestamp,
+      );
+
+      final itemMac = await _cryptor.hmac256(keyItem.toRawJson());
+      keyItem.mac = itemMac;
+
+      final keyItemJson = keyItem.toRawJson();
+      _logManager.logLongMessage("save add peer key keyItem.toRawJson: $keyItemJson");
+
+      final genericItem = GenericItem(type: "key", data: keyItemJson);
+      final genericItemString = genericItem.toRawJson();
+      // _logManager.logger.d("genericItemString: ${genericItemString}");
+
+      /// save key item in keychain
+      ///
+      final status = await _keyManager.saveItem(widget.keyItem!.id, genericItemString);
+
+      if (status) {
+        // await _getItem();
+        EasyLoading.showToast('Saved Peer Message', duration: Duration(seconds: 1));
+      } else {
+        _showErrorDialog('Could not save the item.');
+      }
+
+    }
+  }
+
+  Future<void> _saveDecryptedMessage() async {
+
+    if (_peerKey != null && _receivedMessages != null) {
+
+      final timestamp = DateTime.now().toIso8601String();
+
+      PeerPublicKey newPeerPublicKey = PeerPublicKey(
+        id: widget.peerId,
+        version: AppConstants.peerPublicKeyItemVersion,
+        name: (_peerKey?.name)!,
+        pubKeyX: (_peerKey?.pubKeyX)!,
+        pubKeyS: (_peerKey?.pubKeyS)!,
+        notes: (_peerKey?.notes)!,
+        sentMessages: _sentMessages!,
+        // TODO: add back in
+        receivedMessages: _receivedMessages!,
+        // TODO: add back in
+        cdate: (_peerKey?.cdate)!,
+        mdate: timestamp,
+      );
+
+      var peerIndex = 0;
+      var peerPubKeys = widget.keyItem!.peerPublicKeys;
+      for (var peerKey in widget.keyItem!.peerPublicKeys) {
+        if (peerKey.id == widget.peerId) {
+          break;
+        }
+        peerIndex++;
+      }
+
+      peerPubKeys.removeAt(peerIndex);
+      peerPubKeys.insert(peerIndex, newPeerPublicKey);
+
+
+      var keyItem = KeyItem(
+        id: widget.keyItem!.id,
+        keyId: widget.keyItem!.keyId,
+        version: AppConstants.keyItemVersion,
+        name: widget.keyItem!.name,
+        keys: widget.keyItem!.keys,
+        keyType: widget.keyItem!.keyType,
+        purpose: widget.keyItem!.purpose,
+        algo: widget.keyItem!.algo,
+        notes: widget.keyItem!.notes,
+        favorite: widget.keyItem!.favorite,
+        isBip39: widget.keyItem!.isBip39,
+        peerPublicKeys: peerPubKeys,
+        tags: widget.keyItem!.tags,
+        mac: "",
+        cdate: widget.keyItem!.cdate,
+        mdate: timestamp,
+      );
+
+      final itemMac = await _cryptor.hmac256(keyItem.toRawJson());
+      keyItem.mac = itemMac;
+
+      final keyItemJson = keyItem.toRawJson();
+      _logManager.logLongMessage("save add peer key keyItem.toRawJson: $keyItemJson");
+
+      final genericItem = GenericItem(type: "key", data: keyItemJson);
+      final genericItemString = genericItem.toRawJson();
+      // _logManager.logger.d("genericItemString: ${genericItemString}");
+
+      /// save key item in keychain
+      ///
+      final status = await _keyManager.saveItem(widget.keyItem!.id, genericItemString);
+
+      if (status) {
+        // await _getItem();
+        EasyLoading.showToast('Saved Peer Message', duration: Duration(seconds: 1));
+      } else {
+        _showErrorDialog('Could not save the item.');
+      }
+
     }
  }
+
+ Future<void> _signMessageWOTS(String message) async {
+
+   _wotsSigningCounter++;
+
+   // _lastRecievedHashState = hex.decode(msg_hashv1);
+   // final msgHash = _cryptor.sha256(message);
+   // final kAuthSend = SecretKey(_Kauth_send);
+   //
+   // final hmac = Hmac.sha256();
+   // final mac_msg_wots = await hmac.calculateMac(
+   //   hex.decode(msgHash),
+   //   secretKey: kAuthSend!,
+   // );
+
+   // messageToSendWots.mac = base64.encode(mac_msg_wots.bytes);
+
+
+   final msgObject = WOTSMessageData(
+     messageIndex: _wotsSigningCounter,
+     previousHash: _lastBlockHash,
+     publicKey: _wotsManager.topPublicKey,
+     nextPublicKey: _wotsManager.nextTopPublicKey,
+     data: message,
+   );
+
+   _lastBlockHash = _lastSentHashState;
+
+   GigaWOTSSignatureItem? wotsSignature1 = GigaWOTSSignatureItem(
+     id: "",
+     recovery: "",
+     signature:[],
+     checksum: "",
+     message: msgObject,
+   );
+
+     // updateGenericMessage = GenericPeerMessage(
+     //   type: MessageType.wotsEncryptedMesh.name,
+     //   data: messageToSend.toRawJson(),
+     // );
+
+     final wotsSignature = await _wotsManager.signGigaWotMessage(
+       _Kwots_send,
+       "main",
+       _wotsManager.lastBlockHash,
+       msgObject,
+       256,
+       false,
+     );
+
+     // updateGenericMessage = GenericPeerMessage(
+     //   type: MessageType.wotsEncryptedMesh.name,
+     //   data: wotsSignature1!.toRawJson(),
+     // );
+
+     // setState(() {
+     //   _sentMessages?.list.add(updateGenericMessage);
+     // });
+
+     // await _saveEncryptedMessage();
+
+     // _logManager.logger.d("wotsSignature1: ${wotsSignature1?.toRawJson()}");
+     _logManager.logLongMessage("wotsSignature1: ${wotsSignature?.toRawJson()}");
+ }
+
 
   void _showErrorDialog(String message) {
     showDialog(

@@ -656,26 +656,35 @@ class KeyScheduler {
         if (keyItem != null) {
           final name = keyItem.name;
           final notes = keyItem.notes;
-          final key = keyItem.key;
+
+          final privKeyX = keyItem.keys.privX;
+          final privKeyS = keyItem.keys.privS;
+          final privKeyK = keyItem.keys.privK;
+
           final reecryptedName = await _cryptor.reKeyEncryption(false, name);
           final reecryptedNotes = await _cryptor.reKeyEncryption(false, notes);
-          final reecryptedKey = await _cryptor.reKeyEncryption(false, key);
+          final reecryptedKeyX = await _cryptor.reKeyEncryption(false, privKeyX!);
+          final reecryptedKeyS = await _cryptor.reKeyEncryption(false, privKeyS!);
+          final reecryptedKeyK = await _cryptor.reKeyEncryption(false, privKeyK!);
+
           // final reecryptedKey = await _cryptor.reKeyEncryption(keyItem.);
 
           keyItem.keyId = _keyManager.reKeyId;
           keyItem.name = reecryptedName;
           keyItem.notes = reecryptedNotes;
-          keyItem.key = reecryptedKey;
+          keyItem.keys.privX = reecryptedKeyX;
+          keyItem.keys.privS = reecryptedKeyS;
+          keyItem.keys.privK = reecryptedKeyK;
 
           final peerPubs = keyItem.peerPublicKeys;
           List<PeerPublicKey> newPeerPublicKeys = [];
           for (var peerKey in peerPubs) {
 
-              final reecryptedPeerPublicKey = await _cryptor.reKeyEncryption(false, peerKey.key);
+              final reecryptedPeerPublicKeyX = await _cryptor.reKeyEncryption(false, peerKey.pubKeyX);
               final reecryptedPeerName = await _cryptor.reKeyEncryption(false, peerKey.name);
 
               peerKey.name = reecryptedPeerName;
-              peerKey.key = reecryptedPeerPublicKey;
+              peerKey.pubKeyX = reecryptedPeerPublicKeyX;
 
               newPeerPublicKeys.add(peerKey);
           }
@@ -695,7 +704,7 @@ class KeyScheduler {
       }
     }
 
-    final igen = GenericItemList(list: genericList);
+    // final igen = GenericItemList(list: genericList);
     // final tree = await igen.calculateReKeyMerkleTree();
 
     _reKeyedItemList = GenericItemList(list: genericList);

@@ -218,15 +218,17 @@ class GigaWOTSSignatureChain {
 
 /// WOTS signature that contains the next public key
 class GigaWOTSSignatureItem {
-  String id;   // unique identifier for wots chain (static)
+  String id;
+  String? recovery; // unique identifier for wots chain (static)
   List<String> signature;
-  // String checksum;
+  String checksum;
   WOTSMessageData message;
 
   GigaWOTSSignatureItem({
     required this.id,
+    required this.recovery,
     required this.signature,
-    // required this.checksum,
+    required this.checksum,
     required this.message, // encrypted
   });
 
@@ -235,11 +237,16 @@ class GigaWOTSSignatureItem {
 
   String toRawJson() => json.encode(toJson());
 
+  Map<String, dynamic> toJsonRecovery() => {
+    "recovery": recovery!,
+  };
+
   factory GigaWOTSSignatureItem.fromJson(Map<String, dynamic> json) {
     return GigaWOTSSignatureItem(
       id: json['id'],
+      recovery: json['recovery'] == null ? null : json['recovery'],
       signature: List<String>.from(json['signature']),
-      // checksum: json['checksum'],
+      checksum: json['checksum'],
       message: WOTSMessageData.fromJson(json['message']),
     );
   }
@@ -248,9 +255,13 @@ class GigaWOTSSignatureItem {
     Map<String, dynamic> jsonMap = {
       "id": id,
       "signature": signature,
-      // "checksum": checksum,
+      "checksum": checksum,
       "message": message,
     };
+
+    if (recovery != null) {
+      jsonMap.addAll(toJsonRecovery());
+    }
 
     return jsonMap;
   }
@@ -263,7 +274,6 @@ class WOTSMessageData {
   String previousHash;  // hash of previous signature block
   String publicKey;     // current top public key for signature verification
   String nextPublicKey; // next top public key in WOTS key tree
-  String time;          // creation timestamp
   String data;          // message data
 
   WOTSMessageData({
@@ -271,7 +281,6 @@ class WOTSMessageData {
     required this.previousHash,
     required this.publicKey,
     required this.nextPublicKey,
-    required this.time,
     required this.data,
   });
 
@@ -285,7 +294,6 @@ class WOTSMessageData {
       previousHash: json['previousHash'],
       publicKey: json['publicKey'],
       nextPublicKey: json['nextPublicKey'],
-      time: json['time'],
       data: json['data'],
     );
   }
@@ -296,7 +304,6 @@ class WOTSMessageData {
       "previousHash": previousHash,
       "publicKey": publicKey,
       "nextPublicKey": nextPublicKey,
-      "time": time,
       "data": data,
     };
 

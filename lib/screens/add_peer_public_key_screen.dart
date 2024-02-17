@@ -2,8 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import '../helpers/WidgetUtils.dart';
-import '../models/KeyItem.dart';
+import 'package:blackbox_password_manager/models/EncryptedPeerMessage.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:enum_to_string/enum_to_string.dart';
@@ -15,6 +14,8 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:string_validator/string_validator.dart';
 
+import '../helpers/WidgetUtils.dart';
+import '../models/KeyItem.dart';
 import '../helpers/AppConstants.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
@@ -26,6 +27,9 @@ import '../widgets/QRScanView.dart';
 import 'home_tab_screen.dart';
 
 
+/// Adding a Peer Public Key Set
+///
+///
 class AddPeerPublicKeyScreen extends StatefulWidget {
   const AddPeerPublicKeyScreen({
     Key? key,
@@ -120,8 +124,8 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
 
     // final keyIndex = (widget.keyItem.keyIndex)!;
     /// decrypt root seed and expand
-    _cryptor.decrypt(widget.keyItem.key).then((value) async {
-      final decryptedSeedData = value;
+    _cryptor.decrypt(widget.keyItem.keys.privX!).then((privKeyX) async {
+      final decryptedSeedData = privKeyX;
       // print("decryptedSeedData: ${decryptedSeedData}");
 
       /// TODO: switch encoding !
@@ -166,7 +170,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
     // }
 
     // _filteredTags = _settingsManager.itemTags;
-    for (var tag in _settingsManager.itemTags) {
+    for (var _ in _settingsManager.itemTags) {
       _selectedTags.add(false);
       // _filteredTags.add(tag);
     }
@@ -175,7 +179,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
 
     _selectedIndex = _settingsManager.currentTabIndex;
 
-    _validateFields();
+    _validateFields(true);
 
     _startOTPTimer();
     
@@ -236,7 +240,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
     if (_Kmac.isEmpty) {
       return;
     }
-    final otpTimeInterval = AppConstants.appTOTPDefaultTimeInterval; // seconds
+    final otpTimeInterval = AppConstants.peerTOTPDefaultTimeInterval; // seconds
     final t = AppConstants.appTOTPStartTime;
     final otpStartTime = DateTime.parse(t);
     // print("otpStartTime: ${otpStartTime} | ${otpStartTime.second}");
@@ -362,7 +366,6 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
                       : MaterialStateProperty.all<Color>(Colors.grey))
                       : null),
               onPressed: () async {
-                // print("pressed done");
                 await _pressedSavePeerKeyItem();
               },
             ),),
@@ -422,13 +425,13 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
                     color: _isDarkModeEnabled ? Colors.white : null,
                   ),
                   onChanged: (_) {
-                    _validateFields();
+                    _validateFields(true);
                   },
                   onTap: () {
-                    _validateFields();
+                    _validateFields(false);
                   },
                   onFieldSubmitted: (_) {
-                    _validateFields();
+                    _validateFields(false);
                   },
                   // keyboardType: TextInputType.name,
                   textInputAction: TextInputAction.done,
@@ -436,11 +439,6 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
                   controller: _peerNameTextController,
                 ),
               ),
-
-              /// symmetric options
-              ///
-              // Divider(color: _isDarkModeEnabled ? Colors.greenAccent : null),
-
 
               Visibility(
                 visible: true,
@@ -470,7 +468,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
                             _isImportingManually = true;
                           });
 
-                          _validateFields();
+                          _validateFields(true);
                           // await _generateKeyPair();
                         },
                         child: Text(
@@ -501,7 +499,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
                             _isImportingManually = false;
                           });
 
-                          _validateFields();
+                          _validateFields(true);
 
                           /// HERE: scanQRCode
                           /// 
@@ -593,13 +591,13 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
                             color: _isDarkModeEnabled ? Colors.white : null,
                           ),
                           onChanged: (_) {
-                            _validateFields();
+                            _validateFields(true);
                           },
                           onTap: () {
-                            _validateFields();
+                            _validateFields(true);
                           },
                           onFieldSubmitted: (_) {
-                            _validateFields();
+                            _validateFields(true);
                           },
                           // keyboardType: TextInputType.name,
                           textInputAction: TextInputAction.done,
@@ -676,7 +674,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
                               /// auto clear clipboard?
                               // Clipboard.setData(ClipboardData(text: ""));
 
-                              _validateFields();
+                              _validateFields(true);
                             }
                           });
 
@@ -710,7 +708,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
                               });
                               // print("pasted: ${data}");
 
-                              _validateFields();
+                              _validateFields(true);
 
                               /// auto clear clipboard?
                               // Clipboard.setData(ClipboardData(text: ""));
@@ -787,13 +785,13 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
                             color: _isDarkModeEnabled ? Colors.white : null,
                           ),
                           onChanged: (_) {
-                            _validateFields();
+                            _validateFields(true);
                           },
                           onTap: () {
-                            _validateFields();
+                            _validateFields(true);
                           },
                           onFieldSubmitted: (_) {
-                            _validateFields();
+                            _validateFields(true);
                           },
                           // keyboardType: TextInputType.name,
                           textInputAction: TextInputAction.done,
@@ -948,13 +946,13 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
                     color: _isDarkModeEnabled ? Colors.white : null,
                   ),
                   onChanged: (_) {
-                    _validateFields();
+                    // _validateFields(false);
                   },
                   onTap: () {
-                    _validateFields();
+                    // _validateFields(false);
                   },
                   onFieldSubmitted: (_) {
-                    _validateFields();
+                    // _validateFields(false);
                   },
                   // keyboardType: TextInputType.name,
                   textInputAction: TextInputAction.newline,
@@ -1300,7 +1298,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
 
 
   /// TODO: fix this validation with key encodings
-  void _validateFields() {
+  void _validateFields(bool genKey) {
     final name = _peerNameTextController.text;
     final importedData = _importedKeyDataTextController.text;
     final scannedData = _scannedKeyDataTextController.text;
@@ -1312,6 +1310,10 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
       setState(() {
         _fieldsAreValid = false;
       });
+      return;
+    }
+
+    if (!genKey) {
       return;
     }
 
@@ -1633,10 +1635,11 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
       id: peer_uuid,
       version: AppConstants.peerPublicKeyItemVersion,
       name: encryptedPeerName,
-      key: encryptedPeerPublicKey,
+      pubKeyX: encryptedPeerPublicKey,
+      pubKeyS: "",
       notes: encryptedPeerNotes,
-      sentMessages: SecureMessageList(list: []), // TODO: add back in
-      receivedMessages: SecureMessageList(list: []), // TODO: add back in
+      sentMessages: GenericMessageList(list: []), // TODO: add back in
+      receivedMessages: GenericMessageList(list: []), // TODO: add back in
       cdate: createdDate,
       mdate: createdDate,
     );
@@ -1648,7 +1651,8 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
       keyId: widget.keyItem.keyId,
       version: AppConstants.keyItemVersion,
       name: widget.keyItem.name,
-      key: widget.keyItem.key,
+      // key: widget.keyItem.key,
+      keys: widget.keyItem.keys,
       keyType: EnumToString.convertToString(EncryptionKeyType.asym),
       purpose: EnumToString.convertToString(KeyPurposeType.keyexchange),
       algo: EnumToString.convertToString(KeyExchangeAlgoType.x25519),

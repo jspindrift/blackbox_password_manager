@@ -26,10 +26,10 @@ import '../models/QRCodeItem.dart';
 import '../widgets/qr_code_view.dart';
 import 'home_tab_screen.dart';
 
+
 /// Editing a Primary (Main/Parent) Public Key
 /// 
 ///
-
 class EditPublicEncryptionKeyScreen extends StatefulWidget {
   const EditPublicEncryptionKeyScreen({
     Key? key,
@@ -99,6 +99,8 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
   final _keyManager = KeychainManager();
   final _cryptor = Cryptor();
 
+  final algorithm_exchange = X25519();
+
 
   @override
   void initState() {
@@ -129,22 +131,22 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
 
   void _getItem() async {
 
-    _logManager.logger.d("widget.id: ${widget.id}");
+    // _logManager.logger.d("widget.id: ${widget.id}");
 
     /// get the password item and decrypt the data
    final item = await _keyManager.getItem(widget.id);
    final genericItem = GenericItem.fromRawJson(item);
-   _logManager.logger.d("genericItem: ${genericItem.toRawJson()}");
+   // _logManager.logger.d("genericItem: ${genericItem.toRawJson()}");
 
     if (genericItem.type == "key") {
       /// must be a PasswordItem type
       _keyItem = KeyItem.fromRawJson(genericItem.data);
-      _logManager.logger.d("_keyItem: ${_keyItem?.toRawJson()}");
+      // _logManager.logger.d("_keyItem: ${_keyItem?.toRawJson()}");
 
       if (_keyItem != null) {
-        var keydata = (_keyItem?.key)!;
+        var encryptedPrivKeyX = (_keyItem?.keys.privX)!;
 
-        if (keydata == null) {
+        if (encryptedPrivKeyX == null) {
           return;
         }
         // print("keydata: ${keydata.length}: ${keydata}");
@@ -152,12 +154,12 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
         final keyType = (_keyItem?.keyType)!;
 
         /// decrypt root seed and expand
-        final decryptedSeedData = await _cryptor.decrypt(keydata);
+        final decryptedPrivKeyX = await _cryptor.decrypt(encryptedPrivKeyX);
         // print("decryptedSeedData: ${decryptedSeedData}");
 
         /// TODO: switch encoding !
         // final decodedRootKey = hex.decode(decryptedSeedData);
-        final decodedRootKey = base64.decode(decryptedSeedData);
+        final decodedRootKey = base64.decode(decryptedPrivKeyX);
 
         // print("decodedRootKey: ${decodedRootKey.length}: ${decodedRootKey}");
 
@@ -184,7 +186,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
             }
           }
 
-          _generateKeyPair(decryptedSeedData);
+          _generateKeyPair(decryptedPrivKeyX);
 
         } else {
           setState(() {
@@ -200,7 +202,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
             Kenc = expanded.sublist(0,32);
             Kauth = expanded.sublist(32,64);
 
-            _keyDataTextController.text = bip39.entropyToMnemonic(decryptedSeedData);
+            _keyDataTextController.text = bip39.entropyToMnemonic(decryptedPrivKeyX);
           });
         }
 
@@ -208,7 +210,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
         var name = (_keyItem?.name)!;
         var tags = (_keyItem?.tags)!;
 
-        for (var tag in tags) {
+        for (var _ in tags) {
           _selectedTags.add(false);
         }
 
@@ -270,7 +272,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
   Future<void> _generateKeyPair(String privateKeyString) async {
     // print("edit_public_encr_key: _generateKeyPair");
 
-    final algorithm_exchange = X25519();
+    // final algorithm_exchange = X25519();
 
     // _seedKey = _cryptor.getRandomBytes(32);
     // print("rand seed: $_seedKey");
@@ -318,7 +320,11 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
 
       _pubKeyAddress = _cryptor.sha256(hex.encode(_pubKeyExchange)).substring(0,40);
 
-      _publicKeyMnemonic = bip39.entropyToMnemonic(hex.encode(_pubKeyExchange));
+      final pubWords = bip39.entropyToMnemonic(hex.encode(_pubKeyExchange));
+      final words = pubWords.split(" ");
+      // print("_publicKeyMnemonic: ${_publicKeyMnemonic}");
+
+      _publicKeyMnemonic = words[0] + " " + words[1] + " " + words.last;
 
       _keyDataTextController.text =
           _publicKeyMnemonic;
@@ -591,7 +597,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                       child:  Padding(
                       padding: EdgeInsets.all(16.0),
                       child: Text(
-                        "Public Key:\n${hex.encode(_pubKeyExchange)}",
+                        "Public Key:\n${hex.encode(_pubKeyExchange)}\nPub Words: $_publicKeyMnemonic",
                         // "Public Key:\n${hex.encode(_peerPublicKeyData)}\n\nPublic Mnemonic:\n${_publicKeyMnemonic}",
                         style: TextStyle(
                           color: _isDarkModeEnabled ? Colors.white : null,
@@ -830,6 +836,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                           builder: (context) => PeerPublicKeyListScreen(
                             id: widget.id,
                           ),
+                          fullscreenDialog: true,
                         ),
                       ).then((value) {
                         // _getItem();
@@ -871,6 +878,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
                             builder: (context) => PeerPublicKeyListScreen(
                               id: widget.id,
                             ),
+                            fullscreenDialog: true,
                           ),
                         ).then((value) {
                           _getItem();
@@ -1375,7 +1383,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
       keyId: _keyManager.keyId,
       version: AppConstants.keyItemVersion,
       name: encryptedName,
-      key: encryptedKey,
+      keys: Keys(privX: encryptedKey, privS: encryptedKey, privK: encryptedKey),
       keyType: EnumToString.convertToString(EncryptionKeyType.asym),
       purpose: EnumToString.convertToString(KeyPurposeType.keyexchange),
       algo: EnumToString.convertToString(KeyExchangeAlgoType.x25519),

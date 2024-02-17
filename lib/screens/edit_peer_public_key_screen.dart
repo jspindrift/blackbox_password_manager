@@ -14,19 +14,22 @@ import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:bip39/bip39.dart' as bip39;
 
 import '../helpers/WidgetUtils.dart';
-import '../models/KeyItem.dart';
 import '../helpers/AppConstants.dart';
+import '../screens/peer_messages_screen.dart';
+import '../screens/active_encryption_screen.dart';
 import '../managers/LogManager.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
 import '../managers/Cryptor.dart';
+import '../models/KeyItem.dart';
 import '../models/GenericItem.dart';
 import '../models/QRCodeItem.dart';
-import 'home_tab_screen.dart';
 import '../widgets/QRScanView.dart';
-import '../screens/active_encryption_screen.dart';
+import 'home_tab_screen.dart';
 
 
+/// Peer Key under a Primary Key Pair
+///
 class EditPeerPublicKeyScreen extends StatefulWidget {
   const EditPeerPublicKeyScreen({
     Key? key,
@@ -57,14 +60,9 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
   bool _isDarkModeEnabled = false;
   bool _shouldShowExtendedKeys = false;
-
   bool _isEditing = false;
-
-  // bool _isFavorite = false;
   bool _fieldsAreValid = false;
-
   bool _isImportingManually = false;
-  bool _isScanningQRCode = false;
 
   List<String> _keyTags = [];
   List<bool> _selectedTags = [];
@@ -75,18 +73,15 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
   List<int> _sharedSecretKey = [];
 
   String _otpTokenWords = "";
-  int _numberTOTPWords = 4;
-  int _numberTOTPDigits = 6;
-
+  // int _numberTOTPWords = 4;
+  // int _numberTOTPDigits = 6;
 
   int _otpIntervalIncrement = 0;
-  int _otpIterationNumber = 0;
-
-  bool _otpUseNumbers = false;
-
+  // int _otpIterationNumber = 0;
   int _otpUseNumberOfDigits = 6;
   int _otpUseNumberOfWords = 4;
 
+  bool _otpUseNumbers = false;
 
   KeyItem? _mainKeyItem;
   List<int> _mainPrivKey = [];
@@ -131,7 +126,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
     // _generateKeyPair();
     // _filteredTags = _settingsManager.itemTags;
-    for (var tag in _settingsManager.itemTags) {
+    for (var _ in _settingsManager.itemTags) {
       _selectedTags.add(false);
       // _filteredTags.add(tag);
     }
@@ -157,10 +152,19 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
       }
     }
 
+    _logManager.logger.d("_thisPeerPublicKey: ${_thisPeerPublicKey?.toRawJson()}");
+
     /// decrypt root seed and expand
-    _cryptor.decrypt(widget.keyItem.key).then((value) {
-      final decryptedSeedData = value;
+    _cryptor.decrypt(widget.keyItem.keys.privX!).then((privKeyX) async {
+      final decryptedSeedData = privKeyX;
       // print("decryptedSeedData: ${decryptedSeedData}");
+
+      // final name = await _cryptor.decrypt(_mainKeyItem!.name);//.then((value) {
+      // _logManager.logger.d("name: ${name}");
+      //
+      // setState(() {
+      //   _decryptedMainKeyName = name;
+      // });
 
       /// TODO: switch encoding !
       // final decodedRootKey = hex.decode(decryptedSeedData);
@@ -204,7 +208,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
                 // }
                 // final peerPublicKeyIndex = (_thisPeerPublicKey?.keyIndex)!;
 
-                final encryptedPeerPublicKey = _thisPeerPublicKey?.key;
+                final encryptedPeerPublicKey = _thisPeerPublicKey?.pubKeyX;
                   // _isFavorite = (_thisPeerPublicKey?.favorite)!;
 
                   final encryptedPeerPublicKeyNote = _thisPeerPublicKey?.notes;
@@ -259,7 +263,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
               //   peerPublicKeyIndex = (_thisPeerPublicKey?.keyIndex)!;
               // }
 
-              final encryptedPeerPublicKey = _thisPeerPublicKey?.key;
+              final encryptedPeerPublicKey = _thisPeerPublicKey?.pubKeyX;
               // _isFavorite = (_thisPeerPublicKey?.favorite)!;
 
               final encryptedPeerPublicKeyNote = _thisPeerPublicKey?.notes;
@@ -340,26 +344,25 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
       }
     }
 
-    final mkey = (_mainKeyItem?.key)!;
+    final mkey = (_mainKeyItem?.keys.privX)!;
     if (mkey == null) {
       return;
     }
 
-    // var mainKeyIndex = 0;
-    //
-    // if (_mainKeyItem?.keyIndex != null) {
-    //   mainKeyIndex = (_mainKeyItem?.keyIndex)!;
-    // }
+
+    // final name = await _cryptor.decrypt(_mainKeyItem!.name);
+    // setState(() {
+    //   _decryptedMainKeyName = name;
+    // });
+
+
     /// decrypt root seed and expand
     _cryptor.decrypt(mkey).then((value) {
       final decryptedSeedData = value;
-      // print("decryptedSeedData: ${decryptedSeedData}");
 
       /// TODO: switch encoding !
       // final decodedRootKey = hex.decode(decryptedSeedData);
       final decodedMainPrivateKey = base64.decode(decryptedSeedData);
-
-      // print("decodedMainPrivateKey: ${decodedMainPrivateKey}");
 
       algorithm_exchange
           .newKeyPairFromSeed(decodedMainPrivateKey).then((value) {
@@ -367,12 +370,6 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
         final privSeedPair = value;
         privSeedPair.extractPublicKey().then((value) {
           final simplePublicKey = value;
-          // _mainPubKey = simplePublicKey.bytes;
-          // privSeedPair.extractPrivateKeyBytes().then((value) {
-          //   print("privkeyseed check: ${value}");
-          //   print("privkeyseed check hex: ${hex.encode(value)}");
-          // });
-
 
           if (mounted) {
             setState(() {
@@ -389,7 +386,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
                 // if (_thisPeerPublicKey?.keyIndex != null) {
                 //   peerPublicKeyIndex = (_thisPeerPublicKey?.keyIndex)!;
                 // }
-                final encryptedPeerPublicKey = _thisPeerPublicKey?.key;
+                final encryptedPeerPublicKey = _thisPeerPublicKey?.pubKeyX;
                 // _isFavorite = (_thisPeerPublicKey?.favorite)!;
                 final encryptedPeerPublicKeyNote = _thisPeerPublicKey?.notes;
                 // print("1encryptedPeerPublicKeyNote: ${encryptedPeerPublicKeyNote}");
@@ -443,7 +440,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
               // if (_thisPeerPublicKey?.keyIndex != null) {
               //   peerPublicKeyIndex = (_thisPeerPublicKey?.keyIndex)!;
               // }
-              final encryptedPeerPublicKey = _thisPeerPublicKey?.key;
+              final encryptedPeerPublicKey = _thisPeerPublicKey?.pubKeyX;
               // _isFavorite = (_thisPeerPublicKey?.favorite)!;
 
               final encryptedPeerPublicKeyNote = _thisPeerPublicKey?.notes;
@@ -485,16 +482,6 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
       });
 
-
-      // _pubKey = simplePublicKey.bytes;
-
-      // if (mounted) {
-      //   setState(() {
-      //     _mainPrivKey = decodedRootKey;
-      //   });
-      // } else {
-      //   _mainPrivKey = decodedRootKey;
-      // }
     });
   }
 
@@ -520,22 +507,18 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
     // final ownerKeyPair = await algorithm_exchange.newKeyPairFromSeed(privKey);
     final ownerKeyPair = await algorithm_exchange.newKeyPairFromSeed(_mainPrivKey);
-    final mainPublicKey = await ownerKeyPair.extractPublicKey();
+    // final mainPublicKey = await ownerKeyPair.extractPublicKey();
     // print("mainPublicKey: ${mainPublicKey.bytes.length}: ${hex.encode(mainPublicKey.bytes)}");
 
     // final privKey = await ownerKeyPair.extractPrivateKeyBytes();
     // print("privKeyBytes: ${privKey.length}: ${privKey}");
 
-    // final bobPub = hex.decode(bobPubString);
     final bobPub = base64.decode(bobPubString);
-    // print('peer Public Key: $bobPub');
     // print('peer Public Key hex: ${hex.encode(bobPub)}');
     _peerPublicKeyData = bobPub;
 
     _peerAddr = _cryptor.sha256(hex.encode(_peerPublicKeyData)).substring(0,40);
-
     // _publicKeyMnemonic = bip39.entropyToMnemonic(hex.encode(_peerPublicKeyData));
-
 
     final bobPublicKey = SimplePublicKey(bobPub, type: KeyPairType.x25519);
 
@@ -612,7 +595,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
     if (_Kmac.isEmpty) {
       return;
     }
-    final otpTimeInterval = AppConstants.appTOTPDefaultTimeInterval;
+    final otpTimeInterval = AppConstants.peerTOTPDefaultTimeInterval;
     final t = AppConstants.appTOTPStartTime;
     final otpStartTime = DateTime.parse(t);
     // print("otpStartTime: ${otpStartTime} | ${otpStartTime.second}");
@@ -641,9 +624,9 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
       // print("div_sec: ${div_sec}");
       // print("div_sec_floor: ${div_sec_floor}");
 
-      setState((){
-        _otpIterationNumber = div_sec_floor;
-      });
+      // setState((){
+      //   _otpIterationNumber = div_sec_floor;
+      // });
 
       var divHex = div_sec_floor.toRadixString(16);
       // print("divHex: $divHex");
@@ -969,12 +952,14 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
               // Divider(color: _isDarkModeEnabled ? Colors.greenAccent : null),
 
               Padding(
-                padding: EdgeInsets.all(16.0),
+                padding: EdgeInsets.fromLTRB(8, 4, 8, 16),
                 child: Text(
-                  "Public Key:\n${hex.encode(_peerPublicKeyData)}\n\nPublic Address:\n${_peerAddr}",
+                  "Address: ${_peerAddr}",
+                  textAlign: TextAlign.start,
+                  // "Address:\n${_peerAddr}\n\nPublic Key:\n${hex.encode(_peerPublicKeyData)}",
                   style: TextStyle(
                     color: _isDarkModeEnabled ? Colors.white : null,
-                    fontSize: 14,
+                    fontSize: 15,
                   ),
                 ),
               ),
@@ -1162,9 +1147,6 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
                               _validateFields();
                             }
                           });
-
-                          // EasyLoading.showToast('Pasted',
-                          //     duration: Duration(milliseconds: 500));
                         },
                         icon: Icon(
                           Icons.paste,
@@ -1291,8 +1273,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
               ),
               Visibility(
                 visible: !_isEditing,
-                child:
-              Padding(
+                child: Padding(
                   padding: EdgeInsets.all(8),
                   child: ListTile(
                     title: Text(
@@ -1311,7 +1292,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => ActiveEncryptionScreen(
-                            id: widget.peerId,
+                            peerId: widget.peerId,
                             keyItem: widget.keyItem,
                           ),
                           fullscreenDialog: true,
@@ -1324,6 +1305,50 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
                 visible: true,//!_isEditing,
                 child: Divider(
                     color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
+                ),
+              ),
+              Visibility(
+                visible: false, //!_isEditing && (_thisPeerPublicKey!.sentMessages!.list.isNotEmpty || _thisPeerPublicKey!.receivedMessages!.list.isNotEmpty),
+                child: Padding(
+                    padding: EdgeInsets.all(8),
+                    child: ListTile(
+                      title: Text(
+                        "Saved Messages ${(_thisPeerPublicKey!.receivedMessages!.list.length > 0 ?
+                        "(r:${_thisPeerPublicKey!.receivedMessages!.list.length})" : "")}"
+                            "${(_thisPeerPublicKey!.sentMessages!.list.length > 0 ? "(s:${_thisPeerPublicKey!.sentMessages!.list.length})" : "")}",
+                        style: TextStyle(
+                          color: _isDarkModeEnabled ? Colors.white : Colors.blueAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios,
+                        color: _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+                      ),
+                      onTap: (){
+                        /// TODO: peer messages idea
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (context) => PeerMessagesScreen(
+                        //       peerKeyItem: _thisPeerPublicKey,
+                        //       keyItem: _mainKeyItem,
+                        //       myPrivateKey: _mainPrivKey,
+                        //     ),
+                        //     fullscreenDialog: true,
+                        //   ),
+                        // ).then((value) async {
+                        //   if (value == "delete") {
+                        //     await _refreshKeyData();
+                        //   }
+                        // });
+                      },
+                    )
+                ),),
+              Visibility(
+                visible: (_thisPeerPublicKey!.sentMessages!.list.isNotEmpty || _thisPeerPublicKey!.receivedMessages!.list.isNotEmpty),
+                child: Divider(
+                  color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
                 ),
               ),
               Visibility(
@@ -1358,7 +1383,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
                       ],),
                     subtitle: Text(
-                      "time: ${AppConstants.appTOTPDefaultTimeInterval - _otpIntervalIncrement}",
+                      "time: ${AppConstants.peerTOTPDefaultTimeInterval - _otpIntervalIncrement}",
                       style: TextStyle(
                         color: _isDarkModeEnabled ? Colors.white : null,
                         fontSize: 16,
@@ -1542,7 +1567,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
               Padding(
                 padding: EdgeInsets.all(8.0),
                 child: Text(
-                  "id: ${(_mainKeyItem?.id)!}",
+                  "id: ${(_thisPeerPublicKey?.id)!}",
                   // "Public Key:\n${hex.encode(_peerPublicKeyData)}\n\nPublic Mnemonic:\n${_publicKeyMnemonic}",
                   style: TextStyle(
                     color: _isDarkModeEnabled ? Colors.white : null,
@@ -1974,7 +1999,8 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
       id: widget.peerId,
       version: AppConstants.peerPublicKeyItemVersion,
       name: encryptedPeerName,
-      key: encryptedPeerPublicKey,
+      pubKeyX: encryptedPeerPublicKey,
+      pubKeyS: "",
       notes: encryptedPeerNotes,
       sentMessages: thisKey.sentMessages,
       receivedMessages: thisKey.receivedMessages, // TODO: add this back in
@@ -2002,7 +2028,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
       keyId: _keyManager.keyId,
       version: AppConstants.keyItemVersion,
       name: widget.keyItem.name,
-      key: widget.keyItem.key,
+      keys: widget.keyItem.keys,
       keyType: EnumToString.convertToString(EncryptionKeyType.asym),
       purpose: EnumToString.convertToString(KeyPurposeType.keyexchange),
       algo: EnumToString.convertToString(KeyExchangeAlgoType.x25519),
@@ -2098,7 +2124,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
       keyId: widget.keyItem.keyId,
       version: widget.keyItem.version,
       name: widget.keyItem.name,
-      key: widget.keyItem.key,
+      keys: widget.keyItem.keys,
       keyType: EnumToString.convertToString(EncryptionKeyType.asym),
       purpose: EnumToString.convertToString(KeyPurposeType.keyexchange),
       algo: EnumToString.convertToString(KeyExchangeAlgoType.x25519),

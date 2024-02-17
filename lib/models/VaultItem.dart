@@ -99,8 +99,6 @@ class VaultItem {
   MyDigitalIdentity? myIdentity; // my key pair info - encrypted
   List<DigitalIdentity>? identities; // recovery identity public key info - encrypted
 
-  // Vault vault;
-
   String mac;                 // mac of VaultItem model with empty string as initial mac value (using auth key)
   String cdate;               // created date
   String mdate;               // modified date

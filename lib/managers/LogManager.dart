@@ -375,6 +375,35 @@ class LogManager {
   LogManager._internal();
 
 
+  void printJSON(int level, String message, Map<String, dynamic> jsonObject) {
+    if (level < 4) {
+      level = 4;
+    }
+    switch (level) {
+      case 0:
+        logger.d("${getPrettyJSONString(jsonObject)}");
+        break;
+      case 1:
+        logger.i("${getPrettyJSONString(jsonObject)}");
+        break;
+      case 2:
+        logger.w("${getPrettyJSONString(jsonObject)}");
+        break;
+      case 3:
+        logger.e("${getPrettyJSONString(jsonObject)}");
+        break;
+      case 4:
+        logger.wtf("${getPrettyJSONString(jsonObject)}");
+        break;
+    }
+  }
+
+  String getPrettyJSONString(jsonObject){
+    var encoder = new JsonEncoder.withIndent("     ");
+    return encoder.convert(jsonObject);
+  }
+
+
   void setIsSavingLogs(bool value) {
     _isSavingLogs = value;
   }

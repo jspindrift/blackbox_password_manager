@@ -18,6 +18,9 @@ import 'edit_public_encryption_key_screen.dart';
 import 'home_tab_screen.dart';
 
 
+/// List of Primary Key Pairs
+///
+///
 class KeyListScreen extends StatefulWidget {
   const KeyListScreen({
     Key? key,
@@ -32,6 +35,7 @@ class _KeyListScreenState extends State<KeyListScreen> {
   bool _isDarkModeEnabled = false;
 
   List<KeyItem> _keys = [];
+  Map<String, String> _pubKeyMap = {};
 
   int _selectedIndex = 1;
 
@@ -57,6 +61,7 @@ class _KeyListScreenState extends State<KeyListScreen> {
 
   void _getAllKeyItems() async {
     _keys = [];
+    _pubKeyMap = {};
 
     final items = await _keyManager.getAllItems();
 
@@ -83,12 +88,12 @@ class _KeyListScreenState extends State<KeyListScreen> {
           var decryptedName = await _cryptor.decrypt(keyItem.name);
           keyItem.name = decryptedName;
 
-          var decryptedPrivateKey = await _cryptor.decrypt(keyItem.key);
+          var decryptedPrivateKey = await _cryptor.decrypt(keyItem.keys.privX!);
           // keyItem.key = decryptedKey;
           if (keyType == "asym") {
-            keyItem.key = await _generateKeyPair(decryptedPrivateKey);
+            keyItem.keys.privX = await _generateKeyPair(keyItem.id, decryptedPrivateKey);
           } else {
-            keyItem.key = "private symmetric key";
+            keyItem.keys.privX = "private symmetric key";
           }
 
           var decryptedNote = await _cryptor.decrypt(keyItem.notes);
@@ -123,7 +128,7 @@ class _KeyListScreenState extends State<KeyListScreen> {
 
 
   /// return the public key
-  Future<String> _generateKeyPair(String privateKeyString) async {
+  Future<String> _generateKeyPair(String id, String privateKeyString) async {
     // print("_generateKeyPair");
 
     final algorithm_exchange = X25519();
@@ -147,8 +152,10 @@ class _KeyListScreenState extends State<KeyListScreen> {
 
     // final expanded = await _cryptor.expandKey(_seedKey);
     final pubKey = simplePublicKey.bytes;
-    // print("pubKey: ${pubKey}");
 
+    var pubKeyHex = hex.encode(simplePublicKey.bytes);
+    _pubKeyMap.addAll({id: pubKeyHex});
+    // logger.d("_pubKeyMap: ${_pubKeyMap}");
 
     final toAddr = _cryptor.sha256(hex.encode(pubKey)).substring(0, 40);
     // final fromAddr = _cryptor.sha256(base64.encode(_mainPublicKey)).substring(0,40);
@@ -254,18 +261,16 @@ class _KeyListScreenState extends State<KeyListScreen> {
           }
 
           // TODO: show address equivalent?
-          if (keyItem.keyType == "asym") {
-            // nameString += "\npubKey: " + keyItem.key;
-            nameString += "\naddress: " + keyItem.key.substring(0,40);
-          }
-          // else {
-          //   // nameString += "\nkey: " + keyItem.key;
+          // if (keyItem.keyType == "asym") {
+          //   // nameString += "\npubKey: " + keyItem.key;
+          //   nameString += "\naddress: " + keyItem.keys.privX!.substring(0,40);
           // }
 
+          final toAddr = _cryptor.sha256(_pubKeyMap[keyItem.id]!).substring(0, 40);
+
           var trimmedNote = cnote.substring(0, cnote.length <= 50 ? cnote.length : cnote.length > 50 ? 50 : cnote.length);
-          if (trimmedNote.length > 0) {
-            trimmedNote = "\nnotes: ${trimmedNote}...";
-          }
+          // trimmedNote = "address: " + toAddr + _pubKeyMap[keyItem.id]!.substring(0,40) + (trimmedNote.length > 0 ? "\nnotes: ${trimmedNote}..." : "");
+          trimmedNote = "address: " + toAddr + (trimmedNote.length > 0 ? "\nnotes: ${trimmedNote}..." : "");
 
           return
             // Container(
@@ -282,14 +287,15 @@ class _KeyListScreenState extends State<KeyListScreen> {
                 style: TextStyle(
                   color: _isDarkModeEnabled ? Colors.white : null,
                   fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               subtitle: Text(
                 //yyyy-MM-dd, dd-MM-yyyy
-                'type: ${keyItemType}${trimmedNote}', // DateFormat('MMM d y  hh:mm a').format(DateTime.parse(_notes[index].mdate))
+                '${trimmedNote}', // DateFormat('MMM d y  hh:mm a').format(DateTime.parse(_notes[index].mdate))
                 style: TextStyle(
-                  color: _isDarkModeEnabled ? Colors.grey : null,
-                  fontSize: 14,
+                  color: _isDarkModeEnabled ? Colors.white : null,
+                  fontSize: 16,
                 ),
               ),
               leading: categoryIcon,

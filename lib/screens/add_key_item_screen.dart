@@ -1270,12 +1270,13 @@ class _AddKeyItemScreenState extends State<AddKeyItemScreen> {
     final encryptedNotes = await _cryptor.encrypt(notes);
     final encryptedKey = await _cryptor.encrypt(hex.encode(_seedKey));
 
+    /// TODO: change encryptedKey field value
     var keyItem = KeyItem(
       id: uuid,
       keyId: _keyManager.keyId,
       version: AppConstants.keyItemVersion,
       name: name,
-      key: encryptedKey,
+      keys: Keys(privX: encryptedKey, privS: encryptedKey, privK: encryptedKey),
       keyType: EnumToString.convertToString(EncryptionKeyType.sym),
       purpose: EnumToString.convertToString(KeyPurposeType.encryption),
       algo: EnumToString.convertToString(EncryptionAlgoType.aes_ctr_256),

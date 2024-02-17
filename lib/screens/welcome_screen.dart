@@ -563,15 +563,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           },
         ),
         actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.camera),
-            color: _isDarkModeEnabled ? Colors.greenAccent : null,
-            onPressed: () async {
-              _settingsManager.setIsScanningQRCode(true);
-
-              await _scanQR();
-            },
-          ),
+          // IconButton(
+          //   icon: Icon(Icons.camera),
+          //   color: _isDarkModeEnabled ? Colors.greenAccent : null,
+          //   onPressed: () async {
+          //     _settingsManager.setIsScanningQRCode(true);
+          //
+          //     await _scanQR();
+          //   },
+          // ),
           IconButton(
             icon: Icon(Icons.add),
             color: _isDarkModeEnabled ? Colors.greenAccent : null,

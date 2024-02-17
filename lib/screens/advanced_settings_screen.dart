@@ -507,13 +507,13 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                 ),
               ),
               Visibility(
-                visible: false, //kDebugMode,
+                visible: kDebugMode,
                 child: Divider(
                   color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
                 ),
               ),
               Visibility(
-                visible: false, //kDebugMode,
+                visible: kDebugMode,
                 child: Padding(
                   padding: EdgeInsets.all(0.0),
                   child: ListTile(
@@ -542,10 +542,12 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                       ),
                       onPressed: () async {
                         // await _runPostQuantumIntegrityTestWithReset();
+                        await _runGigaWotsSignTestWithReset();
                       },
                     ),
                     onTap: () async {
                       // await _runPostQuantumIntegrityTest();
+                      await _runGigaWotsSignTest();
                     },
                   ),
                 ),
@@ -734,6 +736,55 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     _resetTestVariables();
 
     await _runPostQuantumIntegrityTest();
+  }
+
+  /// hybrid asymmetric and WOTS signing
+  Future<void> _runGigaWotsSignTest() async {
+    _logManager.logger.d("_runPostQuantumTest");
+
+    /// set variables here
+    final message = "[$_signCounter]:hello world";
+    final kek = List.filled(32, 0);
+
+    /// Do some testing here...
+    ///
+
+    var wotsMessageData = WOTSMessageData(
+        messageIndex: _signCounter,
+        previousHash: _wotsManager.lastBlockHash,
+        publicKey: _wotsManager.topPublicKey,
+        nextPublicKey: _wotsManager.nextTopPublicKey,
+        data: message,
+    );
+
+    // final ctx = await _cryptor.superEncryption(kek, kak, ivg, message);
+    // final ptx = await _cryptor.superDecryption(kek, kak, ivg, ctx);
+
+    /// create WOTS top public key
+    // _wotsManager.createTopPubKey(kek, 0);
+
+    /// create WOTS signature
+    final sigItem = await _wotsManager.signGigaWotMessage(
+        kek,
+        "main",
+        _wotsManager.lastBlockHash,
+        wotsMessageData,
+        256,
+        false,
+    );
+    // _logManager.logLongMessage("sigItem: ${sigItem?.toRawJson()}");
+
+    /// verify WOTS signature
+    final isValid = await _wotsManager.verifyGigaWotSignature(sigItem);
+    _logManager.logger.d("isValid[${_signCounter}]: ${isValid}");
+
+    _signCounter++;
+  }
+
+  Future<void> _runGigaWotsSignTestWithReset() async {
+    _resetTestVariables();
+
+    await _runGigaWotsSignTest();
   }
 
 

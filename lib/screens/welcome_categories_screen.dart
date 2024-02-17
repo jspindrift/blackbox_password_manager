@@ -101,12 +101,12 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
             }
           }
 
-          _logManager.logger.d("passwordItem: ${passwordItem.toRawJson()}");
+          // _logManager.logger.d("passwordItem: ${passwordItem.toRawJson()}");
 
           if (passwordItem.geoLock == null) {
             final decryptedPassword =
                 await _cryptor.decrypt(passwordItem.password);
-            _logManager.logger.d("decryptedPassword: $decryptedPassword");
+            // _logManager.logger.d("decryptedPassword: $decryptedPassword");
 
             if (passwordItem.isBip39) {
               try {

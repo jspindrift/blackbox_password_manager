@@ -14,11 +14,12 @@ import '../managers/Cryptor.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/KeychainManager.dart';
 import '../screens/add_peer_public_key_screen.dart';
-
 import 'edit_peer_public_key_screen.dart';
 import 'home_tab_screen.dart';
 
 
+/// List of peer keys under primary key pair
+///
 class PeerPublicKeyListScreen extends StatefulWidget {
   const PeerPublicKeyListScreen({
     Key? key,
@@ -49,7 +50,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
     keyId: "",
     version: 0,
     name: "",
-    key: "",
+    keys: Keys(privX: "", privS: "", privK: ""),
     keyType: "",
     purpose: "",
     algo: "",
@@ -105,7 +106,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
         if (_keyItem != null) {
 
           /// owner private key pair data...
-          var keydata = (_keyItem?.key)!;
+          var keydata = (_keyItem?.keys.privX)!;
           // final keyIndex = (_keyItem?.keyIndex)!;
           // var keyIndex = 0;
           //
@@ -120,20 +121,22 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
 
           // final keyType = (_keyItem?.keyType)!;
 
+          // final decryptedKeyName = await _cryptor.decrypt(_keyItem.name);
+
 
           /// decrypt root seed and expand
-          final decryptedOwnerPrivateKey = await _cryptor.decrypt(keydata);
+          final decryptedOwnerPrivateKeyX = await _cryptor.decrypt(keydata);
           // print("_getItem decryptedOwnerPrivateKey: ${decryptedOwnerPrivateKey.length}: ${decryptedOwnerPrivateKey}");
 
 
           /// TODO: switch encoding !
           // final decodedOwnerPrivateKey = hex.decode(decryptedOwnerPrivateKey);
-          final decodedOwnerPrivateKey = base64.decode(decryptedOwnerPrivateKey);
+          final decodedOwnerPrivateKeyX = base64.decode(decryptedOwnerPrivateKeyX);
           // print("_getItem decodedOwnerPrivateKey: ${decodedOwnerPrivateKey.length}: ${decodedOwnerPrivateKey}");
 
           // if (keyType == EnumToString.convertToString(EncryptionKeyType.asym)) {
           setState(() {
-            _ownerPrivateKey = decodedOwnerPrivateKey;
+            _ownerPrivateKey = decodedOwnerPrivateKeyX;
           });
 
           final peerPublicKeys = (_keyItem?.peerPublicKeys)!;
@@ -146,10 +149,15 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
             });
 
             if (!_hasForwaredScreenAlready) {
+              setState(() {
+                _hasForwaredScreenAlready = true;
+              });
               /// autmatically go to add key screen
               Navigator.of(context)
                   .push(MaterialPageRoute(
                 builder: (context) => AddPeerPublicKeyScreen(keyItem: _keyItem),
+                fullscreenDialog: true,
+
               ))
                   .then((value) {
                 if (value == "savedItem") {
@@ -172,11 +180,15 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
               });
 
               if (!_hasForwaredScreenAlready) {
+                setState(() {
+                  _hasForwaredScreenAlready = true;
+                });
                 /// automatically go to add key screen
                 Navigator.of(context)
                     .push(MaterialPageRoute(
                   builder: (context) =>
                       AddPeerPublicKeyScreen(keyItem: _keyItem),
+                  fullscreenDialog: true,
                 ))
                     .then((value) {
                   if (value == "savedItem") {
@@ -212,7 +224,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
                 /// decrypting public key (not private)
                 // print("peerKey.key: ${peerKey.key.length}: ${peerKey.key}");
 
-                final decryptedPeerPublicKeyData = await _cryptor.decrypt(peerKey.key);
+                final decryptedPeerPublicKeyData = await _cryptor.decrypt(peerKey.pubKeyX);
                 // print("decryptedPeerPublicKeyData: ${decryptedPeerPublicKeyData.length}: ${decryptedPeerPublicKeyData}");
 
                 final decodedPeerPublicKeyData = base64.decode(decryptedPeerPublicKeyData);
@@ -226,7 +238,8 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
                     id: peerKey.id,
                     version: AppConstants.peerPublicKeyItemVersion,
                     name: decryptedPeerPublicKeyName,
-                    key: hex.encode(decodedPeerPublicKeyData),
+                    pubKeyX: hex.encode(decodedPeerPublicKeyData),
+                    pubKeyS: "",
                     // favorite: peerKey.favorite,
                     notes: peerKey.notes,
                     sentMessages: peerKey.sentMessages,
@@ -293,13 +306,13 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
       );
 
       final sharedSecretBytes = await sharedSecret.extractBytes();
-      print('Shared secret hex: ${hex.encode(sharedSecretBytes)}');
+      // _logManager.logger.d('Shared secret hex: ${hex.encode(sharedSecretBytes)}');
 
       final sharedSecretKeyHash = await _cryptor.sha256(
           base64.encode(sharedSecretBytes),
       );
 
-      _logManager.logger.d('sharedSecretKeyHash: ${sharedSecretKeyHash}');
+      // _logManager.logger.d('sharedSecretKeyHash: ${sharedSecretKeyHash}');
 
     } catch (e) {
       _logManager.logger.w("$e");
@@ -321,7 +334,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
         ),
         automaticallyImplyLeading: false,
         backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
-        leading: BackButton(
+        leading: CloseButton(
           color: _isDarkModeEnabled ? Colors.greenAccent : null,
           onPressed: () {
             Navigator.of(context).pop();
@@ -333,18 +346,12 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
             color: _isDarkModeEnabled ? Colors.greenAccent : null,
             onPressed: () async {
 
-              /// TODO: Show Modal for key type
-              ///
-
-              /// add peer key page
-              ///
-              // print("add peer key page");
-
               // _showKeyTypeSelectionModal();
 
               Navigator.of(context)
                   .push(MaterialPageRoute(
                 builder: (context) => AddPeerPublicKeyScreen(keyItem: _keyItem),
+                fullscreenDialog: true,
               ))
                   .then((value) {
                 if (value == "savedItem") {
@@ -397,7 +404,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
           final peerKeyItem = _peerPublicKeysShowing[index];
 
           /// decrypt these fields
-          final keyData = peerKeyItem.key;
+          final keyData = peerKeyItem.pubKeyX;
           final keyName = peerKeyItem.name;
 
           // final decryptedSeedData = await _cryptor.decrypt(keyData);
@@ -417,7 +424,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
             nameString += '...';
           }
 
-          var pubAddress = "address: ${_cryptor.sha256(peerKeyItem.key).substring(0,40)}";
+          var pubAddress = "address: ${_cryptor.sha256(peerKeyItem.pubKeyX).substring(0,40)}";
 
 
           return
@@ -466,6 +473,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
                       keyItem: _keyItem,
                       peerId: peerKeyItem.id,
                     ),
+                    fullscreenDialog: true,
                   ),
                 ).then((value) {
                   /// TODO: refresh tag items

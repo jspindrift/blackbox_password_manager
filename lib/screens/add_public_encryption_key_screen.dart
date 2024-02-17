@@ -10,6 +10,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:bip39/bip39.dart' as bip39;
+import 'package:ecdsa/ecdsa.dart' as ecdsa;
+import 'package:elliptic/elliptic.dart';
 
 import '../models/KeyItem.dart';
 import '../helpers/AppConstants.dart';
@@ -21,10 +23,9 @@ import '../models/GenericItem.dart';
 import 'home_tab_screen.dart';
 
 
-/// Adding a Primary (Main/Parent) Public Key
+/// Adding a Primary (Main/Parent) Key Pair
 ///
 ///
-
 class AddPublicEncryptionKeyScreen extends StatefulWidget {
   const AddPublicEncryptionKeyScreen({
     Key? key,
@@ -51,7 +52,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
 
   bool _isDarkModeEnabled = false;
   bool _tagTextFieldValid = false;
-  bool _shouldShowExtendedKeys = false;
+  // bool _shouldShowExtendedKeys = false;
   bool _shouldShowRootKey = false;
 
   bool _isEditing = false;
@@ -61,21 +62,31 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
 
   bool _isGeneratingKey = true;
 
-  bool _validKeyTypeValues = true;
+  // bool _validKeyTypeValues = true;
 
   List<String> _keyTags = [];
   List<bool> _selectedTags = [];
   List<String> _filteredTags = [];
 
-  List<int> _privKeyExchange = [];
-  List<int> _pubKeyExchange = [];
+  // List<int> _privKeyExchange = [];
+  String _privKeyX = "";
 
-  List<int> _privKeySigning = [];
-  List<int> _pubKeySigning = [];
+  // List<int> _pubKeyExchange = [];
+  String _pubKeyX = "";
 
-  String _publicKeyMnemonic = "";
+  // List<int> _privKeySigning = [];
+  String _privKeyS = "";
 
-  final algorithm_exchange = X25519();
+  // List<int> _pubKeySigning = [];
+  String _pubKeyS = "";
+
+  String _publicKeyXMnemonic = "";
+  String _publicKeySMnemonic = "";
+
+  // final algorithm_exchange = X25519();
+  final ec_exchange_algo = X25519();
+  final ec_sign_algo = getS256();
+
 
   final _logManager = LogManager();
   final _settingsManager = SettingsManager();
@@ -94,7 +105,9 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     // print("starting new key item");
     _isEditing = true;
 
-    _generateKeyPair();
+    _generateKeyPairX();
+
+    _generateKeyPairS();
 
     _filteredTags = _settingsManager.itemTags;
     for (var tag in _settingsManager.itemTags) {
@@ -113,7 +126,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     // });
   }
 
-  Future<void> _generateKeyPair() async {
+  Future<void> _generateKeyPairX() async {
     // print("add_public_encryption_key: _generateKeyPair");
 
     // _seedKey = _cryptor.getRandomBytes(32);
@@ -144,12 +157,12 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
 
     /// TODO: test alt method
     ///
-    final privSeedPair2 = await algorithm_exchange
+    final privSeedPair2 = await ec_exchange_algo
         .newKeyPair();
     final privkeyseed2 = await privSeedPair2.extractPrivateKeyBytes();
-    // print("privkeyseed2 check: ${privkeyseed2}");
 
-    _privKeyExchange = privkeyseed2;
+    _privKeyX = hex.encode(privkeyseed2);
+    _logManager.logger.e("_privKeyX: ${_privKeyX}");
 
     // final privSeedPairChecker = await algorithm_exchange
     //     .newKeyPairFromSeed(privkeyseed2);
@@ -164,31 +177,82 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
 
     final simplePublicKey = await privSeedPair2.extractPublicKey();
 
-    _pubKeyExchange = simplePublicKey.bytes;
+    // _pubKeyX = simplePublicKey.bytes;
     // print("_pubKeyExchange: ${_pubKeyExchange}");
 
     // final expanded = await _cryptor.expandKey(_seedKey);
 
     setState(() {
-      _pubKeyExchange = simplePublicKey.bytes;
-      // print("_pubKeyExchange: ${_pubKeyExchange}");
-      // print("_pubKeyExchange: ${_pubKeyExchange.length}: ${_pubKeyExchange}");
-      // print("main publicKey: ${_pubKeyExchange.length}: ${hex.encode(_pubKeyExchange)}");
+      _pubKeyX = hex.encode(simplePublicKey.bytes);
+      _logManager.logger.d("_pubKeyX: ${_pubKeyX}");
 
-      _publicKeyMnemonic = bip39.entropyToMnemonic(hex.encode(_pubKeyExchange));
+      final pubWords = bip39.entropyToMnemonic(_pubKeyX);
+      final words = pubWords.split(" ");
       // print("_publicKeyMnemonic: ${_publicKeyMnemonic}");
 
+      _publicKeyXMnemonic = words[0] + " " + words[1] + " " + words.last;
+      _logManager.logger.d("_publicKeyXMnemonic: ${_publicKeyXMnemonic}");
+
       _keyDataTextController.text =
-          _publicKeyMnemonic;
+          _publicKeyXMnemonic;
     });
 
     _validateFields();
 
   }
 
+  /// secp256k1 signing algo
+  Future<PrivateKey?> _generateKeyPairS() async {
+    _logManager.logger.d("generateSigningKeyPair");
+
+    var privS = ec_sign_algo.generatePrivateKey();
+    _logManager.logger.e("privS[${privS.bytes.length}]: ${hex.encode(privS.bytes)}");
+
+    // logger.d("privateKey.D: ${priv.D}");
+    // logger.d("privateKey.bytes: ${priv.bytes}");
+    // logger.d("privateKey.hex: ${hex.encode(priv.bytes)}");
+    // logger.d("priv: $priv");
+
+    var pub = privS.publicKey;
+    // _logManager.logger.d("pub.X: ${pub.X}");
+    // _logManager.logger.d("pub.Y: ${pub.Y}");
+    // _logManager.logger.d("pub.toHex()[${pub.toHex().length}]: ${pub.toHex()}");
+    _logManager.logger.d("pub.toCompressedHex()[${pub.toCompressedHex().length}]: ${pub.toCompressedHex()}");
+
+    // var pubKeyS = ec_sign_algo.publicKeyToCompressedHex(pub);
+    // _logManager.logger.d("pubKeyS.publicKeyToCompressedHex: ${pubKeyS.length}: ${pubKeyS}");
+
+    // final pubWords = bip39.entropyToMnemonic(pubKeyS);
+    // final words = pubWords.split(" ");
+    // print("_publicKeyMnemonic: ${_publicKeyMnemonic}");
+
+    // _publicKeySMnemonic = words[0] + " " + words[1] + " " + words.last;
+    // _logManager.logger.d("_publicKeySMnemonic: ${_publicKeySMnemonic}");
+
+    final a = _cryptor.sha256("hello");
+    final abytes = hex.decode(a);
+    // _logManager.logger.d("hash:abytes: ${a}");
+
+    var sig = ecdsa.signature(privS, abytes);
+    _logManager.logger.d("sig.toCompactHex()[${sig.toCompactHex().length}]: ${sig.toCompactHex()}");
+    // _logManager.logger.d("sig.R: ${sig.R}");
+    // _logManager.logger.d("sig.S: ${sig.S}");
+
+    var result = ecdsa.verify(pub, abytes, sig);
+    _logManager.logger.d("sig verify result: ${result}");
+
+    if (result) {
+      _privKeyS = hex.encode(privS.bytes);
+      _pubKeyS = pub.toCompressedHex();
+      return privS;
+    }
+
+    return null;
+  }
+
   Future<void> _getChainedKey() async {
     final seed = List<int>.filled(32, 0);
-    final privSeedPair = await algorithm_exchange.newKeyPairFromSeed(seed);
+    final privSeedPair = await ec_exchange_algo.newKeyPairFromSeed(seed);
 
     // final privSeedPair = pair;
     final pubKey = await privSeedPair.extractPublicKey();
@@ -196,7 +260,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     _logManager.logger.d("pubKeyHash1: $pubKeyHash");
 
     for (var index = 0; index < 8; index++) {
-      final keyPair = await algorithm_exchange.newKeyPairFromSeed(hex.decode(pubKeyHash));
+      final keyPair = await ec_exchange_algo.newKeyPairFromSeed(hex.decode(pubKeyHash));
       final pubKey = await keyPair.extractPublicKey();
       pubKeyHash = _cryptor.sha256(hex.encode(pubKey.bytes));
       _logManager.logger.d("pubKeyHash-$index: $pubKeyHash");
@@ -265,7 +329,6 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
                       : MaterialStateProperty.all<Color>(Colors.grey))
                       : null),
               onPressed: () async {
-                // print("pressed done");
                 await _pressedSaveKeyItem();
 
                 setState(() {
@@ -278,7 +341,8 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
                   });
                 }
               },
-            ),),
+            ),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -382,7 +446,8 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
                           setState((){
                             _isGeneratingKey = true;
                           });
-                          await _generateKeyPair();
+                          await _generateKeyPairX();
+                          await _generateKeyPairS();
                         },
                         child: Text(
                           "Generate Key",
@@ -426,7 +491,19 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
               Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Text(
-                  "Public Key:\n${hex.encode(_pubKeyExchange)}",
+                  "Public Key Exchange:\n${_pubKeyX}\n\npubX phrase: $_publicKeyXMnemonic",
+
+                  // "Public Key:\n${hex.encode(_pubKeyExchange)}\n\nPublic Mnemonic:\n${_publicKeyMnemonic}",
+                  style: TextStyle(
+                    color: _isDarkModeEnabled ? Colors.white : null,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  "Public Key Signing:\n${_pubKeyS}",
 
                   // "Public Key:\n${hex.encode(_pubKeyExchange)}\n\nPublic Mnemonic:\n${_publicKeyMnemonic}",
                   style: TextStyle(
@@ -991,19 +1068,19 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
       return;
     }
 
-    if (_pubKeyExchange.isEmpty) {
+    if (_pubKeyX.isEmpty) {
       setState(() {
         _fieldsAreValid = false;
       });
       return;
     }
 
-    if (!bip39.validateMnemonic(mnemonic)) {
-      setState(() {
-        _fieldsAreValid = false;
-      });
-      return;
-    }
+    // if (!bip39.validateMnemonic(mnemonic)) {
+    //   setState(() {
+    //     _fieldsAreValid = false;
+    //   });
+    //   return;
+    // }
 
     setState(() {
       _fieldsAreValid = true;
@@ -1013,12 +1090,12 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
 
   _pressedSaveKeyItem() async {
 
-    if (_privKeyExchange == null) {
+    if (_privKeyX == null) {
       _showErrorDialog('Could not save the item.');
       return;
     }
 
-    if (_privKeyExchange.isEmpty) {
+    if (_privKeyX.isEmpty) {
       _showErrorDialog('Could not save the item.');
       return;
     }
@@ -1028,12 +1105,12 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     final name = _nameTextController.text;
     final notes = _notesTextController.text;
 
-    final encodedLength = utf8.encode(name).length + utf8.encode(notes).length + utf8.encode(base64.encode(_privKeyExchange)).length;
+    final encodedLength = utf8.encode(name).length + utf8.encode(notes).length + utf8.encode(_privKeyX).length;
 
     _settingsManager.doEncryption(encodedLength);
 
     if (AppConstants.debugKeyData) {
-      _logManager.logger.d("_privKeyExchange: $_privKeyExchange");
+      _logManager.logger.d("_privKeyExchange: $_privKeyX");
     }
 
 
@@ -1045,14 +1122,14 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
 
     /// TODO: switch encoding !
     // final encryptedKey = await _cryptor.encrypt(hex.encode(_privKeyExchange));
-    final encryptedKey = await _cryptor.encrypt(base64.encode(_privKeyExchange));
+    final encryptedKey = await _cryptor.encrypt(base64.encode(hex.decode(_privKeyX)));
 
     var keyItem = KeyItem(
       id: uuid,
       keyId: _keyManager.keyId,
       version: AppConstants.keyItemVersion,
       name: encryptedName,
-      key: encryptedKey,
+      keys: Keys(privX: encryptedKey, privS: encryptedKey, privK: encryptedKey),
       keyType: EnumToString.convertToString(EncryptionKeyType.asym),
       purpose: EnumToString.convertToString(KeyPurposeType.keyexchange),
       algo: EnumToString.convertToString(KeyExchangeAlgoType.x25519),
@@ -1073,7 +1150,7 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
     // print("save keyItemJson: $keyItemJson");
 
     final genericItem = GenericItem(type: "key", data: keyItemJson);
-    // print('genericItem toRawJson: ${genericItem.toRawJson()}');
+    print('genericItem toRawJson: ${genericItem.toRawJson()}');
 
     final genericItemString = genericItem.toRawJson();
     // _logManager.logger.d("save key item genericItemString: $genericItemString");

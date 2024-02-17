@@ -26,7 +26,7 @@ class SecItem {
 
 class KeychainManager {
   var logger = Logger(
-    printer: PrettyPrinter(),
+    printer: PrettyPrinter(methodCount: 4),
   );
 
   static final KeychainManager _shared = KeychainManager._internal();
@@ -1489,10 +1489,14 @@ class KeychainManager {
           .map((entry) => GenericItem.fromRawJson(entry.value))
           .toList(growable: false);
 
+      // logManager.logger.w("Keychain allItems: ${allItems.first.toRawJson()}");
+
       _passwordItemsSize = 0;
       _numberOfPreviousPasswords = 0;
 
       allItems.forEach((element) {
+        // logManager.logger.w("Keychain data: ${element.data}");
+
         if (element.type == "password") {
           final item = PasswordItem.fromRawJson(element.data);
           if (item != null) {

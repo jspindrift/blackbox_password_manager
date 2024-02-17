@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:blackbox_password_manager/models/EncryptedPeerMessage.dart';
 import 'package:convert/convert.dart';
 import 'package:logger/logger.dart';
 
@@ -57,7 +58,7 @@ class KeyItem {
   String keyId;
   int version;  // add version that signals how to decrypt/manipulate
   String name;
-  String key;  // encrypted private key (asym or sym)
+  Keys keys;  // encrypted private key (asym or sym)
   String keyType;
   String purpose;
   String algo;
@@ -75,7 +76,7 @@ class KeyItem {
     required this.keyId,
     required this.version,
     required this.name,
-    required this.key,
+    required this.keys,
     required this.keyType,
     required this.purpose,
     required this.algo,
@@ -100,7 +101,7 @@ class KeyItem {
       keyId: json['keyId'],
       version: json["version"],
       name: json['name'],
-      key: json['key'],
+      keys: Keys.fromJson(json['keys']),
       keyType: json['keyType'],
       purpose: json['purpose'],
       algo: json['algo'],
@@ -122,7 +123,7 @@ class KeyItem {
       "keyId": keyId,
       "version": version,
       "name": name,
-      "key": key,
+      "keys": keys,
       "keyType": keyType,
       "purpose": purpose,
       "algo": algo,
@@ -142,7 +143,12 @@ class KeyItem {
   void calculateFieldHash() {
     // for (var fields in )
     final nameHash = Cryptor().sha256(name);
-    final keyHash = Cryptor().sha256(key);
+
+    final x = keys?.privX ?? "";
+    final s = keys?.privS ?? "";
+    final k = keys?.privK ?? "";
+
+    final keyHash = Cryptor().sha256(x + k + s);
     final notesHash = Cryptor().sha256(notes);
     // logger.d("nameHash: ${nameHash}\nusernameHash: ${usernameHash}\npasswordHash: ${passwordHash}");
 
@@ -172,18 +178,78 @@ class KeyItem {
 
 }
 
+/// object containing relevant keys
+class Keys {
+  String? privX;  /// key exchange
+  String? privS;  /// signing
+  String? privK;  /// symmetric usage
+
+  Keys({
+  required this.privX,
+  required this.privS,
+  required this.privK,
+  });
+
+  factory Keys.fromRawJson(String str) => Keys.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  Map<String, dynamic> toJsonPrivX() => {
+    "privX": privX!,
+  };
+
+  Map<String, dynamic> toJsonPrivS() => {
+    "privS": privS!,
+  };
+
+  Map<String, dynamic> toJsonPrivK() => {
+    "privK": privK!,
+  };
+
+  factory Keys.fromJson(Map<String, dynamic> json) {
+    return Keys(
+      privX: json['privX'] == null ? null : json['privX'],
+      privS: json['privS'] == null ? null : json['privS'],
+      privK: json['privK'] == null ? null : json['privK'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonMap = {
+      // "privX": privX,
+      // "privS": privS,
+      // "privK": privK,
+    };
+
+    if (privX != null) {
+      jsonMap.addAll(toJsonPrivX());
+    }
+
+    if (privS != null) {
+      jsonMap.addAll(toJsonPrivS());
+    }
+
+    if (privK != null) {
+      jsonMap.addAll(toJsonPrivK());
+    }
+
+    return jsonMap;
+  }
+}
+
 /// The secret shared key is computed by this vault owner's private key and this
 /// peer's public key.  Then this secret key acts as a root key that gets
 /// expanded into and encryption and authentication key for Encrypt-then-Mac
 /// functionality with encrypting and decrypting messages.
 class PeerPublicKey {
   String id;
-  int? version;
+  int version;
   String name;  // encrypted
-  String key;  // encrypted
+  String pubKeyX;  // encrypted Peer Public Key (exchange)
+  String pubKeyS;  // encrypted Peer Public Key (signing)
   String notes;  // encrypted
-  SecureMessageList sentMessages;  // encrypted
-  SecureMessageList receivedMessages; // encrypted
+  GenericMessageList? sentMessages;  // encrypted
+  GenericMessageList? receivedMessages; // encrypted
   String mdate;
   String cdate;
 
@@ -191,7 +257,8 @@ class PeerPublicKey {
     required this.id,
     required this.version,
     required this.name,
-    required this.key,
+    required this.pubKeyX,
+    required this.pubKeyS,
     required this.notes,
     required this.sentMessages,
     required this.receivedMessages,
@@ -203,20 +270,19 @@ class PeerPublicKey {
 
   String toRawJson() => json.encode(toJson());
 
-  Map<String, dynamic> toJsonVersion() => {
-    "version": version!,
-  };
-
 
   factory PeerPublicKey.fromJson(Map<String, dynamic> json) {
     return PeerPublicKey(
       id: json['id'],
-      version: json['version'] == null ? null : json["version"],
+      version: json["version"],
       name: json['name'],
-      key: json['key'],
+      pubKeyX: json['pubKeyX'],
+      pubKeyS: json['pubKeyS'],
       notes: json['notes'],
-      sentMessages: SecureMessageList.fromJson(json["sentMessages"]),
-      receivedMessages: SecureMessageList.fromJson(json["receivedMessages"]),
+      sentMessages: GenericMessageList.fromJson(json["sentMessages"]) == null
+          ? null : GenericMessageList.fromJson(json["sentMessages"]),
+      receivedMessages: GenericMessageList.fromJson(json["receivedMessages"]) == null
+          ? null : GenericMessageList.fromJson(json["receivedMessages"]),
       cdate: json['cdate'],
       mdate: json['mdate'],
     );
@@ -225,18 +291,16 @@ class PeerPublicKey {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
       "id": id,
+      "version": version,
       "name": name,
-      "key": key,
+      "pubKeyX": pubKeyX,
+      "pubKeyS": pubKeyS,
       "notes": notes,
       "sentMessages": sentMessages,
       "receivedMessages": receivedMessages,
       "cdate": cdate,
       "mdate": mdate,
     };
-
-    if (version != null) {
-      jsonMap.addAll(toJsonVersion());
-    }
 
     return jsonMap;
   }
@@ -245,7 +309,7 @@ class PeerPublicKey {
 
 
 class SecureMessageList {
-  List<SecureMessage> list;
+  List<GenericPeerMessage> list;
 
   SecureMessageList({
     required this.list,
@@ -257,8 +321,8 @@ class SecureMessageList {
 
   factory SecureMessageList.fromJson(Map<String, dynamic> json) {
     return SecureMessageList(
-      list: List<SecureMessage>.from(
-          json["list"].map((x) => SecureMessage.fromJson(x))),
+      list: List<GenericPeerMessage>.from(
+          json["list"].map((x) => GenericPeerMessage.fromJson(x))),
     );
   }
 
@@ -275,18 +339,12 @@ class SecureMessageList {
 
 /// encrypted with key derived from user's shared secret key
 class SecureMessage {
-  String version;
-  String to;
-  String from;
-  String blob; // iv + mac + encryptedMessage
-  String cdate;
+  String version; // protocol version for blob
+  String data;    // version dependant json encoded string object (SignedMessageDataV1)
 
   SecureMessage({
     required this.version,
-    required this.to,
-    required this.from,
-    required this.blob,
-    required this.cdate,
+    required this.data,
   });
 
   factory SecureMessage.fromRawJson(String str) => SecureMessage.fromJson(json.decode(str));
@@ -296,24 +354,110 @@ class SecureMessage {
 
   factory SecureMessage.fromJson(Map<String, dynamic> json) {
     return SecureMessage(
+      // index: json['index'],
       version: json['version'],
-      to: json['to'],
-      from: json['from'],
-      blob: json['blob'],
-      cdate: json['cdate'],
+      // to: json['to'],
+      // from: json['from'],
+      data: json['data'],
     );
   }
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
+      // "index": index,
       "version": version,
+      // "to": to,
+      // "from": from,
+      "data": data,
+    };
+
+    return jsonMap;
+  }
+
+  getMessageData() {
+
+  }
+
+}
+
+
+class SignedMessageDataV1 {
+  String protocol;        // signing and encryption protocol
+  String signature;       // receiving address
+  MessageDataV1 data;     // message data
+
+  SignedMessageDataV1({
+    required this.protocol,
+    required this.signature,
+    required this.data,
+  });
+
+  factory SignedMessageDataV1.fromRawJson(String str) => SignedMessageDataV1.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+
+  factory SignedMessageDataV1.fromJson(Map<String, dynamic> json) {
+    return SignedMessageDataV1(
+      protocol: json['protocol'],
+      signature: json['signature'],
+      data: MessageDataV1.fromRawJson(json['data']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonMap = {
+      "protocol": protocol,
+      "signature": signature,
+      "data": data,
+    };
+
+    return jsonMap;
+  }
+}
+
+class MessageDataV1 {
+  int index;      // message index
+  String to;      // receiving address
+  String from;    // sending address
+  String cdate;   // created date
+  String message; // message data (eg. [iv + mac + encryptedMessage])
+
+  MessageDataV1({
+    required this.index,
+    required this.to,
+    required this.from,
+    required this.cdate,
+    required this.message,
+  });
+
+  factory MessageDataV1.fromRawJson(String str) => MessageDataV1.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+
+  factory MessageDataV1.fromJson(Map<String, dynamic> json) {
+    return MessageDataV1(
+      index: json['index'],
+      to: json['to'],
+      from: json['from'],
+      cdate: json['cdate'],
+      message: json['message'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonMap = {
+      "index": index,
       "to": to,
       "from": from,
-      "blob": blob,
       "cdate": cdate,
+      "message": message,
     };
 
     return jsonMap;
   }
 
 }
+
+

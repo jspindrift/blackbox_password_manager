@@ -1,8 +1,17 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:convert/convert.dart';
+import 'package:cryptography/cryptography.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:ecdsa/ecdsa.dart' as ecdsa;
+import 'package:elliptic/elliptic.dart' as elliptic;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:bip39/bip39.dart' as bip39;
 
 import '../helpers/AppConstants.dart';
+import '../managers/Cryptor.dart';
 import '../managers/SettingsManager.dart';
 import '../managers/DeviceManager.dart';
 import '../managers/LogManager.dart';
@@ -30,11 +39,22 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
 
   int _passwordFileSize = 0;
   int _selectedIndex = 3;
+  int _modIndex = 0;
+
+  Timer? otpTimer;
+  String _otpTokenWords = "";
+
+  List<int> _appKeyBytes = [];
+
+  final algorithm_secp256k1 = elliptic.getS256();
+  final algorithm_nomac = AesCtr.with256bits(macAlgorithm: MacAlgorithm.empty);
+
 
   final _settingsManager = SettingsManager();
   final _deviceManager = DeviceManager();
   final _logManager = LogManager();
   final _keyManager = KeychainManager();
+  final _cryptor = Cryptor();
 
 
   @override
@@ -70,9 +90,127 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
           _deviceName = _deviceManager.deviceData['device'];
         });
       }
+
+      await _generateAppTOTP();
+
+      await _calculateOTPToken();
+
+      await _startOTPTimer();
     });
 
     _passwordFileSize = _keyManager.passwordItemsSize;
+  }
+
+  Future<void> _generateAppTOTP() async {
+    final keyEnv = dotenv.env["KEY_COMPANY_APP"];
+    if (keyEnv == null) {
+      return;
+    }
+
+    if (keyEnv.isEmpty) {
+      return;
+    }
+
+    final appVersionAndBuildNumber = _settingsManager.versionAndBuildNumber();
+    final convertedSeed = _cryptor.mnemonicToEntropy(keyEnv!);
+    // final seedEntropy = hex.decode(convertedSeed);
+    // _logManager.logger.d("keyEnv: ${keyEnv}");
+
+    // _logManager.logger.d("converted: ${"${convertedSeed}:$appVersionAndBuildNumber"}");
+    final Kpriv = _cryptor.sha256("${convertedSeed}:$appVersionAndBuildNumber");
+    // _logManager.logger.d("Kpriv: ${Kpriv}");
+    _appKeyBytes = hex.decode(Kpriv); // seedEntropy
+
+    // final privateKeyGen = elliptic.PrivateKey(
+    //   algorithm_secp256k1,
+    //   BigInt.parse(Kpriv, radix: 16),
+    // );
+    //
+    // final pubGen = privateKeyGen.publicKey;
+    // final xpub = algorithm_secp256k1.publicKeyToCompressedHex(pubGen);
+    // _logManager.logger.d("xpub: ${xpub}");
+  }
+
+  Future<void> _calculateOTPToken() async {
+    if (_appKeyBytes.isEmpty) {
+      return;
+    }
+    final otpTimeInterval = AppConstants.appTOTPDefaultTimeInterval;
+    final t = AppConstants.appTOTPStartTime;
+    final otpStartTime = DateTime.parse(t);
+    // print("otpStartTime: ${otpStartTime} | ${otpStartTime.second}");
+
+    final timestamp = DateTime.now();
+
+    if (timestamp.isAfter(otpStartTime)) {
+      final diff_sec = timestamp.difference(otpStartTime).inSeconds;
+      // print("diff_sec: ${diff_sec}");
+
+      /// this gives the current step within the time interval 0-30
+      final mod_sec = diff_sec.toInt() % otpTimeInterval.toInt();
+      setState(() {
+        _modIndex = mod_sec;
+      });
+
+      /// this gives the iteration number we are on
+      final div_sec = (diff_sec.toInt() / otpTimeInterval.toInt());
+      final div_sec_floor = div_sec.floor();
+      // print("div_sec: ${div_sec}");
+      // print("div_sec_floor: ${div_sec_floor}");
+
+      var divHex = div_sec_floor.toRadixString(16);
+      // print("divHex: $divHex");
+
+      /// add "0" if # of hex chars is odd
+      if (divHex.length % 2 == 1) {
+        divHex = "0" + divHex;
+      }
+
+      final divBytes = hex.decode(divHex);
+      final nonce = List<int>.filled(16, 0);
+      final pad = nonce;
+
+      final iv = nonce.sublist(0, nonce.length - divBytes.length) + divBytes;
+      // print("iv: $iv");
+      // print("iv.hex: ${hex.encode(iv)}");
+
+      final secretKeyMac = SecretKey(_appKeyBytes);
+      /// Encrypt the appended keys
+      final secretBox = await algorithm_nomac.encrypt(
+        pad,
+        secretKey: secretKeyMac,
+        nonce: iv,
+      );
+
+      final tokenWords = bip39.entropyToMnemonic(hex.encode(secretBox.cipherText));
+      // print("token words: ${tokenWords}");
+      final tokenParts = tokenWords.split(" ");
+
+      final macWords = tokenParts[0] + " " + tokenParts[1] + " " + tokenParts[2] + " " + tokenParts.last;
+      _otpTokenWords = macWords;
+    }
+  }
+
+  Future<void> _startOTPTimer() async {
+    otpTimer = Timer.periodic(Duration(seconds:1),(value) async {
+      // print("timer: ${value.tick}");
+
+      await _calculateOTPToken();
+    });
+  }
+
+  void _cancelOTPTimer() {
+    if (otpTimer != null) {
+      otpTimer!.cancel();
+      otpTimer = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    _cancelOTPTimer();
   }
 
 
@@ -105,19 +243,19 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
               ListTile(
                 enabled: false,
                 title: Text(
-                  "App Version:",
+                  "App Version: ${_settingsManager.versionAndBuildNumber()}",
                   style: TextStyle(
                     color: _isDarkModeEnabled ? Colors.white : Colors.black,
                   ),
                 ),
-                subtitle: Text(
-                  _settingsManager.versionAndBuildNumber(),
+                subtitle: kDebugMode ? Text(
+                  "[${AppConstants.appTOTPDefaultTimeInterval - _modIndex}] app phrase:\n$_otpTokenWords",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.normal,
                     color: _isDarkModeEnabled ? Colors.white : Colors.black,
                   ),
-                ),
+                ) : null,
               ),
               Divider(
                 color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
@@ -368,4 +506,7 @@ class _SettingsAboutScreenState extends State<SettingsAboutScreen> {
 
     _settingsManager.changeRoute(index);
   }
+
 }
+
+

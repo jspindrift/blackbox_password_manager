@@ -12,9 +12,11 @@ class AppConstants {
   static const String appName = "Blackbox Password Manager";
 
   /// TOTP values ---------------------------------------
-  static const String appTOTPStartTime = "2023-07-22T15:08:36.310505";
+  static const String appTOTPStartTime = "2024-01-22T01:01:00.000000";
 
-  static const int appTOTPDefaultTimeInterval = 30;
+  static const int appTOTPDefaultTimeInterval = 3600;  // 1 hour
+  static const int peerTOTPDefaultTimeInterval = 30;
+
   static const int appTOTPDefaultMaxNumberDigits = 12;
   static const int appTOTPDefaultMaxNumberWords = 12;
   static const int appTOTPDefaultMinNumberDigits = 3;
