@@ -289,44 +289,15 @@ class _HomeTabScreenState extends State<HomeTabScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.grey : Colors.blue[50],//Colors.grey[100],
-      // appBar: AppBar(
-      //   title: Text('BlackBox'),
-      //   automaticallyImplyLeading: false,
-      //   backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
-      //   // leading: IconButton(
-      //   //   icon: Icon(Icons.settings),
-      //   //   color: _isDarkModeEnabled ? Colors.greenAccent : null,
-      //   //   onPressed: () {
-      //   //     Navigator.push(
-      //   //       context,
-      //   //       MaterialPageRoute(
-      //   //         builder: (context) => SettingsScreen(),
-      //   //         fullscreenDialog: true,
-      //   //       ),
-      //   //     ).then((value) {
-      //   //       setState(() {
-      //   //         _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
-      //   //       });
-      //   //       // _updatePasswordItemList();
-      //   //     });
-      //   //   },
-      //   // ),
-      // ),
+      backgroundColor: _isDarkModeEnabled ? Colors.grey : Colors.white70,//Colors.blue[50],//Colors.grey[100],
       body: _widgetOptions.elementAt(_selectedIndex),
-      // Center(
-      //   child: _widgetOptions.elementAt(_selectedIndex),
-      // ),
       bottomNavigationBar: BottomNavigationBar(
         elevation: 2.0,
-        backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
-        // fixedColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
-        // fixedColor: Colors.blue,
         currentIndex: _selectedIndex,
         selectedItemColor:
-            _isDarkModeEnabled ? Colors.white : Colors.blueAccent,
-        unselectedItemColor: Colors.grey,
-        unselectedIconTheme: IconThemeData(color: Colors.grey),
+            _isDarkModeEnabled ? Colors.white : Colors.white,
+        unselectedItemColor: Colors.greenAccent,
+        unselectedIconTheme: IconThemeData(color: Colors.greenAccent),
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(
@@ -334,11 +305,11 @@ class _HomeTabScreenState extends State<HomeTabScreen>
               color: Colors.grey,
             ),
             label: 'Favorites',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.star,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+                  _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
           BottomNavigationBarItem(
@@ -347,11 +318,11 @@ class _HomeTabScreenState extends State<HomeTabScreen>
               color: Colors.grey,
             ),
             label: 'Categories',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.category,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+                  _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
           BottomNavigationBarItem(
@@ -360,11 +331,11 @@ class _HomeTabScreenState extends State<HomeTabScreen>
               color: Colors.grey,
             ),
             label: 'Tags',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.discount,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+                  _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
           BottomNavigationBarItem(
@@ -373,11 +344,11 @@ class _HomeTabScreenState extends State<HomeTabScreen>
               color: Colors.grey,
             ),
             label: 'Settings',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.settings,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+                  _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
         ],

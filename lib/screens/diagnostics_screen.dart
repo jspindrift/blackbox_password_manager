@@ -156,18 +156,18 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
     }
 
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.white70, //Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text(
           "Diagnostics",
           style: TextStyle(
-            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+            color: _isDarkModeEnabled ? Colors.white : Colors.white,
           ),
         ),
         automaticallyImplyLeading: false,
-        backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
+        backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
         leading: BackButton(
-          color: _isDarkModeEnabled ? Colors.greenAccent : null,
+          color: _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
           onPressed: () {
             Navigator.of(context).pop();
           },
@@ -197,13 +197,13 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
           Padding(
             padding: EdgeInsets.all(8.0),
             child: Card(
-              color: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+              color: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
               child: ListTile(
               tileColor: _isDarkModeEnabled ? Colors.black54 : null,
               title: Text(
                 "Logs",
                 style: TextStyle(
-                  color: _isDarkModeEnabled ? Colors.white : null,
+                  color: _isDarkModeEnabled ? Colors.white : Colors.white,
                   fontSize: 18,
                 ),
               ),
@@ -213,7 +213,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
                   Icons.arrow_forward,
                   color: _isDarkModeEnabled
                       ? Colors.greenAccent
-                      : Colors.blueAccent,
+                      : Colors.white,
                 ),
                 onPressed: () {
                   Navigator.push(
@@ -254,14 +254,14 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
           Padding(
             padding: EdgeInsets.all(4.0),
             child: Card(
-              color: _isDarkModeEnabled ? Colors.black87 : null,
+              color: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
               child: Column(
                 children: <Widget>[
                   ListTile(
                     title: Text(
                       _logsAreValid ? "Valid Logs" : "Logs Are Invalid",
                       style: TextStyle(
-                          color: _isDarkModeEnabled ? Colors.white : null),
+                          color: _isDarkModeEnabled ? Colors.white : Colors.white),
                     ),
                   ),
                   Divider(
@@ -270,7 +270,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
                     title: Text(
                       "Log file: ${(_logFileSizeScaled).toStringAsFixed(2)} $_logFileSizeUnits",
                       style: TextStyle(
-                          color: _isDarkModeEnabled ? Colors.white : null,
+                          color: _isDarkModeEnabled ? Colors.white : Colors.white,
                       ),
                     ),
                     subtitle: Padding(
@@ -280,7 +280,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
                       //   "App Time: $elapsedTimeString",
                         "App Time: $elapsedTimeString\n\nrate: ${((_logFileSize)/_logManager.appUsageInSeconds).toStringAsFixed(2)} bytes/sec",
                         style: TextStyle(
-                          color: _isDarkModeEnabled ? Colors.white : null,
+                          color: _isDarkModeEnabled ? Colors.white : Colors.white,
                           fontSize: 16,
                         ),
                      ),),
@@ -310,13 +310,11 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
       ),
       bottomNavigationBar: BottomNavigationBar(
         elevation: 2.0,
-        backgroundColor: _isDarkModeEnabled ? Colors.black12 : Colors.white,
-        // fixedColor: Colors.white,
         currentIndex: _selectedIndex,
         selectedItemColor:
-            _isDarkModeEnabled ? Colors.white : Colors.blueAccent,
-        unselectedItemColor: Colors.grey,
-        unselectedIconTheme: IconThemeData(color: Colors.grey),
+        _isDarkModeEnabled ? Colors.white : Colors.white,
+        unselectedItemColor: Colors.green,
+        unselectedIconTheme: IconThemeData(color: Colors.greenAccent),
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(
@@ -324,11 +322,11 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
               color: Colors.grey,
             ),
             label: 'Favorites',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.star,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
           BottomNavigationBarItem(
@@ -337,11 +335,11 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
               color: Colors.grey,
             ),
             label: 'Categories',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.category,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
           BottomNavigationBarItem(
@@ -350,11 +348,11 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
               color: Colors.grey,
             ),
             label: 'Tags',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.discount,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
           BottomNavigationBarItem(
@@ -363,11 +361,11 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
               color: Colors.grey,
             ),
             label: 'Settings',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.settings,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
         ],

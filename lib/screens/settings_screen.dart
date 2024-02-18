@@ -223,13 +223,13 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? Colors.black87 : (AppConstants.useMaterial3 ? Colors.black87 : Colors.black87)) : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? Colors.black87 : (AppConstants.useMaterial3 ? Colors.black87 : Colors.black87)) : Colors.white70,//Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
+        backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
         title: Text(
             'Settings',
           style: TextStyle(
-            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+            color: _isDarkModeEnabled ? Colors.white : Colors.white,
           ),
         ),
         automaticallyImplyLeading: false,
@@ -247,16 +247,15 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     style: ButtonStyle(
                       backgroundColor: _isDarkModeEnabled
                           ? MaterialStateProperty.all<Color>(Colors.greenAccent)
-                          : null,
+                          : MaterialStateProperty.all<Color>(Colors.blueAccent),
                     ),
                     child: Text(
                       'Log Out',
                       style: _isDarkModeEnabled
                           ? TextStyle(color: Colors.black, fontSize: 16)
-                          : null,
+                          : TextStyle(color: Colors.white, fontSize: 16),
                     ),
                     onPressed: () {
-                      // print("press");
                       _showLogoutDialog(context);
                     },
                   ),
@@ -273,12 +272,12 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       'Change Password',
                       style: _isDarkModeEnabled
                           ? TextStyle(color: Colors.black, fontSize: 16)
-                          : null,
+                          : TextStyle(color: Colors.white, fontSize: 16),
                     ),
                     style: ButtonStyle(
                       backgroundColor: _isDarkModeEnabled
                           ? MaterialStateProperty.all<Color>(Colors.greenAccent)
-                          : null,
+                          : MaterialStateProperty.all<Color>(Colors.blueAccent),
                     ),
                     onPressed: () {
                       Navigator.push(
@@ -400,7 +399,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   padding: EdgeInsets.all(0.0),
                   child: Card(
                     elevation: 0,
-                    color: _isDarkModeEnabled ? Colors.black : Colors.white,
+                    color: _isDarkModeEnabled ? Colors.black : Colors.blueAccent,
                     child: Container(
                       height: 70,
                       child: ListTile(
@@ -410,7 +409,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                           style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: _isDarkModeEnabled ? Colors.white : null),
+                              color: _isDarkModeEnabled ? Colors.white : Colors.white),
                         ),
                         subtitle: !_isBiometricKeyAvailable && _isPinCodeEnabled
                             ? Text(
@@ -418,7 +417,8 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                                 style: TextStyle(
                                     color: _isDarkModeEnabled
                                         ? Colors.white
-                                        : null),
+                                        : Colors.white,
+                                ),
                               )
                             : null,
                         trailing: Switch(
@@ -429,7 +429,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                                   ? MaterialStateProperty.all<Color>(
                                       Colors.greenAccent)
                                   : MaterialStateProperty.all<Color>(
-                                      Colors.blue))
+                                      Colors.greenAccent))
                               : MaterialStateProperty.all<Color>(Colors.grey),
                           value: _isBiometricKeyAvailable,
                           onChanged: (value) {
@@ -440,9 +440,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     ),
                   ),
                 ),),
-              // Divider(
-              //   color: _isDarkModeEnabled ? Colors.grey[900] : Colors.white,
-              // ),
               Visibility(
                 visible: _isBiometricSupported,
                 child: Divider(
@@ -453,7 +450,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 padding: EdgeInsets.all(0.0),
                 child: Card(
                     elevation: 0,
-                    color: _isDarkModeEnabled ? Colors.black54 : Colors.white,
+                    color: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
                     child: Container(
                       height: 70,
                       child: ListTile(
@@ -463,7 +460,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                           style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: _isDarkModeEnabled ? Colors.white : null),
+                              color: _isDarkModeEnabled ? Colors.white : Colors.white),
                         ),
                         subtitle: _isBiometricSupported && !_isPinCodeEnabled
                             ? Text(
@@ -471,7 +468,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                                 style: TextStyle(
                                     color: _isDarkModeEnabled
                                         ? Colors.white
-                                        : null),
+                                        : Colors.white),
                               )
                             : null,
                         trailing: Switch(
@@ -482,7 +479,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                                   ? MaterialStateProperty.all<Color>(
                                       Colors.greenAccent)
                                   : MaterialStateProperty.all<Color>(
-                                      Colors.blue))
+                                      Colors.greenAccent))
                               : MaterialStateProperty.all<Color>(Colors.grey),
                           value: _isPinCodeEnabled,
                           onChanged: (value) {
@@ -499,7 +496,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 padding: EdgeInsets.all(0.0),
                 child: Card(
                   elevation: 0,
-                  color: _isDarkModeEnabled ? Colors.black54 : Colors.white,
+                  color: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
                   child: Container(
                     height: 70,
                     child: ListTile(
@@ -509,12 +506,12 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                         style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: _isDarkModeEnabled ? Colors.white : null),
+                            color: _isDarkModeEnabled ? Colors.white : Colors.white),
                       ),
                       subtitle: Text(
                         _selectedTimeString,
                         style: TextStyle(
-                            color: _isDarkModeEnabled ? Colors.white : null),
+                            color: _isDarkModeEnabled ? Colors.white : Colors.white),
                       ),
                       onTap: () {
                         // print("inactivity screen");
@@ -535,7 +532,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                           Icons.arrow_forward,
                           color: _isDarkModeEnabled
                               ? Colors.greenAccent
-                              : Colors.blueAccent,
+                              : Colors.white,
                         ),
                         onPressed: () {
                           // print("inactivity screen");
@@ -561,7 +558,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               ),
               Card(
                 elevation: 0,
-                color: _isDarkModeEnabled ? Colors.black54 : Colors.white,
+                color: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
                 child: Container(
                   height: 70,
                   child: ListTile(
@@ -571,12 +568,12 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: _isDarkModeEnabled ? Colors.white : null),
+                          color: _isDarkModeEnabled ? Colors.white : Colors.white),
                     ),
                     subtitle: Text(
                       'App locks when backgrounded',
                       style: TextStyle(
-                          color: _isDarkModeEnabled ? Colors.white : null),
+                          color: _isDarkModeEnabled ? Colors.white : Colors.white),
                     ),
                     trailing: Switch(
                       thumbColor:
@@ -585,7 +582,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                           ? (_isDarkModeEnabled
                               ? MaterialStateProperty.all<Color>(
                                   Colors.greenAccent)
-                              : MaterialStateProperty.all<Color>(Colors.blue))
+                              : MaterialStateProperty.all<Color>(Colors.greenAccent))
                           : MaterialStateProperty.all<Color>(Colors.grey),
                       value: _isLockOnExitEnabled,
                       onChanged: (value) {
@@ -615,7 +612,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 padding: EdgeInsets.all(0.0),
                 child: Card(
                   elevation: 1,
-                  color: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+                  color: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
                   child: ListTile(
                     enabled: true,
                     title: Text(
@@ -623,14 +620,14 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: _isDarkModeEnabled ? Colors.white : null),
+                          color: _isDarkModeEnabled ? Colors.white : Colors.white),
                     ),
                     subtitle: Text(
                       'Create and restore backups',
                       style: TextStyle(
                           // fontSize: 20,
                           // fontWeight: FontWeight.bold,
-                          color: _isDarkModeEnabled ? Colors.white : null),
+                          color: _isDarkModeEnabled ? Colors.white : Colors.white),
                     ),
                     onTap: () {
                       Navigator.push(
@@ -647,7 +644,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                         Icons.arrow_forward,
                         color: _isDarkModeEnabled
                             ? Colors.greenAccent
-                            : Colors.blueAccent,
+                            : Colors.white,
                       ),
                       onPressed: () {
                         Navigator.push(
@@ -669,7 +666,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               Padding(
                 padding: EdgeInsets.all(0.0),
                 child: Card(
-                  color: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+                  color: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
                   elevation: 1,
                   child: ListTile(
                     enabled: true,
@@ -678,7 +675,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                         Icons.settings,
                         color: _isDarkModeEnabled
                             ? Colors.greenAccent
-                            : Colors.blueAccent,
+                            : Colors.white,
                       ),
                       onPressed: () {
                         Navigator.push(
@@ -696,14 +693,14 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: _isDarkModeEnabled ? Colors.white : null),
+                          color: _isDarkModeEnabled ? Colors.white : Colors.white),
                     ),
                     subtitle: Text(
                       'Tap to see advanced settings',
                       style: TextStyle(
                           // fontSize: 20,
                           // fontWeight: FontWeight.bold,
-                          color: _isDarkModeEnabled ? Colors.white : null),
+                          color: _isDarkModeEnabled ? Colors.white : Colors.white),
                     ),
                     onTap: () {
                       Navigator.push(
@@ -767,8 +764,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     ),
                     onTap: () {
                       /// scan in message
-                      // print("scan message");
-
                     },
                   ),
                 ),

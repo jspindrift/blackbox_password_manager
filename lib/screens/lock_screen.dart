@@ -122,9 +122,9 @@ class _LockScreenState extends State<LockScreen> {
       backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text('Locked'),
-        // backgroundColor: Colors.black54,
+        // backgroundColor: Colors.blue,
         automaticallyImplyLeading: false,
-        backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
+        backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
       ),
       body: SingleChildScrollView(
         child: Center(

@@ -47,13 +47,13 @@ class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
         title: Text(
             "Block #${widget.block.blockNumber + 1}",
           style: TextStyle(
-            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+            color: _isDarkModeEnabled ? Colors.white : Colors.white,
           ),
         ),
         automaticallyImplyLeading: false,
-        backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
+        backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
         leading: CloseButton(
-          color: _isDarkModeEnabled ? Colors.greenAccent : null,
+          color: _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
           onPressed: () {
             Navigator.of(context).pop();
           },
@@ -94,22 +94,16 @@ class _ShowLogDetailScreenState extends State<ShowLogDetailScreen> {
             color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
           ),
           controller: _controller,
-          itemCount: widget.block.logList.list.length,
+          itemCount: widget.block.blockNumber > 1 ? widget.block.logList.list.length - 1 : widget.block.logList.list.length,
           itemBuilder: (context, index) {
-            // print('index: $index');
-            // if (index == 0) {
-            //   return ListTile(
-            //     // shape: ShapeBorder,
-            //     isThreeLine: true,
-            //     title: Text('blockHeight: ${widget.block.logList[index]
-            //         .callingFunction}:\n${widget.block.logList[index].message}'),
-            //     subtitle: Text('time: ${widget.block.logList[index].time}'),
-            //   );
-            // }
-            // if (index > 0) {
             final msg = widget.block.logList.list[index].message;
-            final line =
+            var line =
                 '${widget.block.logList.list[index].callingFunction}:\n$msg';
+
+            // _logManager.logger.wtf("line: ${msg}");
+            // if (line.contains("prevHash: ")) {
+            //   line = "${widget.block.logList.list[index].callingFunction}";
+            // }
 
             final hasFailure = msg.contains("failure");
             final validPinCode = msg.contains("Valid Pin Code");

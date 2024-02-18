@@ -73,18 +73,18 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.white70, //Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text(
           "Advanced Settings",
           style: TextStyle(
-            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+            color: _isDarkModeEnabled ? Colors.white : Colors.white,
           ),
         ),
         automaticallyImplyLeading: false,
-        backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
+        backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
         leading: BackButton(
-          color: _isDarkModeEnabled ? Colors.greenAccent : null,
+          color: _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
           onPressed: () {
             Navigator.of(context).pop();
           },
@@ -96,7 +96,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              // if (kDebugMode)
               Padding(
                 padding: EdgeInsets.all(0.0),
                 child: ListTile(
@@ -199,8 +198,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                   ),
                 ),
               ),
-              // if (kDebugMode)
-              // SizedBox(height:32),
               Divider(
                 color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
               ),
@@ -538,7 +535,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                         Icons.transfer_within_a_station,
                         color: _isDarkModeEnabled
                             ? Colors.greenAccent
-                            : Colors.redAccent,
+                            : Colors.green,
                       ),
                       onPressed: () async {
                         // await _runPostQuantumIntegrityTestWithReset();
@@ -557,11 +554,11 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               ),
               Padding(
                 padding: EdgeInsets.all(12.0),
-                child: OutlinedButton(
+                child: ElevatedButton(
                   style: OutlinedButton.styleFrom(
                     side: _isDarkModeEnabled
                         ? BorderSide(color: Colors.greenAccent)
-                        : null,
+                        : BorderSide(color: Colors.black),
                   ),
                   child: Text(
                     'Delete Blackbox Data',
@@ -587,18 +584,21 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                 ),
               ),
               Visibility(
-                visible: Platform.isIOS,
+                visible: true,
                 child: Divider(
                   color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
                 ),
               ),
-              Padding(
-                padding: EdgeInsets.all(12.0),
-                child: OutlinedButton(
+              Visibility(
+                visible: kDebugMode,
+                child: Padding(
+                padding: EdgeInsets.fromLTRB(16.0, 16, 16, 32),
+                child: ElevatedButton(
                   style: OutlinedButton.styleFrom(
                     side: _isDarkModeEnabled
                         ? BorderSide(color: Colors.greenAccent)
-                        : null,
+                        : BorderSide(color: Colors.black),
+                    // backgroundColor: _isDarkModeEnabled ? Colors.transparent : Colors.blueAccent,
                   ),
                   child: Text(
                     'Delete Everything',
@@ -612,19 +612,18 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                     _showConfirmDeleteEverythingDialog();
                   },
                 ),
-              ),
+              ),),
             ],
           ),
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         elevation: 2.0,
-        backgroundColor: _isDarkModeEnabled ? Colors.black12 : Colors.white,
         currentIndex: _selectedIndex,
         selectedItemColor:
-            _isDarkModeEnabled ? Colors.white : Colors.blueAccent,
-        unselectedItemColor: Colors.grey,
-        unselectedIconTheme: IconThemeData(color: Colors.grey),
+        _isDarkModeEnabled ? Colors.white : Colors.white,
+        unselectedItemColor: Colors.green,
+        unselectedIconTheme: IconThemeData(color: Colors.greenAccent),
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(
@@ -632,11 +631,11 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               color: Colors.grey,
             ),
             label: 'Favorites',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.star,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
           BottomNavigationBarItem(
@@ -645,11 +644,11 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               color: Colors.grey,
             ),
             label: 'Categories',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.category,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
           BottomNavigationBarItem(
@@ -658,11 +657,11 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               color: Colors.grey,
             ),
             label: 'Tags',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.discount,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
           BottomNavigationBarItem(
@@ -671,11 +670,11 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               color: Colors.grey,
             ),
             label: 'Settings',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.settings,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
         ],

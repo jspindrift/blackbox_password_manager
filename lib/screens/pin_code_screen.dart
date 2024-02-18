@@ -86,7 +86,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
       child: Scaffold(
       backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
       appBar: AppBar(
-        backgroundColor: _isDarkModeEnabled ? Colors.black87 : null,
+        backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
         automaticallyImplyLeading:
             widget.flow == PinCodeFlow.create ? true : false,
         leading: widget.flow == PinCodeFlow.create

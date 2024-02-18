@@ -208,12 +208,11 @@ class _PreviousPasswordsScreenState extends State<PreviousPasswordsScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         elevation: 2.0,
-        backgroundColor: _isDarkModeEnabled ? Colors.black12 : Colors.white,
         currentIndex: _selectedIndex,
         selectedItemColor:
-            _isDarkModeEnabled ? Colors.white : Colors.blueAccent,
-        unselectedItemColor: Colors.grey,
-        unselectedIconTheme: IconThemeData(color: Colors.grey),
+        _isDarkModeEnabled ? Colors.white : Colors.white,
+        unselectedItemColor: Colors.green,
+        unselectedIconTheme: IconThemeData(color: Colors.greenAccent),
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(
@@ -221,11 +220,11 @@ class _PreviousPasswordsScreenState extends State<PreviousPasswordsScreen> {
               color: Colors.grey,
             ),
             label: 'Favorites',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.star,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
           BottomNavigationBarItem(
@@ -234,11 +233,11 @@ class _PreviousPasswordsScreenState extends State<PreviousPasswordsScreen> {
               color: Colors.grey,
             ),
             label: 'Categories',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.category,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
           BottomNavigationBarItem(
@@ -247,11 +246,11 @@ class _PreviousPasswordsScreenState extends State<PreviousPasswordsScreen> {
               color: Colors.grey,
             ),
             label: 'Tags',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.discount,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
           BottomNavigationBarItem(
@@ -260,11 +259,11 @@ class _PreviousPasswordsScreenState extends State<PreviousPasswordsScreen> {
               color: Colors.grey,
             ),
             label: 'Settings',
-            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
             activeIcon: Icon(
               Icons.settings,
               color:
-                  _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
           ),
         ],

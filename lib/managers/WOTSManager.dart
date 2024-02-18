@@ -140,12 +140,15 @@ class WOTSManager {
     _privLeaves = [];
 
     _privChecksumLeaf = "";
-    _lastBlockHash = "";
+    _pubChecksumLeaf = "";
+    _xpub_recovery = "";
 
+    _privChecksumLeaf = "";
+    _lastBlockHash = "";
     _messageIndex = 1;
 
-    // _wotsChain = WOTSBasicSignatureChain(blocks: []);
-    // _wotsJoinChain = WOTSOverlapSignatureChain(blocks: []);
+    _topPublicKey = "";
+    _nextTopPublicKey = "";
 
     _wotsSimpleJoinChain = GigaWOTSSignatureChain(chainId: "",blocks: []);
     _wotsSimpleChainDictionary = GigaWOTSSignatureDictionary(chains: []);

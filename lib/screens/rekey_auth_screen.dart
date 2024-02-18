@@ -55,13 +55,18 @@ class _ReKeyAuthScreenState extends State<ReKeyAuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white70, //Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
-        title: Text('Re-Key Vault'),
+        title: Text(
+            'Re-Key Vault',
+          style: TextStyle(
+            color: Colors.white,
+          ),
+        ),
         automaticallyImplyLeading: false,
-        backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
+        backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
         leading: BackButton(
-          color: _isDarkModeEnabled ? Colors.greenAccent : null,
+          color: _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
           onPressed: () {
             Navigator.of(context).pop();
           },

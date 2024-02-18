@@ -12,7 +12,6 @@ import '../screens/add_public_encryption_key_screen.dart';
 import '../screens/edit_public_encryption_key_screen.dart';
 import '../screens/peer_public_key_list_screen.dart';
 import '../screens/rekey_auth_screen.dart';
-import '../screens/show_log_detail2_screen.dart';
 import '../screens/welcome_all_list_screen.dart';
 import '../managers/LogManager.dart';
 import './screens/change_password_screen.dart';
@@ -129,7 +128,6 @@ class MyApp extends StatelessWidget {
                     mac: '',
                   ),
                 ),
-            ShowLogDetail2Screen.routeName: (ctx) => ShowLogDetail2Screen(),
             AdvancedSettingsScreen.routeName: (ctx) => AdvancedSettingsScreen(),
             DiagnosticsScreen.routeName: (ctx) => DiagnosticsScreen(),
             QRCodeView.routeName: (ctx) =>

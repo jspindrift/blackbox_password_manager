@@ -8,6 +8,7 @@ import '../screens/show_log_detail_screen.dart';
 import '../managers/LogManager.dart';
 import '../managers/FileManager.dart';
 import '../managers/SettingsManager.dart';
+import 'home_tab_screen.dart';
 
 
 class ShowLogsScreen extends StatefulWidget {
@@ -24,6 +25,8 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObse
   List<Block> _blocks = [];
   List<String> _timeLapses = [];
   List<int> sessionTimes = [];
+
+  int _selectedIndex = 3;
 
   bool _isDarkModeEnabled = false;
 
@@ -213,12 +216,12 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.white70, //Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
+        backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
         leading: BackButton(
-          color: _isDarkModeEnabled ? Colors.greenAccent : null,
+          color: _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
           onPressed: () {
             Navigator.of(context).pop();
           },
@@ -293,7 +296,80 @@ class _ShowLogsScreenState extends State<ShowLogsScreen> with WidgetsBindingObse
           );
         },
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        elevation: 2.0,
+        currentIndex: _selectedIndex,
+        selectedItemColor:
+        _isDarkModeEnabled ? Colors.white : Colors.white,
+        unselectedItemColor: Colors.green,
+        unselectedIconTheme: IconThemeData(color: Colors.greenAccent),
+        items: <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.star,
+              color: Colors.grey,
+            ),
+            label: 'Favorites',
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
+            activeIcon: Icon(
+              Icons.star,
+              color:
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
+            ),
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.category,
+              color: Colors.grey,
+            ),
+            label: 'Categories',
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
+            activeIcon: Icon(
+              Icons.category,
+              color:
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
+            ),
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.discount,
+              color: Colors.grey,
+            ),
+            label: 'Tags',
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
+            activeIcon: Icon(
+              Icons.discount,
+              color:
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
+            ),
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.settings,
+              color: Colors.grey,
+            ),
+            label: 'Settings',
+            backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
+            activeIcon: Icon(
+              Icons.settings,
+              color:
+              _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
+            ),
+          ),
+        ],
+        onTap: _onItemTapped,
+      ),
     );
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    Navigator.of(context)
+        .popUntil((route) => route.settings.name == HomeTabScreen.routeName);
+
+    _settingsManager.changeRoute(index);
+  }
 }

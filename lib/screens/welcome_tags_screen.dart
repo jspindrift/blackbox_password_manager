@@ -189,21 +189,21 @@ class _WelcomeTagsScreenState extends State<WelcomeTagsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? Colors.black87 : Colors.black87) : null,
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? Colors.black87 : Colors.black87) : Colors.white70,
       appBar: AppBar(
         title: Text(
             "Tags",
           style: TextStyle(
-            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+            color: _isDarkModeEnabled ? Colors.white : Colors.white,
           ),
         ),
         automaticallyImplyLeading: false,
-        backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
+        backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
         actions: [
           IconButton(
             icon: Icon(
               Icons.add,
-              color: _isDarkModeEnabled ? Colors.greenAccent : null,
+              color: _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
             onPressed: () {
               _showSelectCategoryModal(context);

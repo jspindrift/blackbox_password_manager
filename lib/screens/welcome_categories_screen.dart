@@ -210,24 +210,25 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? Colors.black87 : Colors.black87) : Colors.blue[50],//Colors.grey[100],
-      // bottomSheet: ,
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? Colors.black87 : Colors.black87) : Colors.white70, //Colors.blue[50],//Colors.grey[100],
       appBar: AppBar(
         title: Text(
           "Categories",
           style: TextStyle(
-            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+            color: _isDarkModeEnabled ? Colors.white : Colors.white,
           ),
         ),
         automaticallyImplyLeading: false,
-        backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
+        backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
         actions: [
           IconButton(
-            icon: Icon(Icons.add),
+            icon: Icon(
+                Icons.add,
+              color: _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
+            ),
             color: _isDarkModeEnabled ? Colors.greenAccent : null,
             onPressed: () {
               /// add category
-              ///
               _showSelectCategoryModal(context);
             },
           ),
@@ -342,7 +343,6 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
             onTap: () {
               /// forward user to password list with the selected tag
               ///
-
               if (_availableCategories[index] == "Passwords") {
                 Navigator.push(
                   context,
@@ -362,11 +362,8 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
                   await _getAvailableCategories();
                 });
               } else if (_availableCategories[index] == "Keys") {
-
                 /// Modal to ask key type
                 ///
-
-                // _showKeyTypeSelectionModal();
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -382,11 +379,6 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
                     builder: (context) => WelcomeAllListScreen(),
                   ),
                 ).then((value) async {
-                  // if (value == "savedItem") {
-                  //   EasyLoading.showToast("Saved Key Item",
-                  //       duration: Duration(seconds: 2));
-                  // }
-
                   await _getAvailableCategories();
                 });
               }
