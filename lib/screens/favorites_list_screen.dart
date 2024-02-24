@@ -77,9 +77,9 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
           // final keyIndex = (passwordItem.keyIndex)!;
 
           if (passwordItem.favorite) {
-            final decryptedName = await _cryptor.decrypt(passwordItem.name);
+            final decryptedName = await _cryptor.decryptWithPadding(passwordItem.name);
             final decryptedUsername =
-                await _cryptor.decrypt(passwordItem.username);
+                await _cryptor.decryptWithPadding(passwordItem.username);
 
             passwordItem.name = decryptedName;
             passwordItem.username = decryptedUsername;
@@ -89,7 +89,7 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
 
           if (passwordItem.geoLock == null) {
             final decryptedPassword =
-                await _cryptor.decrypt(passwordItem.password);
+                await _cryptor.decryptWithPadding(passwordItem.password);
             if (passwordItem.isBip39) {
               final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
               _decryptedPasswordList.add(mnemonic);
@@ -115,8 +115,8 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
 
           if (noteItem.favorite) {
             if (noteItem.geoLock == null) {
-              final decryptedName = await _cryptor.decrypt(noteItem.name);
-              final decryptedNote = await _cryptor.decrypt(noteItem.notes);
+              final decryptedName = await _cryptor.decryptWithPadding(noteItem.name);
+              final decryptedNote = await _cryptor.decryptWithPadding(noteItem.notes);
               noteItem.name = decryptedName;
               noteItem.notes = decryptedNote;
             }
@@ -134,10 +134,10 @@ class _FavoritesListScreenState extends State<FavoritesListScreen> {
           // final keyIndex = (keyItem.keyIndex)!;
 
           if (keyItem.favorite) {
-            final decryptedName = await _cryptor.decrypt(keyItem.name);
+            final decryptedName = await _cryptor.decryptWithPadding(keyItem.name);
             keyItem.name = decryptedName;
 
-            final decryptedNote = await _cryptor.decrypt(keyItem.notes);
+            final decryptedNote = await _cryptor.decryptWithPadding(keyItem.notes);
             keyItem.notes = decryptedNote;
 
             _favoriteItems.add(keyItem);

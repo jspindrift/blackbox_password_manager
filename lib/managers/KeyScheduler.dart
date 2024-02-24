@@ -332,7 +332,7 @@ class KeyScheduler {
     _logManager.logger.d("keyNonce: ${keyNonce.length}: ${keyNonce}\n"
         "keyNonce utf8: ${utf8.encode(keyNonce).length}: ${utf8.encode(keyNonce)}");
 
-    final encryptedKeyNonce = await _cryptor.encrypt(keyNonce);
+    final encryptedKeyNonce = await _cryptor.encryptWithPadding(keyNonce);
     _logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
 
     var encryptedBlob = await _cryptor.encryptBackupVault(testItems, nonce, idString);
@@ -364,7 +364,7 @@ class KeyScheduler {
     // _logManager.logger.d("deviceDataString: $deviceDataString");
 
     _settingsManager.doEncryption(utf8.encode(deviceDataString).length);
-    final encryptedDeviceData = await _cryptor.encrypt(deviceDataString);
+    final encryptedDeviceData = await _cryptor.encryptWithPadding(deviceDataString);
     // _logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
 
     final backupItem = VaultItem(
@@ -490,13 +490,13 @@ class KeyScheduler {
         if (passwordItem != null) {
           /// decrypt with current key first
           // final keyIndex = (passwordItem?.keyIndex)!;
-          // final decryptedName = await _cryptor.decrypt(passwordItem.name);
-          // final decryptedUsername = await _cryptor.decrypt(passwordItem.username);
+          // final decryptedName = await _cryptor.decryptWithPadding((passwordItem.name);
+          // final decryptedUsername = await _cryptor.decryptWithPadding((passwordItem.username);
 
           if (passwordItem.geoLock == null) {
             /// decrypt with current key first
             // final decryptedPassword =
-            // await _cryptor.decrypt(passwordItem.password);
+            // await _cryptor.decryptWithPadding((passwordItem.password);
             // _logManager.logger.d("rekey enc: ${passwordItem.name}\nusername: ${passwordItem.username}");
 
             final name = passwordItem.name;
@@ -524,10 +524,10 @@ class KeyScheduler {
               if (pp.isBip39) {
                 final seed = _cryptor.mnemonicToEntropy(pp.password);
                 /// Encrypt seed here
-                decryptedPreviousPassword = await _cryptor.decrypt(seed);
+                decryptedPreviousPassword = await _cryptor.decryptWithPadding((seed));
               } else {
                 /// Encrypt password here
-                decryptedPreviousPassword = await _cryptor.decrypt(pp.password);
+                decryptedPreviousPassword = await _cryptor.decryptWithPadding((pp.password));
               }
 
               final reecryptedPreviousPassword = await _cryptor.reKeyEncryption(false, decryptedPreviousPassword);
@@ -727,8 +727,8 @@ class KeyScheduler {
         // print("value.privateHexE: ${value.privKeyExchange}");
 
         /// TODO: fix this
-        final privateHexS = await _cryptor.decrypt(myDigitalId.privKeySignature);
-        _mainPrivExchangeKeySeed = await _cryptor.decrypt(myDigitalId.privKeyExchange);
+        final privateHexS = await _cryptor.decryptWithPadding(myDigitalId.privKeySignature);
+        _mainPrivExchangeKeySeed = await _cryptor.decryptWithPadding(myDigitalId.privKeyExchange);
         // print("privateHexS: $privateHexS");
         // print("pubExchangeKeySeed: $pubExchangeKeySeed");
 
@@ -783,9 +783,9 @@ class KeyScheduler {
           return b.cdate.compareTo(a.cdate);
         });
         for (var id in identities) {
-          final decryptedName = await _cryptor.decrypt(id.name);
-          final dKeySignature = await _cryptor.decrypt(id.pubKeySignature);
-          final dKeyExchange = await _cryptor.decrypt(id.pubKeyExchange);
+          final decryptedName = await _cryptor.decryptWithPadding(id.name);
+          final dKeySignature = await _cryptor.decryptWithPadding(id.pubKeySignature);
+          final dKeyExchange = await _cryptor.decryptWithPadding(id.pubKeyExchange);
 
           decryptedKeyExchangePubKey.add(dKeyExchange);
           final phash = _cryptor.sha256(dKeyExchange);

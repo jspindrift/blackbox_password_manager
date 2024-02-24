@@ -94,9 +94,9 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
           //   keyIndex = (passwordItem?.keyIndex)!;
           // }
           /// decrypt item fields
-          final decryptedName = await _cryptor.decrypt(passwordItem.name);
+          final decryptedName = await _cryptor.decryptWithPadding(passwordItem.name);
           final decryptedUsername =
-              await _cryptor.decrypt(passwordItem.username);
+              await _cryptor.decryptWithPadding(passwordItem.username);
 
           /// set decrypted fields
           passwordItem.name = decryptedName;
@@ -105,7 +105,7 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
           final geoLockItem = passwordItem.geoLock;
           if (geoLockItem == null) {
             final decryptedPassword =
-                await _cryptor.decrypt(passwordItem.password);
+                await _cryptor.decryptWithPadding(passwordItem.password);
             if (passwordItem.isBip39) {
               final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
               _decryptedPasswordList.add(mnemonic);
@@ -113,7 +113,7 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
               _decryptedPasswordList.add(decryptedPassword);
             }
           }
-          // final decryptedPassword = await _cryptor.decrypt(passwordItem.password);
+          // final decryptedPassword = await _cryptor.decryptWithPadding(passwordItem.password);
           // if (passwordItem.isBip39) {
           //   final mnemonic = bip39.entropyToMnemonic(decryptedPassword);
           //   _decryptedPasswordList.add(mnemonic);
@@ -146,11 +146,11 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
                 /// decrypt item fields
                 // final itemId = noteItem.id + "-" + noteItem.cdate + "-" + noteItem.mdate;
 
-                // final decryptedName = await _cryptor.decrypt(noteItem.name);
+                // final decryptedName = await _cryptor.decryptWithPadding(noteItem.name);
                 final geoLockItem = noteItem.geoLock;
                 if (geoLockItem == null) {
-                  final decryptedName = await _cryptor.decrypt(noteItem.name);
-                  final decryptedNote = await _cryptor.decrypt(noteItem.notes);
+                  final decryptedName = await _cryptor.decryptWithPadding(noteItem.name);
+                  final decryptedNote = await _cryptor.decryptWithPadding(noteItem.notes);
 
                   /// set decrypted fields
                   noteItem.name = decryptedName;
@@ -181,8 +181,8 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
                 /// decrypt item fields
                 // final itemId = noteItem.id + "-" + noteItem.cdate + "-" + noteItem.mdate;
 
-                final decryptedName = await _cryptor.decrypt(keyItem.name);
-                final decryptedNote = await _cryptor.decrypt(keyItem.notes);
+                final decryptedName = await _cryptor.decryptWithPadding(keyItem.name);
+                final decryptedNote = await _cryptor.decryptWithPadding(keyItem.notes);
 
                 /// set decrypted fields
                 keyItem.name = decryptedName;
@@ -287,7 +287,7 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
               leading: CircleAvatar(
                 minRadius: 15,
                 maxRadius: 20,
-                backgroundColor: _isDarkModeEnabled ? Colors.greenAccent : null,
+                backgroundColor: _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
                 foregroundColor: _isDarkModeEnabled ? Colors.black : null,
                 child: itemIcon,
               ),
@@ -297,8 +297,6 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
                     _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
               ),
               onTap: () {
-                // print("selected item: ${_passwordsWithTag[index].name}, ${_passwordsWithTag[index].username}");
-
                 /// forward user to password list with the selected tag
                 ///
                 Navigator.push(
@@ -310,7 +308,6 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
                     ),
                   ),
                 ).then((value) {
-                  // print("trace 251");
                   if (value != null) {
                     setState(() {
                       _didPopBackFrom = true;

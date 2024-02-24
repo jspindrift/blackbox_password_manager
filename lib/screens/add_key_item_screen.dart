@@ -1265,8 +1265,8 @@ class _AddKeyItemScreenState extends State<AddKeyItemScreen> {
 
     /// encrypt note items
     ///
-    final encryptedNotes = await _cryptor.encrypt(notes);
-    final encryptedKey = await _cryptor.encrypt(hex.encode(_seedKey));
+    final encryptedNotes = await _cryptor.encryptWithPadding(notes);
+    final encryptedKey = await _cryptor.encryptWithPadding(hex.encode(_seedKey));
 
     /// TODO: change encryptedKey field value
     var keyItem = KeyItem(

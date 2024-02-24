@@ -265,7 +265,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
           final vaultDeviceData = (_localVaultItem?.deviceData)!;
 
           final currentDeviceData = _settingsManager.deviceManager.deviceData;
-          final decryptedVaultDeviceData = await _cryptor.decrypt(
+          final decryptedVaultDeviceData = await _cryptor.decryptWithPadding(
               vaultDeviceData);
 
           if (vaultDeviceData != null) {
@@ -315,7 +315,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
           final encryptedKeyNonce = (_localVaultItem?.encryptedKey
               .keyNonce)!;
 
-          final decryptedKeyNonce = await _cryptor.decrypt(
+          final decryptedKeyNonce = await _cryptor.decryptWithPadding(
               encryptedKeyNonce);
 
           if (decryptedKeyNonce.isNotEmpty) {
@@ -400,7 +400,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
           final vaultDeviceData = (_externalVaultItem?.deviceData)!;
 
           final currentDeviceData = _settingsManager.deviceManager.deviceData;
-          final decryptedVaultDeviceData = await _cryptor.decrypt(
+          final decryptedVaultDeviceData = await _cryptor.decryptWithPadding(
               vaultDeviceData);
 
           if (vaultDeviceData != null) {
@@ -440,7 +440,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
           final encryptedKeyNonce = (_externalVaultItem?.encryptedKey
               .keyNonce)!;
 
-          final decryptedKeyNonce = await _cryptor.decrypt(
+          final decryptedKeyNonce = await _cryptor.decryptWithPadding(
               encryptedKeyNonce);
 
           if (decryptedKeyNonce.isNotEmpty) {
@@ -860,18 +860,18 @@ class _BackupsScreenState extends State<BackupsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.blue[50], //Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.white70, //Colors.blue[50], //Colors.grey[100],
       appBar: AppBar(
         title: Text(
           "Backups",
           style: TextStyle(
-            color: _isDarkModeEnabled ? Colors.white : Colors.black,
+            color: _isDarkModeEnabled ? Colors.white : Colors.white,
           ),
         ),
         automaticallyImplyLeading: false,
-        backgroundColor: _isDarkModeEnabled ? Colors.black54 : null,
+        backgroundColor: _isDarkModeEnabled ? Colors.black54 : Colors.blueAccent,
         leading: BackButton(
-          color: _isDarkModeEnabled ? Colors.greenAccent : null,
+          color: _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
           onPressed: () {
             Navigator.of(context).pop();
           },
@@ -883,7 +883,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
           IconButton(
             icon: Icon(
               Icons.refresh_outlined,
-              color: _isDarkModeEnabled ? Colors.greenAccent : null,
+              color: _isDarkModeEnabled ? Colors.greenAccent : Colors.white,
             ),
             onPressed: () async {
               await _fetchBackups();
@@ -910,7 +910,8 @@ class _BackupsScreenState extends State<BackupsScreen> {
                         backgroundColor: _isDarkModeEnabled
                             ? MaterialStateProperty.all<Color>(
                                 Colors.greenAccent)
-                            : null,
+                            : MaterialStateProperty.all<Color>(
+                            Colors.blueAccent),
                       ),
                       child: Text(
                         "Create Backup",
@@ -951,6 +952,12 @@ class _BackupsScreenState extends State<BackupsScreen> {
             ],
           ),
           Visibility(
+            visible: Platform.isAndroid,
+            child: Divider(
+              color: _isDarkModeEnabled ? Colors.grey : Colors.grey,
+            ),
+          ),
+          Visibility(
             visible: _shouldReKeyLocalVault || (_shouldReKeyExternalVault && _shouldSaveToSDCard),
             child: Padding(
               padding: EdgeInsets.all(4),
@@ -971,8 +978,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
                   ),
                   onPressed: () async {
                     if (_localVaultItem != null) {
-                      // WidgetUtils.showSnackBarDuration(context, "Re-Keying and Backing Up Vault...", Duration(seconds: 2));
-
                       if ((_localVaultItem?.id)! == _keyManager.vaultId &&
                           _hasMatchingLocalVaultKeyData) {
 
@@ -990,9 +995,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
               ),
             ),
           ),
-          // Divider(
-          //   color: _isDarkModeEnabled ? Colors.greenAccent : null,
-          // ),
           Visibility(
           visible: Platform.isAndroid && !_loginScreenFlow,
             child: ListTile(
@@ -1066,7 +1068,6 @@ class _BackupsScreenState extends State<BackupsScreen> {
                   ),
                 ),
               ),
-
           Visibility(
             visible: (_localVaultItem != null),
             child: Divider(
@@ -1415,7 +1416,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         // _logManager.logLongMessage("deviceDataString: $deviceDataString");
 
         _settingsManager.doEncryption(utf8.encode(deviceDataString).length);
-        final encryptedDeviceData = await _cryptor.encrypt(deviceDataString);
+        final encryptedDeviceData = await _cryptor.encryptWithPadding(deviceDataString);
         // _logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
         // _logManager.logger.d("deviceDataString.length: ${deviceDataString.length}\n"
         //     "utf8.encode(deviceDataString).length: ${utf8.encode(deviceDataString).length}");
@@ -1423,7 +1424,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         _settingsManager.doEncryption(utf8.encode(testItems).length);
 
         final keyNonce = _convertEncryptedBlocksNonce();
-        final encryptedKeyNonce = await _cryptor.encrypt(keyNonce);
+        final encryptedKeyNonce = await _cryptor.encryptWithPadding(keyNonce);
         // _logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
 
         var encryptedBlob = await _cryptor.encryptBackupVault(testItems, nonce, idString);
@@ -1578,13 +1579,13 @@ class _BackupsScreenState extends State<BackupsScreen> {
         // _logManager.logLongMessage("deviceDataString: $deviceDataString");
 
         _settingsManager.doEncryption(utf8.encode(deviceDataString).length);
-        final encryptedDeviceData = await _cryptor.encrypt(deviceDataString);
+        final encryptedDeviceData = await _cryptor.encryptWithPadding(deviceDataString);
         // _logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
 
         _settingsManager.doEncryption(utf8.encode(testItems).length);
 
         final keyNonce = _convertEncryptedBlocksNonce();
-        final encryptedKeyNonce = await _cryptor.encrypt(keyNonce);
+        final encryptedKeyNonce = await _cryptor.encryptWithPadding(keyNonce);
         // _logManager.logger.d("keyNonce: $keyNonce");
         // _logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
 
@@ -1977,10 +1978,10 @@ class _BackupsScreenState extends State<BackupsScreen> {
       _settingsManager.doEncryption(utf8.encode(tempDecryptedBlob).length);
 
       _settingsManager.doEncryption(utf8.encode(deviceDataString).length);
-      final encryptedDeviceData = await _cryptor.encrypt(deviceDataString);
+      final encryptedDeviceData = await _cryptor.encryptWithPadding(deviceDataString);
 
       final keyNonce = _convertEncryptedBlocksNonce();
-      final encryptedKeyNonce = await _cryptor.encrypt(keyNonce);
+      final encryptedKeyNonce = await _cryptor.encryptWithPadding(keyNonce);
 
       var encryptedBlobUpdated =
       await _cryptor.encryptBackupVault(tempDecryptedBlob, nonce, idStringUpdated);
@@ -2106,11 +2107,11 @@ class _BackupsScreenState extends State<BackupsScreen> {
       final deviceDataString = _settingsManager.deviceManager.deviceData.toString();
 
       _settingsManager.doEncryption(utf8.encode(deviceDataString).length);
-      final encryptedDeviceData = await _cryptor.encrypt(deviceDataString);
+      final encryptedDeviceData = await _cryptor.encryptWithPadding(deviceDataString);
       // _logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
 
       final keyNonce = _convertEncryptedBlocksNonce();
-      final encryptedKeyNonce = await _cryptor.encrypt(keyNonce);
+      final encryptedKeyNonce = await _cryptor.encryptWithPadding(keyNonce);
 
       final encryptedBlobUpdated =
       await _cryptor.encryptBackupVault(tempDecryptedBlob, nonce, idStringUpdated);

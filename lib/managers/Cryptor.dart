@@ -825,7 +825,7 @@ class Cryptor {
       settingsManager.doEncryption(utf8.encode(hex.encode(randomSeed)).length);
 
       /// base64 encoded encrypted hex string key
-      final encryptedKey = await encrypt(hex.encode(randomSeed));
+      final encryptedKey = await encryptWithPadding(hex.encode(randomSeed));
       // logger.d('encryptedKeyExchange: ${encryptedKey}');
 
       return encryptedKey;
@@ -855,7 +855,7 @@ class Cryptor {
       settingsManager.doEncryption(utf8.encode(base64.encode(randomSeed)).length);
 
       /// base64 encoded encrypted hex string key
-      final encryptedKey = await encrypt(base64.encode(randomSeed));
+      final encryptedKey = await encryptWithPadding(base64.encode(randomSeed));
       // logger.d('encryptedKeyExchange: ${encryptedKey}');
       if (AppConstants.debugKeyData){
         logger.d("randomSeed: ${randomSeed}\n"
@@ -890,7 +890,7 @@ class Cryptor {
 
       settingsManager.doEncryption(utf8.encode(hex.encode(priv.bytes)).length);
 
-      final encryptedKey = await encrypt(hex.encode(priv.bytes));
+      final encryptedKey = await encryptWithPadding(hex.encode(priv.bytes));
       // logger.d('encryptedKeySigning: ${encryptedKey}');
       if (AppConstants.debugKeyData){
         logger.d("privKeyBytes: ${hex.encode(privKeyBytes)}\n"
@@ -1707,16 +1707,69 @@ class Cryptor {
   ///
 
   /// general encrypt function for vault data items
-  Future<String> encrypt(String plaintext) async {
+  // Future<String> encrypt(String plaintext) async {
+  //   // logger.d("encrypt");
+  //   try {
+  //     if (_aesEncryptionKey != null && _aesAuthKey != null) {
+  //       final iv = algorithm_nomac.newNonce();
+  //       final encodedPlaintext = utf8.encode(plaintext);
+  //
+  //       /// Encrypt
+  //       final secretBox = await algorithm_nomac.encrypt(
+  //         encodedPlaintext,
+  //         secretKey: _aesEncryptionKey!,
+  //         nonce: iv,
+  //       );
+  //
+  //       final blob = iv + secretBox.cipherText;
+  //       final hashedBlob = hex.decode(sha256(base64.encode(blob)));
+  //
+  //       /// check mac
+  //       final mac = await hmac_algo_256.calculateMac(
+  //         hashedBlob,
+  //         secretKey: _aesAuthKey!,
+  //       );
+  //
+  //       // if (AppConstants.debugKeyData){
+  //       //   logger.d("blob: ${blob}\n"
+  //       //       "mac: ${mac}\n");
+  //       // }
+  //
+  //       var encyptedMaterial = iv + mac.bytes + secretBox.cipherText;
+  //       return base64.encode(encyptedMaterial);
+  //     } else {
+  //       return "";
+  //     }
+  //   } catch (e) {
+  //     logger.w(e);
+  //     return "";
+  //   }
+  // }
+
+
+  /// added padding to encrypt function for vault data items
+  Future<String> encryptWithPadding(String plaintext) async {
     // logger.d("encrypt");
+    // logger.d("encryptWithPadding: ${plaintext.length}: $plaintext");
+
+    var normalizedPlaintext = plaintext.trim();
+    if (normalizedPlaintext.length < 16) {
+      String pad = " ".padRight(16-normalizedPlaintext.length, " ");
+      normalizedPlaintext += pad;
+    }
+    // logger.d("normalizedPlaintext: ${normalizedPlaintext.length}: $normalizedPlaintext");
+
     try {
       if (_aesEncryptionKey != null && _aesAuthKey != null) {
         final iv = algorithm_nomac.newNonce();
         final encodedPlaintext = utf8.encode(plaintext);
+        final encodedNormPlaintext = utf8.encode(normalizedPlaintext);
+        // logger.d("encodedPlaintextLength: ${encodedPlaintext.length}");
+        // logger.d("encodedNormPlaintextLength: ${encodedNormPlaintext.length}");
 
         /// Encrypt
         final secretBox = await algorithm_nomac.encrypt(
-          encodedPlaintext,
+          encodedNormPlaintext,
           secretKey: _aesEncryptionKey!,
           nonce: iv,
         );
@@ -1730,11 +1783,6 @@ class Cryptor {
           secretKey: _aesAuthKey!,
         );
 
-        // if (AppConstants.debugKeyData){
-        //   logger.d("blob: ${blob}\n"
-        //       "mac: ${mac}\n");
-        // }
-
         var encyptedMaterial = iv + mac.bytes + secretBox.cipherText;
         return base64.encode(encyptedMaterial);
       } else {
@@ -1746,7 +1794,6 @@ class Cryptor {
     }
   }
 
-
   /// intakes the currently encrypted item with current key
   /// and decrypts with current key, then re-encrypts with new temp root key
   Future<String> reKeyEncryption(bool ishex, String ciphertext) async {
@@ -1756,7 +1803,7 @@ class Cryptor {
           && _tempAuthKey != null
           && _tempReKeyRootSecretKey != null) {
 
-        final decryptedData = await decrypt(ciphertext);
+        final decryptedData = await decryptWithPadding(ciphertext);
         final iv = algorithm_nomac.newNonce();
 
         var encodedPlaintext = utf8.encode(decryptedData);
@@ -2324,8 +2371,59 @@ class Cryptor {
 
   /// decrypt vault data items
   ///
-  Future<String> decrypt(String blob) async {
-    // logger.d("decrypt");
+  // Future<String> decrypt(String blob) async {
+  //   // logger.d("decrypt");
+  //   try {
+  //     var keyMaterial = base64.decode(blob);
+  //     if (_aesEncryptionKey != null && _aesAuthKey != null) {
+  //       final iv = keyMaterial.sublist(0, 16);
+  //       final mac = keyMaterial.sublist(16, 48);
+  //       final cipherText = keyMaterial.sublist(48, keyMaterial.length);
+  //
+  //       final cipherBlob = iv + cipherText;
+  //       final hashedBlob = hex.decode(sha256(base64.encode(cipherBlob)));
+  //
+  //       final checkMac = await hmac_algo_256.calculateMac(
+  //         hashedBlob,
+  //         secretKey: _aesAuthKey!,
+  //       );
+  //
+  //       final encodedMac = base64.encode(mac);
+  //       final encodedMacCheck = base64.encode(checkMac.bytes);
+  //       if (encodedMac != encodedMacCheck) {
+  //         logger.w("$blob:\ncheck mac: ${encodedMac == encodedMacCheck}\nencodedMac: $encodedMac\nencodedMacCheck: $encodedMacCheck");
+  //       }
+  //
+  //       if (encodedMac == encodedMacCheck) {
+  //         List<int> empty_mac = [];
+  //
+  //         SecretBox secretBox =
+  //         SecretBox(cipherText, nonce: iv, mac: Mac(empty_mac));
+  //
+  //         /// Decrypt
+  //         final plainTextBytes = await algorithm_nomac.decrypt(
+  //           secretBox,
+  //           secretKey: _aesEncryptionKey!,
+  //         );
+  //
+  //         final plainText = utf8.decode(plainTextBytes);
+  //         return plainText;
+  //       }
+  //       else {
+  //         logger.w("decrypt failure: mac check failed");
+  //       }
+  //     }
+  //     return "";
+  //   } catch (e) {
+  //     logger.w(e);
+  //     return "";
+  //   }
+  // }
+
+
+  /// decryption with padding removed
+  Future<String> decryptWithPadding(String blob) async {
+    // logger.d("decryptWithPadding: ${blob.length}: $blob");
     try {
       var keyMaterial = base64.decode(blob);
       if (_aesEncryptionKey != null && _aesAuthKey != null) {
@@ -2360,7 +2458,12 @@ class Cryptor {
           );
 
           final plainText = utf8.decode(plainTextBytes);
-          return plainText;
+          // logger.d("decryptWithPadding-pleaintext: ${plainText.length}: $plainText");
+
+          final result = plainText.trim();
+          // logger.d("decryptWithPadding-result: ${result.length}: $result");
+
+          return result;
         }
         else {
           logger.w("decrypt failure: mac check failed");
@@ -2372,7 +2475,6 @@ class Cryptor {
       return "";
     }
   }
-
 
   /// Used for Recovery Key decryption
   Future<List<int>> decryptRecoveryKey(SecretKey key, String data) async {

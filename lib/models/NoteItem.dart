@@ -112,9 +112,9 @@ class NoteItem {
     settingsManager.doEncryption(encodedAllPlaintextLength);
 
     /// encrypt fields
-    final encryptedName = await cryptor.encrypt(name);
+    final encryptedName = await cryptor.encryptWithPadding(name);
 
-    final encryptedNotes = await cryptor.encrypt(notes);
+    final encryptedNotes = await cryptor.encryptWithPadding(notes);
 
     /// set fields
     name = encryptedName;
@@ -141,8 +141,8 @@ class NoteItem {
         return;
       }
 
-      final decryptedName = await cryptor.decrypt(name);
-      final decryptedNote = await cryptor.decrypt(notes);
+      final decryptedName = await cryptor.decryptWithPadding(name);
+      final decryptedNote = await cryptor.decryptWithPadding(notes);
 
       name = decryptedName;
       notes = decryptedNote;
@@ -171,8 +171,8 @@ class NoteItem {
       return item;
     }
 
-    final decryptedName = await cryptor.decrypt(item.name);
-    var decryptedNote = await cryptor.decrypt(item.notes);
+    final decryptedName = await cryptor.decryptWithPadding(item.name);
+    var decryptedNote = await cryptor.decryptWithPadding(item.notes);
 
     ditem.name = decryptedName;
     ditem.notes = decryptedNote;

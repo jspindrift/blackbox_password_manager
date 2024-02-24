@@ -154,7 +154,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
         final keyType = (_keyItem?.keyType)!;
 
         /// decrypt root seed and expand
-        final decryptedPrivKeyX = await _cryptor.decrypt(encryptedPrivKeyX);
+        final decryptedPrivKeyX = await _cryptor.decryptWithPadding(encryptedPrivKeyX);
         // print("decryptedSeedData: ${decryptedSeedData}");
 
         /// TODO: switch encoding !
@@ -234,14 +234,14 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
 
         // final blob = (_passwordItem?.password)!;
 
-        _cryptor.decrypt(name).then((value) {
+        _cryptor.decryptWithPadding(name).then((value) {
           name = value;
 
           _validateFields();
         });
 
         /// decrypt notes
-        _cryptor.decrypt(notes).then((value) {
+        _cryptor.decryptWithPadding(notes).then((value) {
           if (value.isNotEmpty) {
             setState(() {
               // _hasNotes = true;
@@ -280,7 +280,7 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
     // final encryptedPrivateKey = await _cryptor.createDigitalIdentityExchange();
     // print("encryptedPrivateKey: ${encryptedPrivateKey}");
     //
-    // final privateExchangeKeySeed = await _cryptor.decrypt(encryptedPrivateKey);
+    // final privateExchangeKeySeed = await _cryptor.decryptWithPadding(encryptedPrivateKey);
     // print("privateExchangeKeySeed: ${privateExchangeKeySeed}");
 
     /// TODO: switch encoding !
@@ -1370,10 +1370,10 @@ class _EditPublicEncryptionKeyScreenState extends State<EditPublicEncryptionKeyS
     _settingsManager.doEncryption(encodedLength);
 
     /// encrypt
-    final encryptedName = await _cryptor.encrypt(name);
-    final encryptedNotes = await _cryptor.encrypt(notes);
+    final encryptedName = await _cryptor.encryptWithPadding(name);
+    final encryptedNotes = await _cryptor.encryptWithPadding(notes);
 
-    final encryptedKey = await _cryptor.encrypt(base64.encode(_privKeyExchange));
+    final encryptedKey = await _cryptor.encryptWithPadding(base64.encode(_privKeyExchange));
 
     var keyItem = KeyItem(
       id: uuid,

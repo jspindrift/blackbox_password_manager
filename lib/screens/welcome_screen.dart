@@ -123,14 +123,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
         // var updatedPasswordItem = PasswordItem.fromRawJson(item.data);
 
-        final decryptedName = await _cryptor.decrypt(passwordItem.name);
+        final decryptedName = await _cryptor.decryptWithPadding(passwordItem.name);
 
         if (decryptedName.isEmpty) {
           return;
         }
 
         passwordItem.name = decryptedName;
-        final decryptedUsername = await _cryptor.decrypt(passwordItem.username);
+        final decryptedUsername = await _cryptor.decryptWithPadding(passwordItem.username);
 
         passwordItem.username = decryptedUsername;
 
@@ -138,7 +138,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         ///
         if (passwordItem.geoLock == null) {
           final decryptedPassword =
-              await _cryptor.decrypt(passwordItem.password);
+              await _cryptor.decryptWithPadding(passwordItem.password);
           if (decryptedPassword.isEmpty) {
             return;
           }
@@ -327,7 +327,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 children: <Widget>[
                   CircleAvatar(
                     backgroundColor:
-                        _isDarkModeEnabled ? Colors.greenAccent : null,
+                        _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
                     foregroundColor: _isDarkModeEnabled ? Colors.black : null,
                     child: Text(
                       "",
@@ -355,13 +355,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               title: Text(
                 item.name,
                 style: TextStyle(
-                  color: _isDarkModeEnabled ? Colors.white : null,
+                  color: _isDarkModeEnabled ? Colors.white : Colors.black,
                 ),
               ),
               subtitle: Text(
                 "${item.username}", //, ${_getTimeDifferences(item.cdate)}",
                 style: TextStyle(
-                  color: _isDarkModeEnabled ? Colors.white : null,
+                  color: _isDarkModeEnabled ? Colors.white : Colors.black,
                 ),
               ),
             ),
@@ -512,9 +512,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       //   keyIndex = (item?.keyIndex)!;
       // }
 
-      final name = await _cryptor.decrypt(encryptedName);
-      final username = await _cryptor.decrypt(encryptedUsername);
-      final password = await _cryptor.decrypt(encryptedPassword);
+      final name = await _cryptor.decryptWithPadding(encryptedName);
+      final username = await _cryptor.decryptWithPadding(encryptedUsername);
+      final password = await _cryptor.decryptWithPadding(encryptedPassword);
 
       /// build QR Code item
       ///
@@ -899,11 +899,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
       /// decrypt fields
       ///
-      final name = await _cryptor.decrypt(encryptedName);
-      final username = await _cryptor.decrypt(encryptedUsername);
+      final name = await _cryptor.decryptWithPadding(encryptedName);
+      final username = await _cryptor.decryptWithPadding(encryptedUsername);
 
       /// if bip39, password is the seed hex
-      var password = await _cryptor.decrypt(encryptedPassword);
+      var password = await _cryptor.decryptWithPadding(encryptedPassword);
 
       /// TODO: change to use key index on encryption
       /// re-encrypt item fields

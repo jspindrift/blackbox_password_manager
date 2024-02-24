@@ -105,7 +105,7 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
 
           if (passwordItem.geoLock == null) {
             final decryptedPassword =
-                await _cryptor.decrypt(passwordItem.password);
+                await _cryptor.decryptWithPadding(passwordItem.password);
             // _logManager.logger.d("decryptedPassword: $decryptedPassword");
 
             if (passwordItem.isBip39) {

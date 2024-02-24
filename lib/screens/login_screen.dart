@@ -95,8 +95,6 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     _logManager.initialize();
 
     _settingsManager.initializeLaunchSettings();
-    // _keyManager.deleteAll();
-    // _logManager.logger.d("now: ${DateTime.now().toIso8601String()}");
 
     _logManager.log("LoginScreen", "initState", "initState");
 
@@ -252,7 +250,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     /// get log key ready for authenticating logs
     _keyManager.readLogKey();
 
-    _getAppState();
+    await _getAppState();
 
     /// check for pin code
     final pinStatus = await _keyManager.readPinCodeKey();
@@ -284,7 +282,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
               _isOnLoginScreen = true;
             });
 
-            _getAppState();
+            await _getAppState();
 
             _computeLogoutValues();
           });
@@ -293,7 +291,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     }
   }
 
-  _getAppState() async {
+  Future<void> _getAppState() async {
     /// read encrypted key material data
     final keyStatus = await _keyManager.readEncryptedKey();
     setState(() {
@@ -374,6 +372,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
       });
     }
 
+    await _checkBackups();
+
   }
 
   Future<void> _getAppSettings() async {
@@ -430,6 +430,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           if (!checkBioAvailability) {
             _keyManager.deleteBiometricKey();
           }
+
+          await _checkBackups();
         }
         break;
       case AppLifecycleState.paused:
@@ -462,10 +464,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     _isDarkModeEnabled = _settingsManager.isDarkModeEnabled;
 
-    // print("$_isOnLoginScreen, $_isFirstLaunch, $_isInit");
     if (_isOnLoginScreen && !_isFirstLaunch && !_isInit) {
       _keyManager.readPinCodeKey().then((value) {
-        // print("readPinCodeKey-login: $value");
         if (value) {
           _isOnLoginScreen = false;
           Navigator.push(
@@ -478,15 +478,13 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
             ),
           ).then((value) async {
             if (value == 'login') {
-              // _settingsManager.setCurrentTabIndex(0);
 
               Navigator.of(context)
                   .pushNamed(HomeTabScreen.routeName)
                   .then((value) async {
+
                 _logManager.saveLogs();
-
                 _settingsManager.setCurrentTabIndex(1);
-
                 _heartbeatTimer.stopHeartbeatTimer();
 
                 setState(() {
@@ -1087,10 +1085,8 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
               _isOnLoginScreen = true;
             });
 
-            _getAppState();
-
-            await _checkBackups();
-          });
+            await _getAppState();
+              });
         }
       });
     }

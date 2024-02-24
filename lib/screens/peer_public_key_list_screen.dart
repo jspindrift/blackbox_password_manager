@@ -121,11 +121,11 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
 
           // final keyType = (_keyItem?.keyType)!;
 
-          // final decryptedKeyName = await _cryptor.decrypt(_keyItem.name);
+          // final decryptedKeyName = await _cryptor.decryptWithPadding(_keyItem.name);
 
 
           /// decrypt root seed and expand
-          final decryptedOwnerPrivateKeyX = await _cryptor.decrypt(keydata);
+          final decryptedOwnerPrivateKeyX = await _cryptor.decryptWithPadding(keydata);
           // print("_getItem decryptedOwnerPrivateKey: ${decryptedOwnerPrivateKey.length}: ${decryptedOwnerPrivateKey}");
 
 
@@ -210,7 +210,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
               });
 
               for (var peerKey in peerPublicKeys) {
-                // final da = await _cryptor.decrypt(peerKey.key);
+                // final da = await _cryptor.decryptWithPadding(peerKey.key);
                 setState(() {
                   _peerPublicKeys.add(peerKey);
                 });
@@ -224,14 +224,14 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
                 /// decrypting public key (not private)
                 // print("peerKey.key: ${peerKey.key.length}: ${peerKey.key}");
 
-                final decryptedPeerPublicKeyData = await _cryptor.decrypt(peerKey.pubKeyX);
+                final decryptedPeerPublicKeyData = await _cryptor.decryptWithPadding(peerKey.pubKeyX);
                 // print("decryptedPeerPublicKeyData: ${decryptedPeerPublicKeyData.length}: ${decryptedPeerPublicKeyData}");
 
                 final decodedPeerPublicKeyData = base64.decode(decryptedPeerPublicKeyData);
                 // print("decodedPeerPublicKeyData: ${decodedPeerPublicKeyData.length}: ${decodedPeerPublicKeyData}");
                 // print("decodedPeerPublicKeyData: ${decodedPeerPublicKeyData.length}: ${hex.encode(decodedPeerPublicKeyData)}");
 
-                final decryptedPeerPublicKeyName = await _cryptor.decrypt(peerKey.name);
+                final decryptedPeerPublicKeyName = await _cryptor.decryptWithPadding(peerKey.name);
 
                 /// create a temp key
                 PeerPublicKey tempPeerKey = PeerPublicKey(
@@ -371,7 +371,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
           color: _isDarkModeEnabled ? Colors.greenAccent : null,
         ),
         itemBuilder: (context, index) {
-          // var decryptedNote = _cryptor.decrypt(_notes[index].notes);
+          // var decryptedNote = _cryptor.decryptWithPadding(_notes[index].notes);
           var categoryIcon = Stack(
             children: [
               IconButton(
@@ -407,7 +407,7 @@ class _PeerPublicKeyListScreenState extends State<PeerPublicKeyListScreen> {
           final keyData = peerKeyItem.pubKeyX;
           final keyName = peerKeyItem.name;
 
-          // final decryptedSeedData = await _cryptor.decrypt(keyData);
+          // final decryptedSeedData = await _cryptor.decryptWithPadding(keyData);
           // print("decryptedSeedData: ${decryptedSeedData}");
           //
           // final decodedRootKey = hex.decode(decryptedSeedData);

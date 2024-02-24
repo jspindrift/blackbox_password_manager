@@ -97,7 +97,7 @@ class _WelcomeTagsScreenState extends State<WelcomeTagsScreen> {
 
           if (passwordItem.geoLock == null) {
             final decryptedPassword =
-                await _cryptor.decrypt(passwordItem.password);
+                await _cryptor.decryptWithPadding(passwordItem.password);
             // print("bip39: ${passwordItem.isBip39}");
             if (passwordItem.isBip39) {
               final mnemonic = bip39.entropyToMnemonic(decryptedPassword);

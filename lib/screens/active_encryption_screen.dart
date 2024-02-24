@@ -219,7 +219,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
     //         _logManager.logger.d("_Kenc: ${hex.encode(_Kenc)}\n"
     //             "_Kauth: ${hex.encode(_Kauth)}");
     //
-    //         _cryptor.decrypt(name).then((value) {
+    //         _cryptor.decryptWithPadding(name).then((value) {
     //           name = value;
     //
     //           _validateFields();
@@ -245,7 +245,7 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
         }
 
         var keyName = (widget.keyItem?.name)!;
-        final decryptedName = await _cryptor.decrypt(keyName);
+        final decryptedName = await _cryptor.decryptWithPadding(keyName);
 
         // var version = widget.keyItem?.version;
         var peerIndex = 0;
@@ -293,11 +293,11 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
             // if (peerKey.version != null) {
             //   version = (peerKey?.version)!;
             // }
-            final decryptedPeerPublicKey = await _cryptor.decrypt(
+            final decryptedPeerPublicKey = await _cryptor.decryptWithPadding(
                 peerKey.pubKeyX);
             // _peerPublicKey = base64.decode(decryptedPeerPublicKey);
 
-            final decryptedPeerName = await _cryptor.decrypt(peerKey.name);
+            final decryptedPeerName = await _cryptor.decryptWithPadding(peerKey.name);
             // _peerKeyName = decryptedPeerName;
             setState(() {
               _peerPublicKey = base64.decode(decryptedPeerPublicKey);
@@ -327,15 +327,15 @@ class _ActiveEncryptionScreenState extends State<ActiveEncryptionScreen> {
         }
 
         /// TODO: set seedKey and encryption/auth keys
-        // final decrypedSeedData = await _cryptor.decrypt(keydata);
-        final decrypedPrivX = await _cryptor.decrypt(keydata.privX!);
+        // final decrypedSeedData = await _cryptor.decryptWithPadding(keydata);
+        final decrypedPrivX = await _cryptor.decryptWithPadding(keydata.privX!);
         // _logManager.logger.wtf("decrypedPrivX: ${decrypedPrivX}");
 
-        final decrypedPrivS = await _cryptor.decrypt(
+        final decrypedPrivS = await _cryptor.decryptWithPadding(
             keydata.privS!);
         // _logManager.logger.wtf("decrypedPrivS: ${decrypedPrivS}");
 
-        final decrypedPrivK = await _cryptor.decrypt(
+        final decrypedPrivK = await _cryptor.decryptWithPadding(
             keydata.privK!);
         // _logManager.logger.wtf("decrypedPrivK: ${decrypedPrivK}");
 

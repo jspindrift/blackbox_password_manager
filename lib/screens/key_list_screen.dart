@@ -85,10 +85,10 @@ class _KeyListScreenState extends State<KeyListScreen> {
           // print("keyPurpose: ${keyPurpose}");
 
 
-          var decryptedName = await _cryptor.decrypt(keyItem.name);
+          var decryptedName = await _cryptor.decryptWithPadding(keyItem.name);
           keyItem.name = decryptedName;
 
-          var decryptedPrivateKey = await _cryptor.decrypt(keyItem.keys.privX!);
+          var decryptedPrivateKey = await _cryptor.decryptWithPadding(keyItem.keys.privX!);
           // keyItem.key = decryptedKey;
           if (keyType == "asym") {
             keyItem.keys.privX = await _generateKeyPair(keyItem.id, decryptedPrivateKey);
@@ -96,7 +96,7 @@ class _KeyListScreenState extends State<KeyListScreen> {
             keyItem.keys.privX = "private symmetric key";
           }
 
-          var decryptedNote = await _cryptor.decrypt(keyItem.notes);
+          var decryptedNote = await _cryptor.decryptWithPadding(keyItem.notes);
           keyItem.notes = decryptedNote;
           _keys.add(keyItem);
           // var tempTags = noteItem.tags;
@@ -214,7 +214,7 @@ class _KeyListScreenState extends State<KeyListScreen> {
           color: _isDarkModeEnabled ? Colors.greenAccent : null,
         ),
         itemBuilder: (context, index) {
-          // var decryptedNote = _cryptor.decrypt(_notes[index].notes);
+          // var decryptedNote = _cryptor.decryptWithPadding(_notes[index].notes);
           var categoryIcon = Stack(
             children: [
               IconButton(

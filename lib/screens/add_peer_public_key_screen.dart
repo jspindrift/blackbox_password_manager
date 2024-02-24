@@ -124,7 +124,7 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
 
     // final keyIndex = (widget.keyItem.keyIndex)!;
     /// decrypt root seed and expand
-    _cryptor.decrypt(widget.keyItem.keys.privX!).then((privKeyX) async {
+    _cryptor.decryptWithPadding(widget.keyItem.keys.privX!).then((privKeyX) async {
       final decryptedSeedData = privKeyX;
       // print("decryptedSeedData: ${decryptedSeedData}");
 
@@ -1600,8 +1600,8 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
     final keyIndex = _settingsManager.doEncryption(encodedLength);
     // _logManager.logger.d("keyIndex: $keyIndex");
 
-    final encryptedPeerName = await _cryptor.encrypt(peerName);
-    final encryptedPeerNotes = await _cryptor.encrypt(peerNotes);
+    final encryptedPeerName = await _cryptor.encryptWithPadding(peerName);
+    final encryptedPeerNotes = await _cryptor.encryptWithPadding(peerNotes);
 
     var encryptedPeerPublicKey = "";
 
@@ -1609,15 +1609,15 @@ class _AddPeerPublicKeyScreenState extends State<AddPeerPublicKeyScreen> {
       // print("_importedKeyDataTextController.text: ${_importedKeyDataTextController.text}");
       if (_isImportedKeyBase64) {
         encryptedPeerPublicKey =
-        await _cryptor.encrypt(_importedKeyDataTextController.text);
+        await _cryptor.encryptWithPadding(_importedKeyDataTextController.text);
       } else if (_isImportedKeyHex) {
         encryptedPeerPublicKey =
-        await _cryptor.encrypt(base64.encode(hex.decode(_importedKeyDataTextController.text)));
+        await _cryptor.encryptWithPadding(base64.encode(hex.decode(_importedKeyDataTextController.text)));
       }
       // print("encryptedPeerPublicKey: ${encryptedPeerPublicKey}");
 
     } else {
-      encryptedPeerPublicKey = await _cryptor.encrypt(_scannedKeyDataTextController.text);
+      encryptedPeerPublicKey = await _cryptor.encryptWithPadding(_scannedKeyDataTextController.text);
     }
 
     if (encryptedPeerPublicKey == null) {

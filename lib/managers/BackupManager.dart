@@ -181,7 +181,7 @@ class BackupManager {
               final encryptedKeyNonce = vault.encryptedKey.keyNonce;
               // _logManager.logger.d("encryptedKeyNonce: ${encryptedKeyNonce}");
 
-              final decryptedKeyNonce = await _cryptor.decrypt(encryptedKeyNonce);
+              final decryptedKeyNonce = await _cryptor.decryptWithPadding(encryptedKeyNonce);
               final keyNonce = hex.decode(decryptedKeyNonce);
               final ablock = keyNonce.sublist(8, 12);
               final bblock = keyNonce.sublist(12, 16);
@@ -488,7 +488,7 @@ class BackupManager {
           final encryptedKeyNonce = localVault.encryptedKey.keyNonce;
           _logManager.logger.d("encryptedKeyNonce: ${encryptedKeyNonce}");
 
-          final decryptedKeyNonce = await _cryptor.decrypt(encryptedKeyNonce);
+          final decryptedKeyNonce = await _cryptor.decryptWithPadding(encryptedKeyNonce);
           _logManager.logger.d("decryptedKeyNonce: ${decryptedKeyNonce}\n"
               "base64decoded keyNonce: ${hex.decode(decryptedKeyNonce)}");
 
@@ -706,7 +706,7 @@ class BackupManager {
     // _logManager.logger.d("deviceData[utsname.version:]: ${_settingsManager.deviceManager.deviceData["utsname.version:"]}");
 
     _settingsManager.doEncryption(utf8.encode(deviceDataString).length);
-    final encryptedDeviceData = await _cryptor.encrypt(deviceDataString);
+    final encryptedDeviceData = await _cryptor.encryptWithPadding(deviceDataString);
     // _logManager.logger.d("encryptedDeviceData: $encryptedDeviceData");
 
     _settingsManager.doEncryption(utf8.encode(testItems).length);
@@ -715,7 +715,7 @@ class BackupManager {
     _logManager.logger.d("keyNonce: ${keyNonce.length}: ${keyNonce}\n"
         "keyNonce utf8: ${utf8.encode(keyNonce).length}: ${utf8.encode(keyNonce)}");
 
-    final encryptedKeyNonce = await _cryptor.encrypt(keyNonce);
+    final encryptedKeyNonce = await _cryptor.encryptWithPadding(keyNonce);
     // _logManager.logger.d("encryptedKeyNonce: $encryptedKeyNonce");
 
     var encryptedKey = EncryptedKey(

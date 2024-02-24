@@ -94,8 +94,8 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         final algorithm_exchange = X25519();
 
         /// TODO: fix this
-        final privateHexS = await _cryptor.decrypt(value.privKeySignature);
-        _pubExchangeKeySeed = await _cryptor.decrypt(value.privKeyExchange);
+        final privateHexS = await _cryptor.decryptWithPadding(value.privKeySignature);
+        _pubExchangeKeySeed = await _cryptor.decryptWithPadding(value.privKeyExchange);
 
         var privateSigningKey = PrivateKey(ec, BigInt.parse(privateHexS, radix: 16));
         final privSeedPair = await algorithm_exchange
@@ -136,10 +136,10 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
       });
       for (var id in ids) {
         // _logManager.logLongMessage(id.toRawJson());
-        final xpub = await _cryptor.decrypt(id.pubKeySignature);
-        final ypub = await _cryptor.decrypt(id.pubKeyExchange);
-        final dname = await _cryptor.decrypt(id.name);
-        final dkeyId = await _cryptor.decrypt(id.keyId);
+        final xpub = await _cryptor.decryptWithPadding(id.pubKeySignature);
+        final ypub = await _cryptor.decryptWithPadding(id.pubKeyExchange);
+        final dname = await _cryptor.decryptWithPadding(id.name);
+        final dkeyId = await _cryptor.decryptWithPadding(id.keyId);
 
         var digitalIdentity = DigitalIdentity(
             id: id.id,
@@ -937,12 +937,12 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
         "RecoveryModeScreen", "_saveScannedIdentity", "identity:{E: $pubE}");
 
     /// Encrypt password here
-    final encryptedPubS = await _cryptor.encrypt(pubS);
-    final encryptedPubE = await _cryptor.encrypt(pubE);
-    final encryptedName = await _cryptor.encrypt(name);
-    final encryptedKeyId = await _cryptor.encrypt(item.keyId);
+    final encryptedPubS = await _cryptor.encryptWithPadding(pubS);
+    final encryptedPubE = await _cryptor.encryptWithPadding(pubE);
+    final encryptedName = await _cryptor.encryptWithPadding(name);
+    final encryptedKeyId = await _cryptor.encryptWithPadding(item.keyId);
 
-    // final encryptedIntKey = await _cryptor.encrypt(intKey);
+    // final encryptedIntKey = await _cryptor.encryptWithPadding(intKey);
 
     /// TODO: save encrypted block number with encryption
     /// TODO: change to encryptParams method for object
@@ -1007,7 +1007,7 @@ class _RecoveryModeScreenState extends State<RecoveryModeScreen> {
     final rootKey = _cryptor.aesRootSecretKeyBytes;
 
     final encryptedRootKey = await _cryptor.encryptRecoveryKey(sharedSecretKey, rootKey);
-    final encryptedKeyId = await _cryptor.encrypt(keyId);
+    final encryptedKeyId = await _cryptor.encryptWithPadding(keyId);
     _logManager.logger.d('encryptedRootKey:[${encryptedRootKey.length}]: ${encryptedRootKey}');
     _logManager.logger.d('encryptedKeyId:[${encryptedKeyId.length}]: ${encryptedKeyId}');
 

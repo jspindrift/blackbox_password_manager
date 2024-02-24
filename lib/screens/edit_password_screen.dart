@@ -380,7 +380,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         final blob = (_passwordItem?.password)!;
 
         /// decrypt password
-        final pwd = await _cryptor.decrypt(blob);
+        final pwd = await _cryptor.decryptWithPadding(blob);
         dpassword = pwd;
         if (_isBip39Valid) {
           dpassword = bip39.entropyToMnemonic(pwd);
@@ -452,11 +452,11 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         }
       }
 
-      final dname = await _cryptor.decrypt(name);
+      final dname = await _cryptor.decryptWithPadding(name);
       /// decrypt username
-      final dusername = await _cryptor.decrypt(username);
+      final dusername = await _cryptor.decryptWithPadding(username);
       /// decrypt notes
-      final dnotes = await _cryptor.decrypt(notes);
+      final dnotes = await _cryptor.decryptWithPadding(notes);
 
       setState(() {
         _nameTextController.text = dname;
@@ -477,7 +477,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
         var index = 0;
         for (var pp in encryptedPreviousPasswords) {
           index += 1;
-          var decryptedPreviousPassword = await _cryptor.decrypt(pp.password);
+          var decryptedPreviousPassword = await _cryptor.decryptWithPadding(pp.password);
 
           if (pp.isBip39) {
             decryptedPreviousPassword =
@@ -1411,7 +1411,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                           Text(
                             "Add Tag",
                             style: TextStyle(
-                              color: Colors.white,
+                              color: _isDarkModeEnabled ? Colors.white : Colors.blueAccent,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
@@ -2378,7 +2378,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
 
   _showModalAddTagView() async {
     showModalBottomSheet(
-        backgroundColor: _isDarkModeEnabled ? Colors.black : null,
+        backgroundColor: _isDarkModeEnabled ? Colors.black : Colors.white,
         elevation: 8,
         context: context,
         isScrollControlled: true,
@@ -2406,7 +2406,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                             Icons.close,
                             size: 30,
                             color:
-                                _isDarkModeEnabled ? Colors.greenAccent : null,
+                                _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
                           ),
                           onPressed: () {
                             FocusScope.of(context).unfocus();
@@ -2519,9 +2519,10 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
                                 ? (_isDarkModeEnabled
                                     ? MaterialStateProperty.all<Color>(
                                         Colors.greenAccent)
-                                    : null)
+                                    : MaterialStateProperty.all<Color>(
+                                Colors.blueAccent))
                                 : MaterialStateProperty.all<Color>(
-                                    Colors.blueGrey),
+                                    Colors.grey),
                           ),
                           child: Text(
                             "Add",

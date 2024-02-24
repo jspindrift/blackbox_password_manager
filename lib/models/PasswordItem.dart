@@ -126,9 +126,13 @@ class PasswordItem {
       settingsManager.doEncryption(encodedAllPlaintextLength);
 
       /// Encrypt parameters
-      final encryptedName = await cryptor.encrypt(name);
-      final encryptedUsername = await cryptor.encrypt(username);
-      final encryptedNotes = await cryptor.encrypt(notes);
+      // final encryptedName = await cryptor.encrypt(name);
+      // final encryptedUsername = await cryptor.encrypt(username);
+      // final encryptedNotes = await cryptor.encrypt(notes);
+
+      final encryptedName = await cryptor.encryptWithPadding(name);
+      final encryptedUsername = await cryptor.encryptWithPadding(username);
+      final encryptedNotes = await cryptor.encryptWithPadding(notes);
 
       String encryptedPassword = '';
       GeoLockItem? geoItem;
@@ -142,7 +146,7 @@ class PasswordItem {
           encryptedPassword = (geoItem?.password)!;
         } else {
           /// Encrypt seed here
-          encryptedPassword = await cryptor.encrypt(seed);
+          encryptedPassword = await cryptor.encryptWithPadding(seed);
         }
       } else {
         if (isGeoLocked) {
@@ -150,7 +154,7 @@ class PasswordItem {
           encryptedPassword = (geoItem?.password)!;
         } else {
           /// Encrypt password here
-          encryptedPassword = await cryptor.encrypt(password);
+          encryptedPassword = await cryptor.encryptWithPadding(password);
         }
       }
 
@@ -187,10 +191,12 @@ class PasswordItem {
         if (isPreviousBip39Valid) {
           final seed = cryptor.mnemonicToEntropy(previousPassword);
           settingsManager.doEncryption(utf8.encode(seed).length);
-          encryptedPrevious = await cryptor.encrypt(seed);
+          // encryptedPrevious = await cryptor.encrypt(seed);
+          encryptedPrevious = await cryptor.encryptWithPadding(seed);
         } else {
           settingsManager.doEncryption(utf8.encode(previousPassword).length);
-          encryptedPrevious = await cryptor.encrypt(previousPassword);
+          // encryptedPrevious = await cryptor.encrypt(previousPassword);
+          encryptedPrevious = await cryptor.encryptWithPadding(previousPassword);
         }
 
         final previousPasswordItem = PreviousPassword(
@@ -226,9 +232,9 @@ class PasswordItem {
       settingsManager.doEncryption(encodedPlaintextLength);
 
       /// Encrypt parameters
-      final encryptedName = await cryptor.encrypt(name);
-      final encryptedUsername = await cryptor.encrypt(username);
-      final encryptedNotes = await cryptor.encrypt(notes);
+      final encryptedName = await cryptor.encryptWithPadding(name);
+      final encryptedUsername = await cryptor.encryptWithPadding(username);
+      final encryptedNotes = await cryptor.encryptWithPadding(notes);
 
       String encryptedPassword = '';
       GeoLockItem? geoItem;
@@ -244,7 +250,7 @@ class PasswordItem {
           encryptedPassword = (geoItem?.password)!;
         } else {
           /// Encrypt seed here
-          encryptedPassword = await cryptor.encrypt(seed);
+          encryptedPassword = await cryptor.encryptWithPadding(seed);
         }
 
       } else {
@@ -256,7 +262,7 @@ class PasswordItem {
           encryptedPassword = (geoItem?.password)!;
         } else {
           /// Encrypt password here
-          encryptedPassword = await cryptor.encrypt(password);
+          encryptedPassword = await cryptor.encryptWithPadding(password);
         }
       }
 
@@ -333,14 +339,14 @@ class PasswordItem {
 
     mac = base64.encode(hex.decode(computedMac));
 
-    final decryptedName = await cryptor.decrypt(name);
-    final decryptedUsername = await cryptor.decrypt(username);
+    final decryptedName = await cryptor.decryptWithPadding(name);
+    final decryptedUsername = await cryptor.decryptWithPadding(username);
 
-    var decryptedNote = await cryptor.decrypt(notes);
+    var decryptedNote = await cryptor.decryptWithPadding(notes);
 
     var decryptedPassword = password;
     if (geoLock == null) {
-      decryptedPassword = await cryptor.decrypt(password);
+      decryptedPassword = await cryptor.decryptWithPadding(password);
       if (isBip39) {
         decryptedPassword = cryptor.entropyToMnemonic(decryptedPassword);
       }
@@ -371,15 +377,14 @@ class PasswordItem {
       return null;
     }
 
-    final decryptedName = await cryptor.decrypt(item.name);
-    final decryptedUsername = await cryptor.decrypt(item.username);
-
-    var decryptedNote = await cryptor.decrypt(item.notes);
+    final decryptedName = await cryptor.decryptWithPadding(item.name);
+    final decryptedUsername = await cryptor.decryptWithPadding(item.username);
+    final decryptedNote = await cryptor.decryptWithPadding(item.notes);
 
     var decryptedPassword = password;
     if (geoLock == null) {
       decryptedPassword =
-      await cryptor.decrypt(password);
+      await cryptor.decryptWithPadding(password);
       if (isBip39) {
         decryptedPassword = cryptor.entropyToMnemonic(decryptedPassword);
       }

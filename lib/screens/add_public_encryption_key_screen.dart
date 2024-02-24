@@ -1114,13 +1114,13 @@ class _AddPublicEncryptionKeyScreenState extends State<AddPublicEncryptionKeyScr
 
     /// encrypt note items
     ///
-    final encryptedName = await _cryptor.encrypt(name);
+    final encryptedName = await _cryptor.encryptWithPadding(name);
 
-    final encryptedNotes = await _cryptor.encrypt(notes);
+    final encryptedNotes = await _cryptor.encryptWithPadding(notes);
 
     /// TODO: switch encoding !
     // final encryptedKey = await _cryptor.encrypt(hex.encode(_privKeyExchange));
-    final encryptedKey = await _cryptor.encrypt(base64.encode(hex.decode(_privKeyX)));
+    final encryptedKey = await _cryptor.encryptWithPadding(base64.encode(hex.decode(_privKeyX)));
 
     var keyItem = KeyItem(
       id: uuid,

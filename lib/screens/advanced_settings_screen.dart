@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:pin_code_view/pin_code_view.dart';
 
 import '../helpers/AppConstants.dart';
+import '../managers/Cryptor.dart';
 import '../managers/PostQuantumManager.dart';
 import '../managers/WOTSManager.dart';
 import '../managers/LogManager.dart';
@@ -45,6 +46,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   /// post quantum signing
   final _wotsManager = WOTSManager();
   final _postQuantumManager = PostQuantumManager();
+  final _cryptor = Cryptor();
 
 
   @override
@@ -540,11 +542,13 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                       onPressed: () async {
                         // await _runPostQuantumIntegrityTestWithReset();
                         await _runGigaWotsSignTestWithReset();
+                        // await _runPadEncryptionTest();
                       },
                     ),
                     onTap: () async {
                       // await _runPostQuantumIntegrityTest();
                       await _runGigaWotsSignTest();
+                      // await _runPadEncryptionTest();
                     },
                   ),
                 ),
@@ -785,6 +789,16 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
 
     await _runGigaWotsSignTest();
   }
+
+
+  // Future<void> _runPadEncryptionTest() async {
+  //   _logManager.logger.d("_runPostQuantumTest");
+  //
+  //   /// set variables here
+  //   final message = "hello world";
+  //   final e = await _cryptor.encryptWithPadding(message);
+  //   await _cryptor.decryptWithPadding(e);
+  // }
 
 
   void _showConfirmDeleteAccountDialog() {

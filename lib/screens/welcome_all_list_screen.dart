@@ -119,8 +119,8 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
             // final keyIndex = (noteItem?.keyIndex)!;
 
             if (noteItem.geoLock == null) {
-              final decryptedName = await _cryptor.decrypt(noteItem.name);
-              final decryptedNote = await _cryptor.decrypt(noteItem.notes);
+              final decryptedName = await _cryptor.decryptWithPadding(noteItem.name);
+              final decryptedNote = await _cryptor.decryptWithPadding(noteItem.notes);
 
               noteItem.name = decryptedName;
               noteItem.notes = decryptedNote;
@@ -143,10 +143,10 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
               }
             }
 
-            final decryptedName = await _cryptor.decrypt(keyItem.name);
+            final decryptedName = await _cryptor.decryptWithPadding(keyItem.name);
             keyItem.name = decryptedName;
 
-            final decryptedNote = await _cryptor.decrypt(keyItem.notes);
+            final decryptedNote = await _cryptor.decryptWithPadding(keyItem.notes);
             keyItem.notes = decryptedNote;
 
             if (keyItem.favorite) {

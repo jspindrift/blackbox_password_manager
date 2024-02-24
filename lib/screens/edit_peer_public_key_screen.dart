@@ -155,11 +155,11 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
     _logManager.logger.d("_thisPeerPublicKey: ${_thisPeerPublicKey?.toRawJson()}");
 
     /// decrypt root seed and expand
-    _cryptor.decrypt(widget.keyItem.keys.privX!).then((privKeyX) async {
+    _cryptor.decryptWithPadding(widget.keyItem.keys.privX!).then((privKeyX) async {
       final decryptedSeedData = privKeyX;
       // print("decryptedSeedData: ${decryptedSeedData}");
 
-      // final name = await _cryptor.decrypt(_mainKeyItem!.name);//.then((value) {
+      // final name = await _cryptor.decryptWithPadding(_mainKeyItem!.name);//.then((value) {
       // _logManager.logger.d("name: ${name}");
       //
       // setState(() {
@@ -214,7 +214,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
                   final encryptedPeerPublicKeyNote = _thisPeerPublicKey?.notes;
                   // print("encryptedPeerPublicKeyNote: ${encryptedPeerPublicKeyNote}");
                   if (encryptedPeerPublicKeyNote != null) {
-                    _cryptor.decrypt(encryptedPeerPublicKeyNote).then((value) {
+                    _cryptor.decryptWithPadding(encryptedPeerPublicKeyNote).then((value) {
                       final dnote = value;
                       setState(() {
                         _notesTextController.text = dnote;
@@ -223,7 +223,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
                   }
 
                   if (encryptedPeerPublicKey != null) {
-                    _cryptor.decrypt(encryptedPeerPublicKey).then((value) {
+                    _cryptor.decryptWithPadding(encryptedPeerPublicKey).then((value) {
                     // print("decryptedPeerPublicKeyData: ${value
                     //     .length}: ${value}");
                     final decryptedPeerPublicKeyData = value;
@@ -234,7 +234,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
                     final encryptedPeerPublicKeyName = _thisPeerPublicKey?.name;
                     if (encryptedPeerPublicKeyName != null) {
-                      _cryptor.decrypt(encryptedPeerPublicKeyName).then((value) {
+                      _cryptor.decryptWithPadding(encryptedPeerPublicKeyName).then((value) {
                         if (value != null) {
                           setState(() {
                             _peerNameTextController.text = value;
@@ -269,7 +269,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
               final encryptedPeerPublicKeyNote = _thisPeerPublicKey?.notes;
               // print("encryptedPeerPublicKeyNote: ${encryptedPeerPublicKeyNote}");
               if (encryptedPeerPublicKeyNote != null) {
-                _cryptor.decrypt(encryptedPeerPublicKeyNote).then((value) {
+                _cryptor.decryptWithPadding(encryptedPeerPublicKeyNote).then((value) {
                   final dnote = value;
                   // setState(() {
                     _notesTextController.text = dnote;
@@ -277,7 +277,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
                 });
               }
               if (encryptedPeerPublicKey != null) {
-                _cryptor.decrypt(encryptedPeerPublicKey).then((value) {
+                _cryptor.decryptWithPadding(encryptedPeerPublicKey).then((value) {
                   // print("decryptedPeerPublicKeyData: ${value
                   //     .length}: ${value}");
                   final decryptedPeerPublicKeyData = value;
@@ -288,7 +288,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
                   final encryptedPeerPublicKeyName = _thisPeerPublicKey?.name;
                   if (encryptedPeerPublicKeyName != null) {
-                    _cryptor.decrypt(encryptedPeerPublicKeyName).then((value) {
+                    _cryptor.decryptWithPadding(encryptedPeerPublicKeyName).then((value) {
                       if (value != null) {
                         setState(() {
                           _peerNameTextController.text = value;
@@ -350,14 +350,14 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
     }
 
 
-    // final name = await _cryptor.decrypt(_mainKeyItem!.name);
+    // final name = await _cryptor.decryptWithPadding(_mainKeyItem!.name);
     // setState(() {
     //   _decryptedMainKeyName = name;
     // });
 
 
     /// decrypt root seed and expand
-    _cryptor.decrypt(mkey).then((value) {
+    _cryptor.decryptWithPadding(mkey).then((value) {
       final decryptedSeedData = value;
 
       /// TODO: switch encoding !
@@ -392,7 +392,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
                 // print("1encryptedPeerPublicKeyNote: ${encryptedPeerPublicKeyNote}");
 
                 if (encryptedPeerPublicKeyNote != null) {
-                  _cryptor.decrypt(encryptedPeerPublicKeyNote).then((value) {
+                  _cryptor.decryptWithPadding(encryptedPeerPublicKeyNote).then((value) {
                     final dnote = value;
                     setState(() {
                       _notesTextController.text = dnote;
@@ -400,7 +400,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
                   });
                 }
                 if (encryptedPeerPublicKey != null) {
-                  _cryptor.decrypt(encryptedPeerPublicKey).then((value) {
+                  _cryptor.decryptWithPadding(encryptedPeerPublicKey).then((value) {
                     // print("decryptedPeerPublicKeyData: ${value
                     //     .length}: ${value}");
                     final decryptedPeerPublicKeyData = value;
@@ -411,7 +411,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
                     final encryptedPeerPublicKeyName = _thisPeerPublicKey?.name;
                     if (encryptedPeerPublicKeyName != null) {
-                      _cryptor.decrypt(encryptedPeerPublicKeyName).then((value) {
+                      _cryptor.decryptWithPadding(encryptedPeerPublicKeyName).then((value) {
                         if (value != null) {
                           setState(() {
                             _peerNameTextController.text = value;
@@ -446,7 +446,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
               final encryptedPeerPublicKeyNote = _thisPeerPublicKey?.notes;
               // print("encryptedPeerPublicKeyNote: ${encryptedPeerPublicKeyNote}");
               if (encryptedPeerPublicKeyNote != null) {
-                _cryptor.decrypt(encryptedPeerPublicKeyNote).then((value) {
+                _cryptor.decryptWithPadding(encryptedPeerPublicKeyNote).then((value) {
                   final dnote = value;
                   setState(() {
                     _notesTextController.text = dnote;
@@ -455,7 +455,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
               }
 
               if (encryptedPeerPublicKey != null) {
-                _cryptor.decrypt(encryptedPeerPublicKey).then((value) {
+                _cryptor.decryptWithPadding(encryptedPeerPublicKey).then((value) {
                   // print("decryptedPeerPublicKeyData: ${value
                   //     .length}: ${value}");
                   final decryptedPeerPublicKeyData = value;
@@ -466,7 +466,7 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
                   final encryptedPeerPublicKeyName = _thisPeerPublicKey?.name;
                   if (encryptedPeerPublicKeyName != null) {
-                    _cryptor.decrypt(encryptedPeerPublicKeyName).then((value) {
+                    _cryptor.decryptWithPadding(encryptedPeerPublicKeyName).then((value) {
                       if (value != null) {
                         setState(() {
                           _peerNameTextController.text = value;
@@ -1960,15 +1960,15 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
 
     /// we don't neet to re-encrypt key items
     ///
-    // final encryptedName = await _cryptor.encrypt(name);
+    // final encryptedName = await _cryptor.encryptWithPadding(name);
     //
-    // final encryptedNotes = await _cryptor.encrypt(notes);
-    // final encryptedKey = await _cryptor.encrypt(hex.encode(_mainPrivKey));
+    // final encryptedNotes = await _cryptor.encryptWithPadding(notes);
+    // final encryptedKey = await _cryptor.encryptWithPadding(hex.encode(_mainPrivKey));
     final encodedLength = utf8.encode(peerName).length + utf8.encode(peerNotes).length + utf8.encode(peerPubKey).length;
     _settingsManager.doEncryption(encodedLength);
 
-    final encryptedPeerName = await _cryptor.encrypt(peerName);
-    final encryptedPeerNotes = await _cryptor.encrypt(peerNotes);
+    final encryptedPeerName = await _cryptor.encryptWithPadding(peerName);
+    final encryptedPeerNotes = await _cryptor.encryptWithPadding(peerNotes);
     // print("encryptedPeerNotes: ${encryptedPeerNotes}");
 
     var encryptedPeerPublicKey = "";
@@ -1978,11 +1978,11 @@ class _EditPeerPublicKeyScreenState extends State<EditPeerPublicKeyScreen> {
     //       "_importedKeyDataTextController.text: ${_importedKeyDataTextController
     //           .text}");
       encryptedPeerPublicKey =
-      await _cryptor.encrypt(peerPubKey);
+      await _cryptor.encryptWithPadding(peerPubKey);
       // print("encryptedPeerPublicKey: ${encryptedPeerPublicKey}");
     // } else {
     //   encryptedPeerPublicKey =
-    //   await _cryptor.encrypt(_scannedKeyDataTextController.text);
+    //   await _cryptor.encryptWithPadding(_scannedKeyDataTextController.text);
     // }
     final thisKey = _thisPeerPublicKey;
 
