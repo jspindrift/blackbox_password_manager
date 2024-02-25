@@ -14,7 +14,6 @@ import '../models/PasswordItem.dart';
 import '../models/NoteItem.dart';
 import '../screens/edit_password_screen.dart';
 import '../screens/add_note_screen.dart';
-import '../screens/edit_public_encryption_key_screen.dart';
 import 'home_tab_screen.dart';
 
 
@@ -159,38 +158,6 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
 
                 /// add modified item
                 _itemsWithTag.add(noteItem);
-              }
-            }
-          }
-        }
-      } else if (item.type == "key") {
-        var keyItem = KeyItem.fromRawJson(item.data);
-        if (keyItem != null) {
-          // print("is of type KeyItem");
-          // final keyIndex = (keyItem?.keyIndex)!;
-          // var keyIndex = 0;
-          //
-          // if (keyItem?.keyIndex != null) {
-          //   keyIndex = (keyItem?.keyIndex)!;
-          // }
-          var tempTags = keyItem.tags;
-          if (tempTags != null) {
-            // iterate through item tags
-            for (var tag in tempTags) {
-              if (tag == widget.tag) {
-                /// decrypt item fields
-                // final itemId = noteItem.id + "-" + noteItem.cdate + "-" + noteItem.mdate;
-
-                final decryptedName = await _cryptor.decryptWithPadding(keyItem.name);
-                final decryptedNote = await _cryptor.decryptWithPadding(keyItem.notes);
-
-                /// set decrypted fields
-                keyItem.name = decryptedName;
-                keyItem.notes = decryptedNote;
-
-
-                /// add modified item
-                _itemsWithTag.add(keyItem);
               }
             }
           }
@@ -496,24 +463,24 @@ class _ItemsByTagScreenState extends State<ItemsByTagScreen> {
               onTap: () {
                 /// forward user to password list with the selected tag
                 ///
-                if (convertedItem.keyType == EnumToString.convertToString(EncryptionKeyType.asym)) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EditPublicEncryptionKeyScreen(
-                        id: convertedItem.id,
-                      ),
-                    ),
-                  ).then((value) {
-                    // print("trace 335");
-                    if (value != null) {
-                      setState(() {
-                        _didPopBackFrom = true;
-                      });
-                    }
-                    _getAllTags();
-                  });
-                }
+                // if (convertedItem.keyType == EnumToString.convertToString(EncryptionKeyType.asym)) {
+                //   Navigator.push(
+                //     context,
+                //     MaterialPageRoute(
+                //       builder: (context) => EditPublicEncryptionKeyScreen(
+                //         id: convertedItem.id,
+                //       ),
+                //     ),
+                //   ).then((value) {
+                //     // print("trace 335");
+                //     if (value != null) {
+                //       setState(() {
+                //         _didPopBackFrom = true;
+                //       });
+                //     }
+                //     _getAllTags();
+                //   });
+                // }
 
               },
             );

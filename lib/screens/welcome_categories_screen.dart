@@ -15,9 +15,7 @@ import '../screens/add_password_screen.dart';
 import '../screens/add_note_screen.dart';
 import '../screens/note_list_screen.dart';
 import '../screens/welcome_screen.dart';
-import '../screens/key_list_screen.dart';
 import '../screens/welcome_all_list_screen.dart';
-import 'add_public_encryption_key_screen.dart';
 
 
 class WelcomeCategoriesScreen extends StatefulWidget {
@@ -38,7 +36,6 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
   List<String> _allCategories = [
     "Password",
     "Secure Note",
-    "Key",
   ]; //, "Credit Card"];
 
   Map<String, int> _categoryCounts = {};
@@ -141,30 +138,6 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
           }
 
           for (var tag in (noteItem?.tags)!) {
-            if (!_allTags.contains(tag)) {
-              _allTags.add(tag);
-            }
-          }
-        }
-      } else if (item.type == "key") {
-        /// TODO: increment favorite counts
-        final keyItem = KeyItem.fromRawJson(item.data);
-
-        if (!_availableCategories.contains("Keys")) {
-          _availableCategories.add("All");
-          _availableCategories.add("Keys");
-          _categoryCounts["Keys"] = 1;
-        } else {
-          _categoryCounts["Keys"] = _categoryCounts["Keys"]! + 1;
-        }
-        if (keyItem != null) {
-          if (_categoryCounts["All"] == null) {
-            _categoryCounts["All"] = 1;
-          } else {
-            _categoryCounts["All"] = _categoryCounts["All"]! + 1;
-          }
-
-          for (var tag in (keyItem?.tags)!) {
             if (!_allTags.contains(tag)) {
               _allTags.add(tag);
             }
@@ -361,18 +334,20 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
                 ).then((value) async {
                   await _getAvailableCategories();
                 });
-              } else if (_availableCategories[index] == "Keys") {
-                /// Modal to ask key type
-                ///
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => KeyListScreen(),
-                  ),
-                ).then((value) async {
-                  await _getAvailableCategories();
-                });
-              } else if (_availableCategories[index] == "All") {
+              }
+              // else if (_availableCategories[index] == "Keys") {
+              //   /// Modal to ask key type
+              //   ///
+              //   Navigator.push(
+              //     context,
+              //     MaterialPageRoute(
+              //       builder: (context) => KeyListScreen(),
+              //     ),
+              //   ).then((value) async {
+              //     await _getAvailableCategories();
+              //   });
+              // }
+              else if (_availableCategories[index] == "All") {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -464,16 +439,8 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
                           iconImage =
                               "assets/icons8-credit-card-60-blueAccent.png";
                         }
-                      } else if (_allCategories[index] == "Key") {
-                        isKey = true;
-                        if (_isDarkModeEnabled) {
-                          iconImage = "assets/icons8-pin-code-96.png";
-                        } else {
-                          iconImage = "assets/icons8-pin-code-96.png";
-                          // iconImage =
-                          // "assets/icons8-credit-card-60-blueAccent.png";
-                        }
                       }
+
                       return ListTile(
                         visualDensity: VisualDensity(vertical: 4),
                         title: Text(
@@ -541,135 +508,8 @@ class _WelcomeCategoriesScreenState extends State<WelcomeCategoriesScreen> {
 
             await _getAvailableCategories();
           });
-        } else if (value == "Credit Card") {
-        } else if (value == "Key") {
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AddPublicEncryptionKeyScreen(), //AddKeyItemScreen(),
-            ),
-          ).then((value) async {
-            if (value == "savedItem") {
-              EasyLoading.showToast("Saved Key Item",
-                  duration: Duration(seconds: 2));
-            }
-
-            await _getAvailableCategories();
-          });
-
-          // _showKeyTypeSelectionModal();
         }
-
-        /// Add New Items here...
       }
-    });
-  }
-
-  _showKeyTypeSelectionModal() {
-    /// show modal bottom sheet
-    showModalBottomSheet(
-        backgroundColor: _isDarkModeEnabled ? Colors.black : null,
-        elevation: 8,
-        context: context,
-        isScrollControlled: false,
-        isDismissible: true,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(20),
-          ),
-        ),
-        builder: (context) {
-          return StatefulBuilder(
-              builder: (BuildContext context, StateSetter state) {
-                return Center(
-                  child: Column(
-                    children: <Widget>[
-                      SizedBox(
-                        height: 16,
-                      ),
-                      Row(
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.fromLTRB(4, 16, 0, 0),
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.close,
-                                size: 30,
-                                color:
-                                _isDarkModeEnabled ? Colors.greenAccent : null,
-                              ),
-                              onPressed: () {
-                                // FocusScope.of(context).unfocus();
-
-                                state(() {
-                                  // _tagTextController.text = "";
-                                  // _tagTextFieldValid = false;
-                                  // _filteredTags = _settingsManager.itemTags;
-                                });
-
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                          ),
-                          Spacer(),
-                        ],
-                      ),
-
-                      Container(
-                        // height: MediaQuery.of(context).size.height * 0.7,
-                        child: Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Container(
-                            child: ElevatedButton(
-                              style: ButtonStyle(
-                                backgroundColor: _isDarkModeEnabled
-                                    ? MaterialStateProperty.all<Color>(
-                                    Colors.greenAccent)
-                                    : null,
-                                foregroundColor: MaterialStateProperty.all<Color>(
-                                    Colors.black),
-                              ),
-                              child: Text("Asymmetric Key Pair"),
-                              onPressed: (){
-
-                                Navigator.of(context).pop();
-
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => AddPublicEncryptionKeyScreen(), //AddKeyItemScreen(),
-                                  ),
-                                ).then((value) async {
-                                  if (value == "savedItem") {
-                                    EasyLoading.showToast("Saved Key Item",
-                                        duration: Duration(seconds: 2));
-                                  }
-
-                                  await _getAvailableCategories();
-                                });
-
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              });
-        }).then((value) async {
-          if (value != null) {
-            // print("Chose: $value");
-
-            if (value == "savedItem") {
-              EasyLoading.showToast("Saved Key Item",
-                  duration: Duration(seconds: 2));
-
-            }
-
-            await _getAvailableCategories();
-          }
     });
   }
 

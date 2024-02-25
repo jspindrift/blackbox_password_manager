@@ -15,8 +15,6 @@ import '../models/NoteItem.dart';
 import '../screens/edit_password_screen.dart';
 import '../screens/add_note_screen.dart';
 import 'add_password_screen.dart';
-import 'add_public_encryption_key_screen.dart';
-import 'edit_public_encryption_key_screen.dart';
 import 'home_tab_screen.dart';
 
 
@@ -47,7 +45,7 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
   List<String> _allTags = [];
   String _dropDownValue = "Title";
 
-  final _allCategories = ["Password", "Secure Note", "Key"];
+  final _allCategories = ["Password", "Secure Note"];
 
   List<String> _decryptedPasswordList = [];
 
@@ -133,27 +131,6 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
             }
 
             _allItems.add(noteItem);
-          }
-        } else if (item.type == "key") {
-          var keyItem = KeyItem.fromRawJson(item.data);
-          if (keyItem != null) {
-            for (var tag in (keyItem?.tags)!) {
-              if (!_allTags.contains(tag)) {
-                _allTags.add(tag);
-              }
-            }
-
-            final decryptedName = await _cryptor.decryptWithPadding(keyItem.name);
-            keyItem.name = decryptedName;
-
-            final decryptedNote = await _cryptor.decryptWithPadding(keyItem.notes);
-            keyItem.notes = decryptedNote;
-
-            if (keyItem.favorite) {
-              _favoriteItems.add(keyItem);
-            }
-
-            _allItems.add(keyItem);
           }
         }
       }
@@ -426,98 +403,6 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
                 });
               },
             );
-          } else if (convertedItemType == KeyItem) {
-            var categoryIcon = Stack(
-              children: [
-                IconButton(
-                  icon: Icon(
-                    Icons.key,
-                    color: _isDarkModeEnabled
-                        ? Colors.greenAccent
-                        : Colors.blueAccent,
-                    size: 40,
-                  ),
-                  onPressed: null,
-                ),
-                Visibility(
-                  visible: convertedItem.favorite,
-                  child: Positioned(
-                    bottom: 20,
-                    right: 35,
-                    child: Icon(
-                      Icons.star,
-                      size: 15,
-                      color: _isDarkModeEnabled
-                          ? Colors.greenAccent
-                          : Colors.blueAccent,
-                    ),
-                  ),
-                ),
-              ],
-            );
-
-
-            final cnote = convertedItem.notes.replaceAll("\n", "... ");
-            var nameString =
-                '${convertedItem.name.substring(0, convertedItem.name.length <= 50 ? convertedItem.name.length : convertedItem.name.length > 50 ? 50 : convertedItem.name.length)}';
-
-            if (convertedItem.name.length > 50) {
-              nameString += '...';
-            }
-            if (convertedItem.name.length <= 50 &&
-                convertedItem.name.length >= 30) {
-              nameString += '...';
-            }
-            return ListTile(
-              // visualDensity: VisualDensity(vertical: 4),
-              title: Text(
-                nameString,
-                // convertedItem.name,
-                // convertedItem.favorite ? "${convertedItem.name}" : "${convertedItem.name}",
-                // "${convertedItem.name} ⭐",
-                style: TextStyle(
-                  color: _isDarkModeEnabled ? Colors.white : null,
-                ),
-              ),
-              subtitle: Text(
-                //yyyy-MM-dd, dd-MM-yyyy
-                '${convertedItem.keyType}: ${cnote.substring(0, cnote.length <= 50 ? cnote.length : cnote.length >= 50 ? 50 : cnote.length)}...', // \n\n${DateFormat('MMM d y  hh:mm a').format(DateTime.parse(convertedItem.mdate))}
-                style: TextStyle(
-                  color: _isDarkModeEnabled ? Colors.grey : null,
-                  fontSize: 14,
-                ),
-              ),
-              leading: categoryIcon,
-              trailing: Icon(
-                Icons.arrow_forward_ios,
-                color:
-                _isDarkModeEnabled ? Colors.greenAccent : Colors.blueAccent,
-              ),
-              onTap: () {
-
-                /// check if asym key or sym key
-                ///
-                if (convertedItem.keyType == EnumToString.convertToString(EncryptionKeyType.asym)) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EditPublicEncryptionKeyScreen(
-                        id: convertedItem.id,
-                      ),
-                    ),
-                  ).then((value) {
-                    // print("trace 335");
-                    if (value != null) {
-                      setState(() {
-                        // _didPopBackFrom = true;
-                      });
-                    }
-                    _getItems();
-                  });
-                }
-
-              },
-            );
           } else {
             return Text(
               "missing requirements",
@@ -759,134 +644,7 @@ class _WelcomeAllListScreenState extends State<WelcomeAllListScreen> {
 
             _getItems();
           });
-        } else if (value == "Credit Card") {
-        } else if (value == "Key") {
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AddPublicEncryptionKeyScreen(), //AddKeyItemScreen(),
-            ),
-          ).then((value) {
-            if (value == "savedItem") {
-              EasyLoading.showToast("Saved Key Item",
-                  duration: Duration(seconds: 2));
-            }
-
-            _getItems();
-          });
-
-          // _showKeyTypeSelectionModal();
         }
-
-        /// Add New Items here...
-      }
-    });
-  }
-
-  _showKeyTypeSelectionModal() {
-    /// show modal bottom sheet
-    showModalBottomSheet(
-        backgroundColor: _isDarkModeEnabled ? Colors.black : null,
-        elevation: 8,
-        context: context,
-        isScrollControlled: false,
-        isDismissible: true,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(20),
-          ),
-        ),
-        builder: (context) {
-          return StatefulBuilder(
-              builder: (BuildContext context, StateSetter state) {
-                return Center(
-                  child: Column(
-                    children: <Widget>[
-                      SizedBox(
-                        height: 16,
-                      ),
-                      Row(
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.fromLTRB(4, 16, 0, 0),
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.close,
-                                size: 30,
-                                color:
-                                _isDarkModeEnabled ? Colors.greenAccent : null,
-                              ),
-                              onPressed: () {
-                                // FocusScope.of(context).unfocus();
-
-                                state(() {
-                                  // _tagTextController.text = "";
-                                  // _tagTextFieldValid = false;
-                                  // _filteredTags = _settingsManager.itemTags;
-                                });
-
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                          ),
-                          Spacer(),
-                        ],
-                      ),
-
-                      Container(
-                        // height: MediaQuery.of(context).size.height * 0.7,
-                        child: Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Container(
-                            child: ElevatedButton(
-                              style: ButtonStyle(
-                                backgroundColor: _isDarkModeEnabled
-                                    ? MaterialStateProperty.all<Color>(
-                                    Colors.greenAccent)
-                                    : null,
-                                foregroundColor: MaterialStateProperty.all<Color>(
-                                    Colors.black),
-                              ),
-                              child: Text("Public Asymmetric Key"),
-                              onPressed: (){
-
-                                Navigator.of(context).pop();
-
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => AddPublicEncryptionKeyScreen(), //AddKeyItemScreen(),
-                                  ),
-                                ).then((value) {
-                                  if (value == "savedItem") {
-                                    EasyLoading.showToast("Saved Key Item",
-                                        duration: Duration(seconds: 2));
-                                  }
-
-                                  _getItems();
-                                });
-
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              });
-        }).then((value) {
-      if (value != null) {
-        // print("Chose: $value");
-
-        if (value == "savedItem") {
-          EasyLoading.showToast("Saved Key Item",
-              duration: Duration(seconds: 2));
-
-        }
-
-        _getItems();
       }
     });
   }

@@ -244,12 +244,8 @@ class BackupManager {
 
                 final noteItem = NoteItem.fromRawJson(genericItem.data);
                 itemId = noteItem.id;
-              } else if (genericItem.type == "key") {
-                // _logManager.logger.d("try key");
-
-                final keyItem = KeyItem.fromRawJson(genericItem.data);
-                itemId = keyItem.id;
               }
+
               final genericItemString = genericItem.toRawJson();
 
               if (itemId.isEmpty) {

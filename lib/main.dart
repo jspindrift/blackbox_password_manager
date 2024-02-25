@@ -3,14 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:dynamic_themes/dynamic_themes.dart';
 
-import '../models/KeyItem.dart';
-// import '../screens/peer_messages_screen.dart';
-import '../screens/active_encryption_screen.dart';
-import '../screens/add_key_item_screen.dart';
-import '../screens/add_peer_public_key_screen.dart';
-import '../screens/add_public_encryption_key_screen.dart';
-import '../screens/edit_public_encryption_key_screen.dart';
-import '../screens/peer_public_key_list_screen.dart';
 import '../screens/rekey_auth_screen.dart';
 import '../screens/welcome_all_list_screen.dart';
 import '../managers/LogManager.dart';
@@ -137,49 +129,7 @@ class MyApp extends StatelessWidget {
                   isEncrypted: false,
                 ),
             RecoveryModeScreen.routeName: (ctx) => RecoveryModeScreen(),
-            AddKeyItemScreen.routeName: (ctx) => AddKeyItemScreen(),
             WelcomeAllListScreen.routeName: (ctx) => WelcomeAllListScreen(),
-            ActiveEncryptionScreen.routeName: (ctx) =>
-                ActiveEncryptionScreen(
-                  peerId: '',
-                ),
-            AddPublicEncryptionKeyScreen.routeName: (ctx) =>
-                AddPublicEncryptionKeyScreen(),
-            EditPublicEncryptionKeyScreen.routeName: (ctx) =>
-                EditPublicEncryptionKeyScreen(
-                  id: "",
-                ),
-            PeerPublicKeyListScreen.routeName: (ctx) =>
-                PeerPublicKeyListScreen(
-                  id: "",
-                ),
-            // PeerMessagesScreen.routeName: (ctx) =>
-            //     PeerMessagesScreen(
-            //       peerKeyItem: null,
-            //       keyItem: null,
-            //       myPrivateKey: [],
-            //     ),
-            AddPeerPublicKeyScreen.routeName: (ctx) =>
-                AddPeerPublicKeyScreen(
-                  keyItem: KeyItem(
-                    id: "",
-                    keyId: "",
-                    version: 0,
-                    name: "",
-                    keys: Keys(privX: "", privS: "", privK: ""),
-                    keyType: "",
-                    purpose: "",
-                    algo: "",
-                    notes: "",
-                    favorite: false,
-                    isBip39: true,
-                    peerPublicKeys: [],
-                    tags: [],
-                    mac: "",
-                    cdate: "",
-                    mdate: "",
-                  ),
-                ),
             ReKeyAuthScreen.routeName: (ctx) => ReKeyAuthScreen(),
           },
           builder: EasyLoading.init(),
