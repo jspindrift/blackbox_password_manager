@@ -2989,7 +2989,7 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
           ),
           OutlinedButton(
             style: TextButton.styleFrom(
-              primary: Colors.redAccent,
+              foregroundColor: Colors.redAccent,
             ),
             onPressed: () {
               Navigator.of(context).pop();

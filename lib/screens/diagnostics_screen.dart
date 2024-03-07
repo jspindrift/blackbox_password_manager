@@ -418,7 +418,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> with WidgetsBindi
           ),
           OutlinedButton(
             style: TextButton.styleFrom(
-              primary: Colors.redAccent,
+              foregroundColor: Colors.redAccent,
             ),
             child: Text('Delete'),
             onPressed: () async {

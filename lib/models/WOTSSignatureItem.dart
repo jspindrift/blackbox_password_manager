@@ -1,156 +1,23 @@
 import 'dart:convert';
 
 
-class WOTSBasicSignatureChain {
-  List<WOTSBasicSignatureItem> blocks;
+enum GSecurityLevel {
+  basic256,  // basic giga wots signing 256 bits
+  basic512,  // basic giga wots signing 512 bits
+  luda256,   // ludicrous mode
+  luda512,
 
-  WOTSBasicSignatureChain({
-    required this.blocks,
-  });
-
-  factory WOTSBasicSignatureChain.fromRawJson(String str) =>
-      WOTSBasicSignatureChain.fromJson(json.decode(str));
-
-  String toRawJson() => json.encode(toJson());
-
-  factory WOTSBasicSignatureChain.fromJson(Map<String, dynamic> json) {
-    return WOTSBasicSignatureChain(
-      blocks: List<WOTSBasicSignatureItem>.from(
-          json["blocks"].map((x) => WOTSBasicSignatureItem.fromJson(x))),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    Map<String, dynamic> jsonMap = {
-      "blocks": blocks,
-    };
-
-    return jsonMap;
-  }
-
+  unknown
 }
 
 
-class WOTSBasicSignatureItem {
-  int id;
-  String publicKey;
-  List<String> signature;
-  String checksum;
-  BasicMessageData message;
+enum GProtocol {
+  alpha,
+  beta,
+  gamma,
 
-  WOTSBasicSignatureItem({
-    required this.id,
-    required this.publicKey,
-    required this.signature,
-    required this.checksum,
-    required this.message,
-  });
-
-  factory WOTSBasicSignatureItem.fromRawJson(String str) =>
-      WOTSBasicSignatureItem.fromJson(json.decode(str));
-
-  String toRawJson() => json.encode(toJson());
-
-  factory WOTSBasicSignatureItem.fromJson(Map<String, dynamic> json) {
-    return WOTSBasicSignatureItem(
-      id: json['id'],
-      publicKey: json['publicKey'],
-      signature: List<String>.from(json["signature"]),
-      checksum: json['checksum'],
-      message: BasicMessageData.fromJson(json['message']),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    Map<String, dynamic> jsonMap = {
-      "id": id,
-      "publicKey": publicKey,
-      "signature": signature,
-      "checksum": checksum,
-      "message": message,
-    };
-
-    return jsonMap;
-  }
-
+  unknown
 }
-
-
-class BasicMessageData {
-  String time;
-  String message;
-  String signature;
-
-  BasicMessageData({
-    required this.time,
-    required this.message,
-    required this.signature,
-  });
-
-  factory BasicMessageData.fromRawJson(String str) => BasicMessageData.fromJson(json.decode(str));
-
-  String toRawJson() => json.encode(toJson());
-
-  factory BasicMessageData.fromJson(Map<String, dynamic> json) {
-    return BasicMessageData(
-      time: json['time'],
-      message: json['message'],
-      signature: json['signature'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    Map<String, dynamic> jsonMap = {
-      "time": time,
-      "message": message,
-      "signature": signature,
-    };
-
-    return jsonMap;
-  }
-
-}
-
-
-class AddressableMessageData {
-  String time;
-  String sender;
-  String reciever;
-  String data;
-
-  AddressableMessageData({
-    required this.time,
-    required this.sender,
-    required this.reciever,
-    required this.data,
-  });
-
-  factory AddressableMessageData.fromRawJson(String str) => AddressableMessageData.fromJson(json.decode(str));
-
-  String toRawJson() => json.encode(toJson());
-
-  factory AddressableMessageData.fromJson(Map<String, dynamic> json) {
-    return AddressableMessageData(
-      time: json['time'],
-      sender: json['sender'],
-      reciever: json['reciever'],
-      data: json['data'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    Map<String, dynamic> jsonMap = {
-      "time": time,
-      "sender": sender,
-      "reciever": reciever,
-      "data": data,
-    };
-
-    return jsonMap;
-  }
-
-}
-
 
 class GigaWOTSSignatureDictionary {
   List<GigaWOTSSignatureChain> chains;
@@ -198,7 +65,7 @@ class GigaWOTSSignatureChain {
 
   factory GigaWOTSSignatureChain.fromJson(Map<String, dynamic> json) {
     return GigaWOTSSignatureChain(
-        chainId: json['chainId'],
+      chainId: json['chainId'],
       blocks: List<GigaWOTSSignatureItem>.from(
           json["blocks"].map((x) => GigaWOTSSignatureItem.fromJson(x))),
     );
@@ -220,7 +87,9 @@ class GigaWOTSSignatureChain {
 class GigaWOTSSignatureItem {
   String id;
   String? recovery; // unique identifier for wots chain (static)
-  List<String> signature;
+  List<String>? signature; /// TODO: turn this into a blob for smaller space
+  String? signatureBlock;
+
   String checksum;
   WOTSMessageData message;
 
@@ -228,6 +97,7 @@ class GigaWOTSSignatureItem {
     required this.id,
     required this.recovery,
     required this.signature,
+    required this.signatureBlock,
     required this.checksum,
     required this.message, // encrypted
   });
@@ -241,11 +111,22 @@ class GigaWOTSSignatureItem {
     "recovery": recovery!,
   };
 
+  Map<String, dynamic> toJsonSignature() => {
+    "signature": signature!,
+  };
+
+  Map<String, dynamic> toJsonSignatureBlock() => {
+    "signatureBlock": signatureBlock!,
+  };
+
   factory GigaWOTSSignatureItem.fromJson(Map<String, dynamic> json) {
     return GigaWOTSSignatureItem(
       id: json['id'],
       recovery: json['recovery'] == null ? null : json['recovery'],
-      signature: List<String>.from(json['signature']),
+      signature:  json['signature'] == null ? null : List<String>.from(json['signature']),
+
+      signatureBlock: json['signatureBlock'] == null ? null : json['signatureBlock'],
+
       checksum: json['checksum'],
       message: WOTSMessageData.fromJson(json['message']),
     );
@@ -254,7 +135,8 @@ class GigaWOTSSignatureItem {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
       "id": id,
-      "signature": signature,
+      // "signature": signature,
+      "signatureBlock": signatureBlock,
       "checksum": checksum,
       "message": message,
     };
@@ -263,47 +145,76 @@ class GigaWOTSSignatureItem {
       jsonMap.addAll(toJsonRecovery());
     }
 
+    if (signature != null) {
+      jsonMap.addAll(toJsonSignature());
+    }
+
+    if (signatureBlock != null) {
+      jsonMap.addAll(toJsonSignatureBlock());
+    }
+
     return jsonMap;
   }
 
 }
 
 
-class WOTSMessageData {
-  int messageIndex;     // current message/signature number
-  String previousHash;  // hash of previous signature block
-  String publicKey;     // current top public key for signature verification
-  String nextPublicKey; // next top public key in WOTS key tree
-  String data;          // message data
+/// Message Layer -----------------------------------
+///
+///
+class GenericMessageList {
+  List<GenericMessage> list;
 
-  WOTSMessageData({
-    required this.messageIndex,
-    required this.previousHash,
-    required this.publicKey,
-    required this.nextPublicKey,
-    required this.data,
+  GenericMessageList({
+    required this.list,
   });
 
-  factory WOTSMessageData.fromRawJson(String str) => WOTSMessageData.fromJson(json.decode(str));
+  factory GenericMessageList.fromRawJson(String str) => GenericMessageList.fromJson(json.decode(str));
 
   String toRawJson() => json.encode(toJson());
 
-  factory WOTSMessageData.fromJson(Map<String, dynamic> json) {
-    return WOTSMessageData(
-      messageIndex: json['messageIndex'],
-      previousHash: json['previousHash'],
-      publicKey: json['publicKey'],
-      nextPublicKey: json['nextPublicKey'],
-      data: json['data'],
+  factory GenericMessageList.fromJson(Map<String, dynamic> json) {
+    return GenericMessageList(
+      list: List<GenericMessage>.from(
+          json["list"].map((x) => GenericMessage.fromJson(x))),
     );
   }
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonMap = {
-      "messageIndex": messageIndex,
-      "previousHash": previousHash,
-      "publicKey": publicKey,
-      "nextPublicKey": nextPublicKey,
+      "list": list,
+    };
+
+    return jsonMap;
+  }
+
+}
+
+
+class GenericMessage {
+  String type;  // message type (opcode)
+  String data;  // message type data (EncryptedMessage/OpCodeMessage)
+
+  GenericMessage({
+    required this.type,
+    required this.data,
+  });
+
+  factory GenericMessage.fromRawJson(String str) =>
+      GenericMessage.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  factory GenericMessage.fromJson(Map<String, dynamic> json) {
+    return GenericMessage(
+      type: json["type"],
+      data: json["data"],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonMap = {
+      "type": type,
       "data": data,
     };
 
@@ -313,33 +224,228 @@ class WOTSMessageData {
 }
 
 
-// class SignatureAsym {
-//   String r;
-//   String s;
-//
-//   SignatureAsym({
-//     required this.r,
-//     required this.s,
-//   });
-//
-//   factory SignatureAsym.fromRawJson(String str) => SignatureAsym.fromJson(json.decode(str));
-//
-//   String toRawJson() => json.encode(toJson());
-//
-//   factory SignatureAsym.fromJson(Map<String, dynamic> json) {
-//     return SignatureAsym(
-//       r: json["r"],
-//       s: json["s"],
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     Map<String, dynamic> jsonMap = {
-//       "r": r,
-//       "s": s,
-//     };
-//
-//     return jsonMap;
-//   }
-//
-// }
+class WOTSMessageData {
+  int messageIndex;     // current message/signature number
+  String securityLevel;
+  String previousHash;  // hash of previous signature block
+  String? publicKey;     // current top public key for signature verification
+  String nextPublicKey; // next top public key in WOTS key tree
+  String? topSignature;     // current signed top public key by asymSigning private key in WOTS key tree
+  String? asymSigningPublicKey;  // asymmetric signing key
+  String data;          // message data
+
+  WOTSMessageData({
+    required this.messageIndex,
+    required this.securityLevel,
+    required this.previousHash,
+    required this.publicKey,
+    required this.nextPublicKey,
+    required this.topSignature,
+    required this.asymSigningPublicKey,
+    required this.data,
+  });
+
+  factory WOTSMessageData.fromRawJson(String str) => WOTSMessageData.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  Map<String, dynamic> toJsonTopSignature() => {
+    "topSignature": topSignature!,
+  };
+
+  Map<String, dynamic> toJsonPublicKey() => {
+    "publicKey": publicKey!,
+  };
+
+  Map<String, dynamic> toJsonAsymSigningPublicKey() => {
+    "asymSigningPublicKey": asymSigningPublicKey!,
+  };
+
+
+  factory WOTSMessageData.fromJson(Map<String, dynamic> json) {
+    return WOTSMessageData(
+      messageIndex: json['messageIndex'],
+      securityLevel: json['securityLevel'],
+      previousHash: json['previousHash'],
+      publicKey: json['publicKey'] == null ? null : json['publicKey'],
+      nextPublicKey: json['nextPublicKey'],
+
+      topSignature: json['topSignature'] == null ? null : json['topSignature'],
+      // nextTopSignature: json['nextTopSignature'] == null ? null : json['nextTopSignature'],
+      asymSigningPublicKey: json['asymSigningPublicKey'] == null ? null : json['asymSigningPublicKey'],
+      data: json['data'],
+
+      // data: ProtocolMessage.fromJson(json['data']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonMap = {
+      "messageIndex": messageIndex,
+      "securityLevel": securityLevel,
+      "previousHash": previousHash,
+      // "publicKey": publicKey,
+      "nextPublicKey": nextPublicKey,
+      "data": data,
+    };
+
+    if (topSignature != null) {
+      jsonMap.addAll(toJsonTopSignature());
+    }
+
+    if (publicKey != null) {
+      jsonMap.addAll(toJsonPublicKey());
+    }
+
+    if (asymSigningPublicKey != null) {
+      jsonMap.addAll(toJsonAsymSigningPublicKey());
+    }
+
+    return jsonMap;
+  }
+
+}
+
+
+/// same as plain data model but message needs decryption
+///
+class EncryptedMessage {
+  int index;
+  String from;
+  String to;
+  String message;
+  String time;
+  String mac;
+
+  EncryptedMessage({
+    required this.index,
+    required this.from,
+    required this.to,
+    required this.message,
+    required this.time,
+    required this.mac,
+  });
+
+  factory EncryptedMessage.fromRawJson(String str) =>
+      EncryptedMessage.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  factory EncryptedMessage.fromJson(Map<String, dynamic> json) {
+    return EncryptedMessage(
+      index: json["index"],
+      from: json["from"],
+      to: json["to"],
+      message: json["message"],
+      time: json["time"],
+      mac: json["mac"],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonMap = {
+      "index": index,
+      "from": from,
+      "to": to,
+      "message": message,
+      "time": time,
+      "mac": mac,
+    };
+
+    return jsonMap;
+  }
+
+}
+
+
+/// protocols for key change, recovery, etc.
+class ProtocolMessage {
+  String protocol;  // GigaProtocol type
+  String data;      // Protocol data (AlphaProtocolMessage)
+
+  ProtocolMessage({
+    required this.protocol,
+    required this.data,
+  });
+
+  factory ProtocolMessage.fromRawJson(String str) =>
+      ProtocolMessage.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  factory ProtocolMessage.fromJson(Map<String, dynamic> json) {
+    return ProtocolMessage(
+      data: json["data"],
+      protocol: json["protocol"],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonMap = {
+      "protocol": protocol,
+      "data": data,
+    };
+
+    return jsonMap;
+  }
+
+}
+
+
+/// (Signing) Key Change Protocol Data Model
+class AlphaProtocolMessage {
+  String data;
+
+  AlphaProtocolMessage({
+    required this.data,
+  });
+
+  factory AlphaProtocolMessage.fromRawJson(String str) =>
+      AlphaProtocolMessage.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  factory AlphaProtocolMessage.fromJson(Map<String, dynamic> json) {
+    return AlphaProtocolMessage(
+      data: json["data"],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonMap = {
+      "data": data,
+    };
+
+    return jsonMap;
+  }
+
+}
+
+/// Recovery Protocol Data Model
+class BetaProtocolMessage {
+  String data;
+
+  BetaProtocolMessage({
+    required this.data,
+  });
+
+  factory BetaProtocolMessage.fromRawJson(String str) =>
+      BetaProtocolMessage.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  factory BetaProtocolMessage.fromJson(Map<String, dynamic> json) {
+    return BetaProtocolMessage(
+      data: json["data"],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonMap = {
+      "data": data,
+    };
+
+    return jsonMap;
+  }
+
+}

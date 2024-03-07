@@ -152,8 +152,8 @@ class PostQuantumManager {
 
     /// create PrivateKey object
     final privateKey = elliptic.PrivateKey(
-        algorithm_secp256k1,
-        BigInt.parse(_privateKeys[keyIndex], radix: 16),
+      algorithm_secp256k1,
+      BigInt.parse(_privateKeys[keyIndex], radix: 16),
     );
 
     /// sign message hash
@@ -246,7 +246,7 @@ class PostQuantumManager {
     var chainId = "main";
     try {
       var storedSignatureChainObject = GigaWOTSSignatureChain.fromRawJson(
-          storedSignatureFormatted,
+        storedSignatureFormatted,
       );
 
       chainId = storedSignatureChainObject.chainId;
@@ -264,22 +264,29 @@ class PostQuantumManager {
       chainId = _cryptor.getUUID();
     }
 
+    final pm = ProtocolMessage(
+      protocol: GProtocol.alpha.name,
+      data: messageString,
+    );
+
     final msgObject = WOTSMessageData(
       messageIndex: thisSigatureIndex,
+      securityLevel: GSecurityLevel.basic256.name,
       previousHash: lastBlockHash,
       publicKey: _wotsManager.topPublicKey,
       nextPublicKey: _wotsManager.nextTopPublicKey,
-      data: messageString,
+      topSignature: null,
+      asymSigningPublicKey: null,
+      data: pm.toRawJson(),
     );
 
     /// compute WOTS signature on message object
     await _wotsManager.signGigaWotMessage(
-        kek,
-        chainId,
-        lastBlockHash,
-        msgObject,
-        bitSecurity,
-        doRecovery,
+      kek,
+      chainId,
+      lastBlockHash,
+      msgObject,
+      doRecovery,
     );
   }
 

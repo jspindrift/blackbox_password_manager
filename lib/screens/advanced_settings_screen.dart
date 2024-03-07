@@ -1,12 +1,13 @@
 import 'dart:io';
 import 'dart:async';
 
+import 'package:convert/convert.dart';
 import 'package:dynamic_themes/dynamic_themes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:pin_code_view/pin_code_view.dart';
 
 import '../helpers/AppConstants.dart';
+import '../helpers/ivHelper.dart';
 import '../managers/Cryptor.dart';
 import '../managers/PostQuantumManager.dart';
 import '../managers/WOTSManager.dart';
@@ -75,7 +76,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black12 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black26 : Colors.black54)) : Colors.white70, //Colors.blue[50],//Colors.grey[100],
+      backgroundColor: _isDarkModeEnabled ? (Platform.isAndroid ? (AppConstants.useMaterial3 ? Colors.black87 : Colors.black54) : (AppConstants.useMaterial3 ? Colors.black87 : Colors.black54)) : Colors.white70,
       appBar: AppBar(
         title: Text(
           "Advanced Settings",
@@ -461,14 +462,14 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                 ),
               ),
               Visibility(
-              visible: kDebugMode,
-              child: Divider(
+                visible: kDebugMode,
+                child: Divider(
                   color: _isDarkModeEnabled ? Colors.greenAccent : Colors.grey,
                 ),
               ),
               Visibility(
-              visible: kDebugMode,
-              child: Padding(
+                visible: kDebugMode,
+                child: Padding(
                   padding: EdgeInsets.all(0.0),
                   child: ListTile(
                     enabled: true,
@@ -540,15 +541,23 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                             : Colors.green,
                       ),
                       onPressed: () async {
-                        // await _runPostQuantumIntegrityTestWithReset();
+                        _logManager.logger.d("run tests...");
                         await _runGigaWotsSignTestWithReset();
+
+                        // await _runPostQuantumIntegrityTestWithReset();
                         // await _runPadEncryptionTest();
+                        // await _runTest2();
                       },
                     ),
                     onTap: () async {
-                      // await _runPostQuantumIntegrityTest();
+                      _logManager.logger.d("run tests...");
                       await _runGigaWotsSignTest();
+
+                      // await _runPostQuantumIntegrityTest();
                       // await _runPadEncryptionTest();
+
+                      // await _runTest2();
+
                     },
                   ),
                 ),
@@ -560,6 +569,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                 padding: EdgeInsets.all(12.0),
                 child: ElevatedButton(
                   style: OutlinedButton.styleFrom(
+                    backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
                     side: _isDarkModeEnabled
                         ? BorderSide(color: Colors.greenAccent)
                         : BorderSide(color: Colors.black),
@@ -596,27 +606,28 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               Visibility(
                 visible: kDebugMode,
                 child: Padding(
-                padding: EdgeInsets.fromLTRB(16.0, 16, 16, 32),
-                child: ElevatedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: _isDarkModeEnabled
-                        ? BorderSide(color: Colors.greenAccent)
-                        : BorderSide(color: Colors.black),
-                    // backgroundColor: _isDarkModeEnabled ? Colors.transparent : Colors.blueAccent,
-                  ),
-                  child: Text(
-                    'Delete Everything',
-                    style: TextStyle(
-                      color: _isDarkModeEnabled
-                          ? Colors.greenAccent
-                          : Colors.redAccent,
+                  padding: EdgeInsets.fromLTRB(16.0, 16, 16, 32),
+                  child: ElevatedButton(
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.blueAccent,
+                      side: _isDarkModeEnabled
+                          ? BorderSide(color: Colors.greenAccent)
+                          : BorderSide(color: Colors.black),
+                      // backgroundColor: _isDarkModeEnabled ? Colors.transparent : Colors.blueAccent,
                     ),
+                    child: Text(
+                      'Delete Everything',
+                      style: TextStyle(
+                        color: _isDarkModeEnabled
+                            ? Colors.greenAccent
+                            : Colors.redAccent,
+                      ),
+                    ),
+                    onPressed: () {
+                      _showConfirmDeleteEverythingDialog();
+                    },
                   ),
-                  onPressed: () {
-                    _showConfirmDeleteEverythingDialog();
-                  },
-                ),
-              ),),
+                ),),
             ],
           ),
         ),
@@ -696,51 +707,9 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     _postQuantumManager.reset();
   }
 
-  void _runTests() async {
-    _logManager.logger.d("_runTests");
 
-    /// set variables here
-    final message = "hello world:${_wotsManager.lastBlockHash}";
-    final kek = List.filled(32, 0);
-    // final kak = List.filled(32, 1);
-    // final ivg = List.filled(16, 0);
-
-    /// Do some testing here...
-    ///
-
-    // final ctx = await _cryptor.superEncryption(kek, kak, ivg, message);
-    // final ptx = await _cryptor.superDecryption(kek, kak, ivg, ctx);
-
-    /// create WOTS top public key
-    // _wotsManager.createTopPubKey(kek, 0);
-
-    /// create WOTS signature
-    final sigItem = await _wotsManager.signMessage(kek, _signCounter, message);
-    // _logManager.logLongMessage("sigItem: ${sigItem?.toRawJson()}");
-
-    /// verify WOTS signature
-    final isValid = await _wotsManager.verifySignature(sigItem);
-    _logManager.logger.d("isValid: ${isValid}");
-
-    _signCounter++;
-  }
 
   /// hybrid asymmetric and WOTS signing
-  Future<void> _runPostQuantumIntegrityTest() async {
-    _logManager.logger.d("_runPostQuantumTest");
-
-    // await _postQuantumManager.postQuantumProjectIntegrityTest(256);
-
-    /// TODO: uncomment this after to verify
-    // await _postQuantumManager.postQuantumProjectIntegrityTestVerify();
-  }
-
-  Future<void> _runPostQuantumIntegrityTestWithReset() async {
-    _resetTestVariables();
-
-    await _runPostQuantumIntegrityTest();
-  }
-
   /// hybrid asymmetric and WOTS signing
   Future<void> _runGigaWotsSignTest() async {
     _logManager.logger.d("_runPostQuantumTest");
@@ -749,33 +718,31 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     final message = "[$_signCounter]:hello world";
     final kek = List.filled(32, 0);
 
-    /// Do some testing here...
-    ///
-
-    var wotsMessageData = WOTSMessageData(
-        messageIndex: _signCounter,
-        previousHash: _wotsManager.lastBlockHash,
-        publicKey: _wotsManager.topPublicKey,
-        nextPublicKey: _wotsManager.nextTopPublicKey,
-        data: message,
+    final pm = ProtocolMessage(
+      protocol: GProtocol.alpha.name,
+      data: message,
     );
 
-    // final ctx = await _cryptor.superEncryption(kek, kak, ivg, message);
-    // final ptx = await _cryptor.superDecryption(kek, kak, ivg, ctx);
+    var wotsMessageData = WOTSMessageData(
+      messageIndex: _signCounter,
+      securityLevel: GSecurityLevel.basic256.name,
+      previousHash: _wotsManager.lastBlockHash,
+      publicKey: null, //_wotsManager.topPublicKey,
+      nextPublicKey: _wotsManager.nextTopPublicKey,
+      topSignature: _wotsManager.topAsymSig,
+      asymSigningPublicKey: _wotsManager.asymSigningPublicKey,
+      data: pm.toRawJson(),
+    );
 
-    /// create WOTS top public key
-    // _wotsManager.createTopPubKey(kek, 0);
 
     /// create WOTS signature
     final sigItem = await _wotsManager.signGigaWotMessage(
-        kek,
-        "main",
-        _wotsManager.lastBlockHash,
-        wotsMessageData,
-        256,
-        false,
+      kek,
+      "main",
+      _wotsManager.lastBlockHash,
+      wotsMessageData,
+      false,
     );
-    // _logManager.logLongMessage("sigItem: ${sigItem?.toRawJson()}");
 
     /// verify WOTS signature
     final isValid = await _wotsManager.verifyGigaWotSignature(sigItem);
@@ -790,15 +757,19 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     await _runGigaWotsSignTest();
   }
 
+  Future<void> _runTest2() async {
 
-  // Future<void> _runPadEncryptionTest() async {
-  //   _logManager.logger.d("_runPostQuantumTest");
-  //
-  //   /// set variables here
-  //   final message = "hello world";
-  //   final e = await _cryptor.encryptWithPadding(message);
-  //   await _cryptor.decryptWithPadding(e);
-  // }
+    final message = "[$_signCounter]:hello world";
+    final kek = List.filled(32, 0);
+    final kak = List.filled(32, 1);
+    final ivg = ivHelper().getIv4x4(0, 0, 1, 0);
+
+    final ctx = await _cryptor.superEncryption(kek, kak, ivg, message);
+    // _logManager.logger.d("ctx: ${ctx}");
+
+    final ptx = await _cryptor.superDecryption(kek, kak, ivg, ctx);
+    // _logManager.logger.d("ptx: ${ptx}");
+  }
 
 
   void _showConfirmDeleteAccountDialog() {
@@ -827,7 +798,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           ),
           OutlinedButton(
             style: TextButton.styleFrom(
-              primary: Colors.redAccent,
+              foregroundColor: Colors.redAccent,
             ),
             onPressed: () async {
               Navigator.of(context).pop();
@@ -856,7 +827,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           ),
           OutlinedButton(
             style: TextButton.styleFrom(
-              primary: Colors.redAccent,
+              foregroundColor: Colors.redAccent,
             ),
             onPressed: () async {
               await _confirmedDeleteAccount();
@@ -901,24 +872,24 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(
-            "Delete Everything",
+          "Delete Everything",
         ),
         content: Text(
-            "Are you sure you want to delete everything?  This will delete everything except backups!",
+          "Are you sure you want to delete everything?  This will delete everything except backups!",
         ),
         actions: <Widget>[
           Padding(
             padding: EdgeInsets.fromLTRB(4, 4, 4, 8),
             child: ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
                 "Cancel",
-              style: TextStyle(
-                color: _isDarkModeEnabled ? Colors.white : Colors.black,
+                style: TextStyle(
+                  color: _isDarkModeEnabled ? Colors.white : Colors.black,
+                ),
               ),
-            ),
             ),
           ),
           ElevatedButton(
@@ -951,17 +922,17 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
             'Are you sure you want to delete all data?  Backups will not be deleted.'),
         actions: <Widget>[
           Padding(
-          padding: EdgeInsets.fromLTRB(4, 4, 4, 8),
-          child: ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text(
-              "Cancel",
-              style: TextStyle(
-                color: _isDarkModeEnabled ? Colors.white : Colors.black,
+            padding: EdgeInsets.fromLTRB(4, 4, 4, 8),
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                "Cancel",
+                style: TextStyle(
+                  color: _isDarkModeEnabled ? Colors.white : Colors.black,
+                ),
               ),
-            ),
             ),
           ),
           ElevatedButton(
@@ -1010,7 +981,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
       builder: (BuildContext context) => AlertDialog(
         // backgroundColor: _isDarkModeEnabled ? Colors.black87 : Colors.white,
         title: Text('Report a bug'),
-      content: TextField(
+        content: TextField(
           controller: _bugNotesTextController,
           autofocus: true,
           maxLines: 4,
@@ -1018,9 +989,9 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           maxLength: 120,
           minLines: 3,
           decoration: InputDecoration(
-              hintText: "Notes",
+            hintText: "Notes",
           ),
-       ),
+        ),
         actions: <Widget>[
           OutlinedButton(
             onPressed: () {
@@ -1030,7 +1001,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           ),
           OutlinedButton(
             style: TextButton.styleFrom(
-              primary: Colors.redAccent,
+              foregroundColor: Colors.redAccent,
             ),
             onPressed: () {
               _confirmedFoundABug(_bugNotesTextController.text);

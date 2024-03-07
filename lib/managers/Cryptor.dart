@@ -2128,7 +2128,7 @@ class Cryptor {
 
         /// XOR the result (iv_xor) back upon our authentication key stream to
         /// get the inverse leaves
-        final inverseAuthKeyStream = await _processKey(authenticationKeyStream.cipherText);
+        final inverseAuthKeyStream = await processKey(authenticationKeyStream.cipherText, 16);
 
         /// Pick a random iv block from the authentication key stream.
         /// This iv will be used for encryption with the session encryption key.
@@ -2233,7 +2233,7 @@ class Cryptor {
 
         /// XOR the result (iv_xor) back upon our authentication key stream to
         /// get the inverse leaves
-        final inverseAuthKeyStream = await _processKey(authenticationKeyStream.cipherText);
+        final inverseAuthKeyStream = await processKey(authenticationKeyStream.cipherText, 16);
 
         List<int> iv_enc = [];
         List<int> iv_auth = [];
@@ -2308,21 +2308,31 @@ class Cryptor {
   }
 
 
-  Future<List<int>> _processKey(List<int> bytes) async {
-    List<int> xorList = bytes;
+  Future<List<int>> processKey(List<int> bytes, int wsize) async {
+    if (bytes.length % wsize != 0){
+      return [];
+    }
 
-    while (xorList.length != 16) {
+    final num_leaves = bytes.length/wsize;
+
+    List<int> xorList = bytes;
+    List<int> newBytes = bytes;
+
+    /// xor all wsize byte blocks together
+    while (xorList.length != wsize) {
       final x =
-      Uint8List.fromList(bytes.sublist(0, (xorList.length! / 2).toInt()));
-      final y = Uint8List.fromList(bytes.sublist(
+      Uint8List.fromList(newBytes.sublist(0, (xorList.length! / 2).toInt()));
+      final y = Uint8List.fromList(newBytes.sublist(
           (xorList.length! / 2).toInt(), (xorList.length!).toInt()));
 
       xorList = xor(x, y);
+      newBytes = xorList;
     }
-    logger.d("xorList: ${xorList}");
+    // logger.d("xorList[${xorList.length}]: ${xorList}");
 
     List<int> xor1Byte = xorList;
 
+    /// xor all single bytes together
     while (xor1Byte.length != 1) {
       final x =
       Uint8List.fromList(bytes.sublist(0, (xor1Byte.length! / 2).toInt()));
@@ -2331,39 +2341,17 @@ class Cryptor {
 
       xor1Byte = xor(x, y);
     }
-    logger.d("xor1Byte: ${xor1Byte}");
-
+    // logger.d("xor1Byte: ${xor1Byte}");
 
     List<int> xorInverseList = [];
 
-    for (var index = 0; index < 4; index++) {
+    for (var index = 0; index < num_leaves; index++) {
       final xx = Uint8List.fromList(xorList);
-      final y = Uint8List.fromList(bytes.sublist(index * 16, 16 * (index + 1)));
+      final y = Uint8List.fromList(bytes.sublist(index * wsize, wsize * (index + 1)));
       // logger.d("y[${index}]: ${y}");
       xorInverseList.addAll(xor(xx, y));
     }
-    logger.d("xorInverseList: ${xorInverseList}");
-
-    List<int> xorSecondInverseList = [];
-
-    for (var index = 0; index < xorList.length; index++) {
-      final xx = Uint8List.fromList(xorList.sublist(index, (index + 1)));
-      final y = Uint8List.fromList(xor1Byte);
-      // logger.d("y[${index}]: ${y}");
-      xorSecondInverseList.addAll(xor(xx, y));
-    }
-
-    logger.d("xorSecondInverseList[${xorSecondInverseList.length}]: ${xorSecondInverseList}");
-
-    List<int> xorInverseListBytes = [];
-
-    for (var index = 0; index < bytes.length/16; index++) {
-      final xx = Uint8List.fromList(xorSecondInverseList);
-      final y = Uint8List.fromList(bytes.sublist(index * 16, 16 * (index + 1)));
-      // logger.d("y[${index}]: ${y}");
-      xorInverseListBytes.addAll(xor(xx, y));
-    }
-    logger.d("xorInverseListBytes: ${xorInverseListBytes}");
+    // logger.d("xorInverseList[${xorInverseList.length}]: ${xorInverseList}");
 
     return xorInverseList;
   }
